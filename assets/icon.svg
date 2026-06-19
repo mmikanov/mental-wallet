@@ -1,0 +1,23 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="224" fill="url(#grad)"/>
+  
+  <!-- Gradient -->
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4ECDC4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6B5CE7;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Card stack (3 cards fanning out) -->
+  <!-- Bottom card -->
+  <rect x="280" y="380" width="464" height="300" rx="24" fill="rgba(255,255,255,0.3)" transform="rotate(-5, 512, 512)"/>
+  <!-- Middle card -->
+  <rect x="280" y="350" width="464" height="300" rx="24" fill="rgba(255,255,255,0.5)" transform="rotate(0, 512, 512)"/>
+  <!-- Top card -->
+  <rect x="280" y="320" width="464" height="300" rx="24" fill="rgba(255,255,255,0.9)" transform="rotate(5, 512, 512)"/>
+  
+  <!-- Heart on top card -->
+  <text x="512" y="500" font-size="120" text-anchor="middle" fill="#4ECDC4">💚</text>
+</svg>
