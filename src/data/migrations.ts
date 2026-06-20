@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS cards (
   is_archived INTEGER NOT NULL DEFAULT 0,
   archived_at TEXT,
   previous_stack_position INTEGER,
+  allow_background_customization INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -50,7 +51,7 @@ CREATE TABLE IF NOT EXISTS controls (
   type TEXT NOT NULL CHECK(type IN (
     'static_text', 'text_input', 'text_area', 'mood_slider',
     'choice_buttons', 'checkbox', 'counter', 'datetime_stamp',
-    'image_attachment', 'link_button'
+    'image_attachment', 'link_button', 'display_media', 'upload_media'
   )),
   position INTEGER NOT NULL,
   config TEXT NOT NULL DEFAULT '{}',
@@ -112,4 +113,17 @@ CREATE TABLE IF NOT EXISTS crisis_resources (
   is_default INTEGER NOT NULL DEFAULT 0,
   display_order INTEGER NOT NULL
 );
+
+-- Background Overlays (per-user personalization for Library/Community cards)
+CREATE TABLE IF NOT EXISTS background_overlays (
+  id TEXT PRIMARY KEY,
+  card_id TEXT NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+  background_type TEXT NOT NULL CHECK(background_type IN ('color', 'gradient', 'image')),
+  background_value TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(card_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_background_overlays_card ON background_overlays(card_id);
 `;

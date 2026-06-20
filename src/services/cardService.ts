@@ -1,13 +1,16 @@
 import * as Crypto from 'expo-crypto';
 import { getDatabase } from '../data/database';
 import { AppError, ErrorCode } from '../types/errors';
+import { copyOverlayToCard } from './backgroundOverlayService';
 import type {
   Card,
   CardShell,
   Control,
   ControlConfig,
+  DisplayMediaConfig,
   LinkButtonConfig,
   OriginBadge,
+  UploadMediaConfig,
   ValidationResult,
 } from '../types/index';
 import type { CardService } from '../types/services';
@@ -82,6 +85,34 @@ export function validateControls(controls: Control[]): ValidationResult {
         });
       }
     }
+    if (control.type === 'display_media') {
+      const config = control.config as DisplayMediaConfig;
+      if (!config.source || config.source.trim().length === 0) {
+        errors.push({
+          field: `controls[${i}].source`,
+          message: 'Media source is required',
+        });
+      }
+      if (
+        (config.mediaSourceType === 'direct_url' || config.mediaSourceType === 'platform_url') &&
+        config.source &&
+        !config.source.startsWith('https://')
+      ) {
+        errors.push({
+          field: `controls[${i}].source`,
+          message: 'Media URL must use HTTPS',
+        });
+      }
+    }
+    if (control.type === 'upload_media') {
+      const config = control.config as UploadMediaConfig;
+      if (!config.acceptedTypes || config.acceptedTypes.length === 0) {
+        errors.push({
+          field: `controls[${i}].acceptedTypes`,
+          message: 'At least one accepted media type is required',
+        });
+      }
+    }
   }
 
   return { isValid: errors.length === 0, errors };
@@ -120,6 +151,7 @@ function mapRowToCard(row: Record<string, unknown>): Omit<Card, 'controls'> {
     isArchived: (row.is_archived as number) === 1,
     archivedAt: (row.archived_at as string) || null,
     previousStackPosition: (row.previous_stack_position as number) ?? null,
+    allowBackgroundCustomization: (row.allow_background_customization as number) === 1,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
@@ -157,11 +189,15 @@ export function createCardService(): CardService {
           c.background_type, c.background_value, c.category_id,
           c.origin_badge, c.stack_position, c.total_uses, c.current_streak,
           c.last_used_at, c.is_archived, c.archived_at, c.previous_stack_position,
+          c.allow_background_customization,
           c.created_at, c.updated_at,
+          bo.background_type AS overlay_background_type,
+          bo.background_value AS overlay_background_value,
           ctrl.id AS control_id, ctrl.card_id AS control_card_id,
           ctrl.type AS control_type, ctrl.position AS control_position,
           ctrl.config AS control_config, ctrl.is_required AS control_is_required
         FROM cards c
+        LEFT JOIN background_overlays bo ON bo.card_id = c.id
         LEFT JOIN controls ctrl ON ctrl.card_id = c.id
         WHERE c.is_archived = 0
         ORDER BY c.stack_position ASC, ctrl.position ASC`
@@ -182,11 +218,15 @@ export function createCardService(): CardService {
           c.background_type, c.background_value, c.category_id,
           c.origin_badge, c.stack_position, c.total_uses, c.current_streak,
           c.last_used_at, c.is_archived, c.archived_at, c.previous_stack_position,
+          c.allow_background_customization,
           c.created_at, c.updated_at,
+          bo.background_type AS overlay_background_type,
+          bo.background_value AS overlay_background_value,
           ctrl.id AS control_id, ctrl.card_id AS control_card_id,
           ctrl.type AS control_type, ctrl.position AS control_position,
           ctrl.config AS control_config, ctrl.is_required AS control_is_required
         FROM cards c
+        LEFT JOIN background_overlays bo ON bo.card_id = c.id
         LEFT JOIN controls ctrl ON ctrl.card_id = c.id
         WHERE c.id = ?
         ORDER BY ctrl.position ASC`,
@@ -252,8 +292,8 @@ export function createCardService(): CardService {
 
         // Insert the card
         await db.runAsync(
-          `INSERT INTO cards (id, title, description, icon_type, icon_value, background_type, background_value, category_id, origin_badge, stack_position, total_uses, current_streak, last_used_at, is_archived, archived_at, previous_stack_position, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, NULL, 0, NULL, NULL, ?, ?)`,
+          `INSERT INTO cards (id, title, description, icon_type, icon_value, background_type, background_value, category_id, origin_badge, stack_position, total_uses, current_streak, last_used_at, is_archived, archived_at, previous_stack_position, allow_background_customization, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, NULL, 0, NULL, NULL, 0, ?, ?)`,
           [
             cardId,
             shell.title,
@@ -374,7 +414,7 @@ export function createCardService(): CardService {
       try {
         await db.runAsync(
           `UPDATE cards SET ${setClauses.join(', ')} WHERE id = ?`,
-          params
+          params as (string | number | null)[]
         );
       } catch (error) {
         throw AppError.persistence(
@@ -556,8 +596,8 @@ export function createCardService(): CardService {
 
         // Insert duplicated card at top of stack
         await db.runAsync(
-          `INSERT INTO cards (id, title, description, icon_type, icon_value, background_type, background_value, category_id, origin_badge, stack_position, total_uses, current_streak, last_used_at, is_archived, archived_at, previous_stack_position, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'my_tool', 0, 0, 0, NULL, 0, NULL, NULL, ?, ?)`,
+          `INSERT INTO cards (id, title, description, icon_type, icon_value, background_type, background_value, category_id, origin_badge, stack_position, total_uses, current_streak, last_used_at, is_archived, archived_at, previous_stack_position, allow_background_customization, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'my_tool', 0, 0, 0, NULL, 0, NULL, NULL, 0, ?, ?)`,
           [
             newCardId,
             newTitle,
@@ -607,6 +647,10 @@ export function createCardService(): CardService {
           'Failed to read duplicated card'
         );
       }
+
+      // Copy background overlay from source card if present (Req 5.10)
+      await copyOverlayToCard(id, newCardId);
+
       return duplicated;
     },
 
@@ -669,10 +713,18 @@ function assembleCardsFromRows(rows: Record<string, unknown>[]): Card[] {
     const cardId = row.id as string;
 
     if (!cardMap.has(cardId)) {
-      cardMap.set(cardId, {
+      const card: Card = {
         ...mapRowToCard(row),
         controls: [],
-      });
+      };
+
+      // Apply background overlay if present
+      if (row.overlay_background_type && row.overlay_background_value) {
+        card.backgroundType = row.overlay_background_type as Card['backgroundType'];
+        card.backgroundValue = row.overlay_background_value as string;
+      }
+
+      cardMap.set(cardId, card);
     }
 
     // Add control if present (LEFT JOIN may yield null control_id)

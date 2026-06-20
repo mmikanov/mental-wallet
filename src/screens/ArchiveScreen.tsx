@@ -67,6 +67,7 @@ export default function ArchiveScreen({ navigation }: Props) {
         isArchived: true,
         archivedAt: (row.archived_at as string) || null,
         previousStackPosition: (row.previous_stack_position as number) ?? null,
+        allowBackgroundCustomization: (row.allow_background_customization as number) === 1,
         controls: [],
         createdAt: row.created_at as string,
         updatedAt: row.updated_at as string,

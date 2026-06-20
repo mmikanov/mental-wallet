@@ -25,6 +25,8 @@ import CounterControl from './CounterControl';
 import DateTimeStampControl from './DateTimeStampControl';
 import ImageAttachmentControl from './ImageAttachmentControl';
 import LinkButtonControl from './LinkButtonControl';
+import DisplayMediaControl from './DisplayMediaControl';
+import UploadMediaControl from './UploadMediaControl';
 
 interface ControlRendererProps {
   controls: Control[];
@@ -159,6 +161,27 @@ export default function ControlRenderer({
           case 'link_button':
             return (
               <LinkButtonControl
+                key={control.id}
+                control={control}
+                value={value}
+                onChange={handleChange}
+                error={error}
+                readOnly={readOnly}
+              />
+            );
+
+          case 'display_media':
+            return (
+              <DisplayMediaControl
+                key={control.id}
+                control={control}
+                readOnly={readOnly}
+              />
+            );
+
+          case 'upload_media':
+            return (
+              <UploadMediaControl
                 key={control.id}
                 control={control}
                 value={value}

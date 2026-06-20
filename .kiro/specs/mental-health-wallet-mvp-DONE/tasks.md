@@ -36,15 +36,9 @@ This plan implements the Mental Health Wallet MVP using React Native/Expo with S
     - JOIN query to load cards with controls in single read
     - _Requirements: 5.1, 5.6, 5.7, 7.7, 9.2, 9.3, 9.4, 14.1_
 
-  - [ ]* 2.2 Write property test: Card Shell Completeness (Property 1)
-    - **Property 1: Card Shell Completeness**
-    - Generate arbitrary CardShell values (empty, whitespace, valid). Assert validateShell rejects iff any field is empty/whitespace and identifies exactly the invalid fields.
-    - **Validates: Requirements 5.6, 5.7**
+  - [x] 2.2 ~~Write property test: Card Shell Completeness (Property 1)~~ — Moved to `property-tests` spec (task 2.1)
 
-  - [ ]* 2.3 Write property test: Control Count Invariant (Property 2)
-    - **Property 2: Control Count Invariant**
-    - Generate control lists of length 0–15. Assert validateControls accepts 1–10 and rejects all others.
-    - **Validates: Requirements 7.7**
+  - [x] 2.3 ~~Write property test: Control Count Invariant (Property 2)~~ — Moved to `property-tests` spec (task 2.2)
 
   - [x] 2.4 Implement CompletionService
     - Create `src/services/completionService.ts` implementing record, getByCard (paginated), deleteEntry, getStreakInfo, updateStreak
@@ -53,15 +47,9 @@ This plan implements the Mental Health Wallet MVP using React Native/Expo with S
     - Implement `resetStaleStreaks` for app-open check
     - _Requirements: 5.5, 13.1, 13.2, 13.3, 11.1_
 
-  - [ ]* 2.5 Write property test: Streak Monotonicity (Property 3)
-    - **Property 3: Streak Monotonicity**
-    - Generate Card states with varying lastUsedAt/currentStreak and completion dates. Assert streak update produces correct value for each case (consecutive, same day, gap).
-    - **Validates: Requirements 13.2, 13.3**
+  - [x] 2.5 ~~Write property test: Streak Monotonicity (Property 3)~~ — Moved to `property-tests` spec (task 3.1)
 
-  - [ ]* 2.6 Write property test: Archive Data Preservation (Property 4)
-    - **Property 4: Archive Data Preservation**
-    - Generate cards with completions, streaks, and reminders. Archive and verify completions preserved, streak unchanged, reminders set inactive.
-    - **Validates: Requirements 14.1**
+  - [x] 2.6 ~~Write property test: Archive Data Preservation (Property 4)~~ — Moved to `property-tests` spec (task 4.1)
 
 - [x] 3. Checkpoint — data layer verification
   - Ensure all tests pass, ask the user if questions arise.
@@ -80,7 +68,7 @@ This plan implements the Mental Health Wallet MVP using React Native/Expo with S
     - Preserve unsaved inputs when switching cards (Requirement 3.5)
     - _Requirements: 3.5, 3.6, 5.5_
 
-- [ ] 5. Navigation and app shell
+- [x] 5. Navigation and app shell
   - [x] 5.1 Set up navigation structure
     - Create Root Stack Navigator (first-launch disclaimer → main tabs → modals)
     - Create MainTab Navigator with single Wallet tab (MVP)
@@ -200,15 +188,9 @@ This plan implements the Mental Health Wallet MVP using React Native/Expo with S
     - Duplicate: copy shell + controls, title + " - Copy", badge = "my_tool", stats zeroed, placed at top
     - _Requirements: 10.1, 10.2, 10.3, 10.4_
 
-  - [ ]* 12.3 Write property test: Origin Badge Editability (Property 5)
-    - **Property 5: Origin Badge Editability**
-    - Generate cards with each origin badge. Assert edit permission granted only for "my_tool".
-    - **Validates: Requirements 9.3, 9.5**
+  - [x] 12.3 ~~Write property test: Origin Badge Editability (Property 5)~~ — Moved to `property-tests` spec (task 5.1)
 
-  - [ ]* 12.4 Write property test: Duplicate Independence (Property 6)
-    - **Property 6: Duplicate Independence**
-    - Generate cards with various titles, badges, controls, stats. Duplicate and verify title suffix, "my_tool" badge, identical controls, zeroed stats.
-    - **Validates: Requirements 9.4, 10.3**
+  - [x] 12.4 ~~Write property test: Duplicate Independence (Property 6)~~ — Moved to `property-tests` spec (task 5.2)
 
 - [x] 13. Usage history and reminders
   - [x] 13.1 Implement usage history view
@@ -228,10 +210,7 @@ This plan implements the Mental Health Wallet MVP using React Native/Expo with S
     - On app launch: reconcile scheduled notifications with active reminders
     - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 12.6_
 
-  - [ ]* 13.3 Write property test: Reminder-Archive Consistency (Property 7)
-    - **Property 7: Reminder-Archive Consistency**
-    - Generate cards with 1–3 active reminders. Archive → verify all inactive. Restore → verify still inactive.
-    - **Validates: Requirements 14.1, 12.6**
+  - [x] 13.3 ~~Write property test: Reminder-Archive Consistency (Property 7)~~ — Moved to `property-tests` spec (task 6.1)
 
 - [x] 14. Archive and restore
   - [x] 14.1 Implement archive view and restore/delete flow
@@ -292,7 +271,7 @@ This plan implements the Mental Health Wallet MVP using React Native/Expo with S
 
 ## Notes
 
-- Tasks marked with `*` are optional property-based test tasks and can be skipped for faster MVP delivery
+- Property-based test tasks have been moved to the `property-tests` spec
 - Each task references specific requirements for traceability
 - Checkpoints ensure incremental validation at natural break points
 - Property tests use fast-check with minimum 100 iterations per property

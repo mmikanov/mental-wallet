@@ -48,6 +48,8 @@ const CONTROL_TYPES: { type: ControlType; label: string; icon: string }[] = [
   { type: 'datetime_stamp', label: 'Date/Time Stamp', icon: '📅' },
   { type: 'image_attachment', label: 'Image Attachment', icon: '📷' },
   { type: 'link_button', label: 'Link Button', icon: '🔗' },
+  { type: 'display_media', label: 'Display Media', icon: '🎬' },
+  { type: 'upload_media', label: 'Upload Media', icon: '🎙️' },
 ];
 
 function getDefaultConfig(type: ControlType): ControlConfig {
@@ -72,6 +74,10 @@ function getDefaultConfig(type: ControlType): ControlConfig {
       return { label: '' };
     case 'link_button':
       return { label: '', targetUrl: '', fallbackUrl: '' };
+    case 'display_media':
+      return { label: '', mediaSourceType: 'local_file' as const, mediaFileType: 'image' as const, source: '', platform: null, cachedPath: null };
+    case 'upload_media':
+      return { label: '', acceptedTypes: ['image', 'video', 'audio'] };
   }
 }
 
@@ -80,7 +86,7 @@ function getDefaultConfig(type: ControlType): ControlConfig {
  * Falls back to the type label if no name has been set.
  */
 function getControlDisplayName(control: Control): string {
-  const config = control.config as Record<string, unknown>;
+  const config = control.config as unknown as Record<string, unknown>;
   const label = config.label as string | undefined;
   const title = config.title as string | undefined;
   const body = config.body as string | undefined;

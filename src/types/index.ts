@@ -17,7 +17,13 @@ export type ControlType =
   | 'counter'
   | 'datetime_stamp'
   | 'image_attachment'
-  | 'link_button';
+  | 'link_button'
+  | 'display_media'
+  | 'upload_media';
+
+export type MediaSourceType = 'local_file' | 'direct_url' | 'platform_url';
+export type MediaFileType = 'image' | 'video' | 'audio';
+export type PlatformType = 'youtube' | 'vimeo' | 'soundcloud' | 'spotify' | 'unknown';
 
 export type ReminderFrequencyType = 'daily' | '3x_week' | 'custom';
 
@@ -79,6 +85,24 @@ export interface LinkButtonConfig {
   fallbackUrl?: string;
 }
 
+export interface DisplayMediaConfig {
+  label: string;
+  mediaSourceType: MediaSourceType;
+  mediaFileType: MediaFileType;
+  /** For local_file: relative path in app file system. For URLs: the URL string. */
+  source: string;
+  /** Recognized platform (null for local files and direct URLs) */
+  platform: PlatformType | null;
+  /** Local cache path after download (populated at runtime for direct_url sources) */
+  cachedPath: string | null;
+}
+
+export interface UploadMediaConfig {
+  label: string;
+  /** Accepted media types the user can upload */
+  acceptedTypes: MediaFileType[];
+}
+
 export type ControlConfig =
   | StaticTextConfig
   | TextInputConfig
@@ -89,7 +113,9 @@ export type ControlConfig =
   | CounterConfig
   | DateTimeStampConfig
   | ImageAttachmentConfig
-  | LinkButtonConfig;
+  | LinkButtonConfig
+  | DisplayMediaConfig
+  | UploadMediaConfig;
 
 // --- Core Domain Models ---
 
@@ -122,6 +148,7 @@ export interface Card extends CardShell {
   isArchived: boolean;
   archivedAt: string | null;
   previousStackPosition: number | null;
+  allowBackgroundCustomization: boolean;
   controls: Control[];
   createdAt: string;
   updatedAt: string;
@@ -215,4 +242,15 @@ export interface ValidationError {
 export interface ValidationResult {
   isValid: boolean;
   errors: ValidationError[];
+}
+
+// --- Background Overlay ---
+
+export interface BackgroundOverlay {
+  id: string;
+  cardId: string;
+  backgroundType: BackgroundType;
+  backgroundValue: string;
+  createdAt: string;
+  updatedAt: string;
 }
