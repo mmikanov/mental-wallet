@@ -32,6 +32,8 @@ interface BackgroundCustomizerSheetProps {
   currentBackgroundValue: string;
   /** Whether the card is Library/Community (shows "Reset to original" option) */
   showResetOption?: boolean;
+  /** When true, hides the color picker tab — only shows image upload */
+  imageOnly?: boolean;
   onApply: (backgroundType: BackgroundType, backgroundValue: string) => void;
   onReset?: () => void;
   onClose: () => void;
@@ -61,12 +63,13 @@ export default function BackgroundCustomizerSheet({
   currentBackgroundType,
   currentBackgroundValue,
   showResetOption = false,
+  imageOnly = false,
   onApply,
   onReset,
   onClose,
 }: BackgroundCustomizerSheetProps) {
   const [mode, setMode] = useState<BackgroundMode>(
-    currentBackgroundType === 'image' ? 'image' : 'color'
+    imageOnly ? 'image' : (currentBackgroundType === 'image' ? 'image' : 'color')
   );
   const [selectedColor, setSelectedColor] = useState(
     currentBackgroundType === 'color' ? currentBackgroundValue : PRESET_COLORS[0].hex
@@ -180,6 +183,7 @@ export default function BackgroundCustomizerSheet({
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             {/* Mode selector */}
+            {!imageOnly && (
             <View style={styles.modeRow}>
               <TouchableOpacity
                 style={[styles.modeButton, mode === 'color' && styles.modeButtonActive]}
@@ -202,6 +206,7 @@ export default function BackgroundCustomizerSheet({
                 </Text>
               </TouchableOpacity>
             </View>
+            )}
 
             {/* Color picker */}
             {mode === 'color' && (

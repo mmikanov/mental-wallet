@@ -293,7 +293,7 @@ export function createCardService(): CardService {
         // Insert the card
         await db.runAsync(
           `INSERT INTO cards (id, title, description, icon_type, icon_value, background_type, background_value, category_id, origin_badge, stack_position, total_uses, current_streak, last_used_at, is_archived, archived_at, previous_stack_position, allow_background_customization, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, NULL, 0, NULL, NULL, 0, ?, ?)`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, NULL, 0, NULL, NULL, ?, ?, ?)`,
           [
             cardId,
             shell.title,
@@ -305,6 +305,7 @@ export function createCardService(): CardService {
             categoryId || 'grounding-calming',
             originBadge,
             stackPosition,
+            originBadge === 'library' || originBadge === 'community' ? 1 : 0,
             now,
             now,
           ]

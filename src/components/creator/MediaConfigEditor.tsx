@@ -47,6 +47,11 @@ export default function MediaConfigEditor({
       ? (initialConfig as DisplayMediaConfig).source
       : ''
   );
+  const [localFileName, setLocalFileName] = useState(
+    initialVariant === 'display_media' && initialConfig && (initialConfig as DisplayMediaConfig).mediaSourceType === 'local_file' && (initialConfig as DisplayMediaConfig).source
+      ? (initialConfig as DisplayMediaConfig).source.split('/').pop() || ''
+      : ''
+  );
   const [urlError, setUrlError] = useState<string | null>(null);
   const [fileType, setFileType] = useState<MediaFileType | null>(
     initialVariant === 'display_media' && initialConfig
@@ -99,7 +104,29 @@ export default function MediaConfigEditor({
 
   const handleVariantChange = (newVariant: MediaVariant) => {
     setVariant(newVariant);
-    emitConfig(newVariant);
+    // Emit immediately with the new type so the parent updates the control type
+    if (newVariant === 'upload_media') {
+      const config: UploadMediaConfig = { label, acceptedTypes };
+      onConfigChange('upload_media', config);
+    } else {
+      const source = sourceMode === 'url' ? urlInput : localFilePath;
+      let mediaSourceType: MediaSourceType = 'local_file';
+      let platform = null;
+      if (sourceMode === 'url' && urlInput) {
+        const classification = classifyUrl(urlInput);
+        mediaSourceType = classification.sourceType;
+        platform = classification.platform;
+      }
+      const config: DisplayMediaConfig = {
+        label,
+        mediaSourceType,
+        mediaFileType: fileType || 'image',
+        source,
+        platform,
+        cachedPath: null,
+      };
+      onConfigChange('display_media', config);
+    }
   };
 
   const handleLabelChange = (text: string) => {
@@ -140,9 +167,20 @@ export default function MediaConfigEditor({
     if (!result.canceled && result.assets?.[0]) {
       const asset = result.assets[0];
       const detectedType: MediaFileType = asset.type === 'video' ? 'video' : 'image';
+      const name = asset.uri.split('/').pop() || 'file';
       setLocalFilePath(asset.uri);
+      setLocalFileName(name);
       setFileType(detectedType);
-      emitConfig();
+      // Emit updated config
+      const config: DisplayMediaConfig = {
+        label,
+        mediaSourceType: 'local_file',
+        mediaFileType: detectedType,
+        source: asset.uri,
+        platform: null,
+        cachedPath: null,
+      };
+      onConfigChange('display_media', config);
     }
   };
 
@@ -151,10 +189,11 @@ export default function MediaConfigEditor({
       const next = prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type];
       // Must have at least one type
       if (next.length === 0) return prev;
+      // Emit config directly with the new value
+      const config: UploadMediaConfig = { label, acceptedTypes: next };
+      onConfigChange('upload_media', config);
       return next;
     });
-    // Emit after state update on next tick
-    setTimeout(() => emitConfig(), 0);
   };
 
   const isUrlPlatform =
@@ -231,7 +270,7 @@ export default function MediaConfigEditor({
               accessibilityLabel="Pick media file"
             >
               <Text style={styles.filePickerText}>
-                {localFilePath ? '✅ File selected' : '📁 Choose file'}
+                {localFilePath ? `✅ File selected: ${localFileName}` : '📁 Choose file'}
               </Text>
               <Text style={styles.filePickerHint}>
                 Image (JPEG, PNG, GIF, WebP), Video (MP4, MOV), Audio (MP3, M4A, WAV)

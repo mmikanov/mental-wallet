@@ -28,6 +28,7 @@ import {
 } from 'react-native';
 import * as Crypto from 'expo-crypto';
 import type { Control, ControlType, ControlConfig } from '@/types/index';
+import MediaConfigEditor from '@/components/creator/MediaConfigEditor';
 
 interface Step2ControlsProps {
   controls: Control[];
@@ -294,6 +295,12 @@ export default function Step2Controls({
                     onRequiredChange={(val) =>
                       updateControlRequired(control.id, val)
                     }
+                    onTypeAndConfigChange={(newType, newConfig) => {
+                      const updated = controls.map((c) =>
+                        c.id === control.id ? { ...c, type: newType, config: newConfig } : c
+                      );
+                      onControlsChange(updated);
+                    }}
                   />
                 </View>
               )}
@@ -368,12 +375,14 @@ interface ControlConfigEditorProps {
   control: Control;
   onConfigChange: (config: ControlConfig) => void;
   onRequiredChange: (val: boolean) => void;
+  onTypeAndConfigChange?: (type: ControlType, config: ControlConfig) => void;
 }
 
 function ControlConfigEditor({
   control,
   onConfigChange,
   onRequiredChange,
+  onTypeAndConfigChange,
 }: ControlConfigEditorProps) {
   const { type, config, isRequired } = control;
 
@@ -658,6 +667,23 @@ function ControlConfigEditor({
             keyboardType="url"
           />
         </View>
+      );
+    }
+
+    case 'display_media':
+    case 'upload_media': {
+      return (
+        <MediaConfigEditor
+          initialConfig={config as any}
+          initialVariant={type as 'display_media' | 'upload_media'}
+          onConfigChange={(newType, newConfig) => {
+            if (newType !== type && onTypeAndConfigChange) {
+              onTypeAndConfigChange(newType, newConfig);
+            } else {
+              onConfigChange(newConfig);
+            }
+          }}
+        />
       );
     }
 

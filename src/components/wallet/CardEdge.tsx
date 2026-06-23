@@ -182,7 +182,6 @@ const styles = StyleSheet.create({
   imageOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    padding: 16,
     justifyContent: 'flex-start',
   },
 });

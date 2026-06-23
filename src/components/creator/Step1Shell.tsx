@@ -25,7 +25,8 @@ import {
 } from 'react-native';
 import { validateShell } from '@/services/cardService';
 import { SEED_CATEGORIES } from '@/data/seeds';
-import type { CardShell, ValidationError } from '@/types/index';
+import BackgroundCustomizerSheet from '@/components/wallet/BackgroundCustomizerSheet';
+import type { BackgroundType, CardShell, ValidationError } from '@/types/index';
 
 interface Step1ShellProps {
   shell: CardShell;
@@ -64,6 +65,7 @@ export default function Step1Shell({
   const [errors, setErrors] = useState<ValidationError[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [customHex, setCustomHex] = useState('');
+  const [showBackgroundSheet, setShowBackgroundSheet] = useState(false);
 
   function getFieldError(field: string): string | undefined {
     return errors.find((e) => e.field === field)?.message;
@@ -168,7 +170,7 @@ export default function Step1Shell({
 
       {/* Background Color Picker */}
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Background Color *</Text>
+        <Text style={styles.label}>Background *</Text>
         <View style={styles.colorGrid}>
           {PRESET_COLORS.map((color) => (
             <TouchableOpacity
@@ -176,7 +178,7 @@ export default function Step1Shell({
               style={[
                 styles.colorSwatch,
                 { backgroundColor: color.hex },
-                shell.backgroundValue === color.hex && styles.colorSwatchSelected,
+                shell.backgroundType === 'color' && shell.backgroundValue === color.hex && styles.colorSwatchSelected,
               ]}
               onPress={() => selectColor(color.hex)}
               accessibilityLabel={`Select ${color.name} background`}
@@ -203,10 +205,29 @@ export default function Step1Shell({
             <Text style={styles.customHexButtonText}>Apply</Text>
           </TouchableOpacity>
         </View>
+        {/* Upload background image button */}
+        <TouchableOpacity
+          style={styles.imageUploadButton}
+          onPress={() => setShowBackgroundSheet(true)}
+          accessibilityLabel="Upload background image"
+          accessibilityRole="button"
+        >
+          <Text style={styles.imageUploadText}>
+            {shell.backgroundType === 'image' ? '🖼️ Image selected — tap to change' : '🖼️ Upload background image'}
+          </Text>
+        </TouchableOpacity>
         {shell.backgroundValue ? (
           <View style={styles.selectedColorPreview}>
-            <View style={[styles.previewSwatch, { backgroundColor: shell.backgroundValue }]} />
-            <Text style={styles.selectedColorText}>{shell.backgroundValue}</Text>
+            {shell.backgroundType === 'color' ? (
+              <>
+                <View style={[styles.previewSwatch, { backgroundColor: shell.backgroundValue }]} />
+                <Text style={styles.selectedColorText}>{shell.backgroundValue}</Text>
+              </>
+            ) : (
+              <Text style={styles.selectedColorText}>
+                Custom image background: {shell.backgroundValue.split('/').pop()}
+              </Text>
+            )}
           </View>
         ) : null}
         {getFieldError('backgroundValue') && (
@@ -284,6 +305,18 @@ export default function Step1Shell({
           </View>
         </View>
       </Modal>
+
+      {/* Background Customizer Sheet */}
+      <BackgroundCustomizerSheet
+        visible={showBackgroundSheet}
+        currentBackgroundType={shell.backgroundType}
+        currentBackgroundValue={shell.backgroundValue}
+        imageOnly
+        onApply={(bgType: BackgroundType, bgValue: string) => {
+          updateShell({ backgroundType: bgType, backgroundValue: bgValue });
+        }}
+        onClose={() => setShowBackgroundSheet(false)}
+      />
     </ScrollView>
   );
 }
@@ -391,6 +424,21 @@ const styles = StyleSheet.create({
   customHexButtonText: {
     color: '#FFFFFF',
     fontSize: 14,
+    fontWeight: '500',
+  },
+  imageUploadButton: {
+    marginTop: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#CCCCCC',
+    borderRadius: 8,
+    backgroundColor: '#FAFAFA',
+    alignItems: 'center',
+  },
+  imageUploadText: {
+    fontSize: 14,
+    color: '#4B5563',
     fontWeight: '500',
   },
   selectedColorPreview: {

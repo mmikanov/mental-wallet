@@ -26,6 +26,7 @@ export interface CuratedCardDefinition {
   backgroundType: 'color';
   backgroundValue: string;
   categoryId: string;
+  allowBackgroundCustomization: boolean;
   controls: CuratedControlDefinition[];
 }
 
@@ -43,6 +44,7 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
     backgroundType: 'color',
     backgroundValue: '#E8F4F8',
     categoryId: 'grounding-calming',
+    allowBackgroundCustomization: true,
     controls: [
       {
         type: 'static_text',
@@ -75,6 +77,7 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
     backgroundType: 'color',
     backgroundValue: '#EDE7F6',
     categoryId: 'grounding-calming',
+    allowBackgroundCustomization: true,
     controls: [
       {
         type: 'static_text',
@@ -97,6 +100,7 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
     backgroundType: 'color',
     backgroundValue: '#E0F2F1',
     categoryId: 'grounding-calming',
+    allowBackgroundCustomization: true,
     controls: [
       {
         type: 'static_text',
@@ -121,6 +125,7 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
     backgroundType: 'color',
     backgroundValue: '#F3E5F5',
     categoryId: 'cognitive-reframing',
+    allowBackgroundCustomization: true,
     controls: [
       {
         type: 'text_input',
@@ -163,6 +168,7 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
     backgroundType: 'color',
     backgroundValue: '#FFF3E0',
     categoryId: 'cognitive-reframing',
+    allowBackgroundCustomization: true,
     controls: [
       {
         type: 'text_area',
@@ -195,6 +201,7 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
     backgroundType: 'color',
     backgroundValue: '#FBE9E7',
     categoryId: 'body-sensory',
+    allowBackgroundCustomization: true,
     controls: [
       {
         type: 'static_text',
@@ -227,6 +234,7 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
     backgroundType: 'color',
     backgroundValue: '#E8F5E9',
     categoryId: 'daily-checkin-journaling',
+    allowBackgroundCustomization: true,
     controls: [
       {
         type: 'mood_slider',
@@ -259,6 +267,7 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
     backgroundType: 'color',
     backgroundValue: '#FFFDE7',
     categoryId: 'daily-checkin-journaling',
+    allowBackgroundCustomization: true,
     controls: [
       {
         type: 'text_area',
@@ -282,6 +291,7 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
     backgroundType: 'color',
     backgroundValue: '#FCE4EC',
     categoryId: 'self-compassion-reminders',
+    allowBackgroundCustomization: true,
     controls: [
       {
         type: 'static_text',
@@ -304,6 +314,7 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
     backgroundType: 'color',
     backgroundValue: '#F8E8F0',
     categoryId: 'self-compassion-reminders',
+    allowBackgroundCustomization: true,
     controls: [
       {
         type: 'static_text',
@@ -327,6 +338,7 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
     backgroundType: 'color',
     backgroundValue: '#FFF8E1',
     categoryId: 'lightweight-connection',
+    allowBackgroundCustomization: true,
     controls: [
       {
         type: 'choice_buttons',

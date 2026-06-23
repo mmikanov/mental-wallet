@@ -14,6 +14,8 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
+  Image,
+  ImageBackground,
   StyleSheet,
 } from 'react-native';
 import type { CardShell, Control } from '@/types/index';
@@ -69,56 +71,76 @@ export default function Step3Preview({
     ? { backgroundColor: shell.backgroundValue.split(',')[0] || '#F5F5F5' }
     : { backgroundColor: '#F5F5F5' };
 
+  const isImageBackground = shell.backgroundType === 'image' && shell.backgroundValue;
+
+  const cardContent = (
+    <>
+      {/* Origin Badge */}
+      <OriginBadge origin="my_tool" />
+
+      {/* Icon + Title */}
+      <View style={styles.titleRow}>
+        {shell.iconValue ? (
+          <Text style={styles.icon}>{shell.iconValue}</Text>
+        ) : null}
+        <Text style={[styles.title, isImageBackground && styles.titleOnImage]} numberOfLines={2}>
+          {shell.title || 'Untitled'}
+        </Text>
+      </View>
+
+      {/* Description */}
+      <Text style={[styles.description, isImageBackground && styles.descriptionOnImage]} numberOfLines={3}>
+        {shell.description || 'No description'}
+      </Text>
+
+      {/* Category pill */}
+      <View style={[styles.categoryPill, { backgroundColor: categoryColor + '20' }]}>
+        <Text style={[styles.categoryText, { color: categoryColor }]}>
+          {categoryLabel}
+        </Text>
+      </View>
+
+      {/* Divider */}
+      <View style={styles.divider} />
+
+      {/* Controls (interactive) */}
+      <ControlRenderer
+        controls={controls}
+        values={values}
+        onChange={handleControlChange}
+      />
+
+      {/* Primary Action Button */}
+      <View style={styles.actionButtonWrapper}>
+        <PrimaryActionButton
+          controls={controls}
+          onPress={() => {
+            // In preview mode, just demonstrate the button works
+          }}
+        />
+      </View>
+    </>
+  );
+
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
         {/* Card Preview Shell */}
-        <View style={[styles.cardShell, backgroundStyle]}>
-          {/* Origin Badge */}
-          <OriginBadge origin="my_tool" />
-
-          {/* Icon + Title */}
-          <View style={styles.titleRow}>
-            {shell.iconValue ? (
-              <Text style={styles.icon}>{shell.iconValue}</Text>
-            ) : null}
-            <Text style={styles.title} numberOfLines={2}>
-              {shell.title || 'Untitled'}
-            </Text>
+        {isImageBackground ? (
+          <ImageBackground
+            source={{ uri: shell.backgroundValue }}
+            style={styles.cardShell}
+            imageStyle={{ borderRadius: 16 }}
+          >
+            <View style={styles.imageOverlay}>
+              {cardContent}
+            </View>
+          </ImageBackground>
+        ) : (
+          <View style={[styles.cardShell, backgroundStyle]}>
+            {cardContent}
           </View>
-
-          {/* Description */}
-          <Text style={styles.description} numberOfLines={3}>
-            {shell.description || 'No description'}
-          </Text>
-
-          {/* Category pill */}
-          <View style={[styles.categoryPill, { backgroundColor: categoryColor + '20' }]}>
-            <Text style={[styles.categoryText, { color: categoryColor }]}>
-              {categoryLabel}
-            </Text>
-          </View>
-
-          {/* Divider */}
-          <View style={styles.divider} />
-
-          {/* Controls (interactive) */}
-          <ControlRenderer
-            controls={controls}
-            values={values}
-            onChange={handleControlChange}
-          />
-
-          {/* Primary Action Button */}
-          <View style={styles.actionButtonWrapper}>
-            <PrimaryActionButton
-              controls={controls}
-              onPress={() => {
-                // In preview mode, just demonstrate the button works
-              }}
-            />
-          </View>
-        </View>
+        )}
       </ScrollView>
 
       {/* Save Button (outside the card preview) */}
@@ -159,6 +181,10 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
+  imageOverlay: {
+    padding: 20,
+    borderRadius: 16,
+  },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -174,11 +200,23 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     flex: 1,
   },
+  titleOnImage: {
+    color: '#FFFFFF',
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
   description: {
     fontSize: 14,
     color: '#4B5563',
     marginTop: 8,
     lineHeight: 20,
+  },
+  descriptionOnImage: {
+    color: '#FFFFFF',
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   categoryPill: {
     alignSelf: 'flex-start',

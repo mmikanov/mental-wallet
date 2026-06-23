@@ -24,8 +24,11 @@ import FocusedCardView from '@/components/wallet/FocusedCardView';
 import CollapsedStack from '@/components/wallet/CollapsedStack';
 import ReorderMode from '@/components/wallet/ReorderMode';
 import CardKebabMenu from '@/components/wallet/CardKebabMenu';
+import BackgroundCustomizerSheet from '@/components/wallet/BackgroundCustomizerSheet';
 import { useWalletStore } from '@/stores/walletStore';
 import { createCardService } from '@/services/cardService';
+import { upsertOverlay, removeOverlay } from '@/services/backgroundOverlayService';
+import type { BackgroundType } from '@/types/index';
 import type { RootStackParamList } from '@/navigation/types';
 
 type WalletNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -58,6 +61,7 @@ export default function WalletScreen() {
   } = useWalletStore();
 
   const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const [showBackgroundCustomizer, setShowBackgroundCustomizer] = useState(false);
 
   useEffect(() => {
     loadCards();
@@ -169,6 +173,44 @@ export default function WalletScreen() {
     [loadCards, returnToStack]
   );
 
+  const handleCustomizeBackground = useCallback(
+    (_cardId: string) => {
+      setShowBackgroundCustomizer(true);
+    },
+    []
+  );
+
+  const handleApplyBackground = useCallback(
+    async (backgroundType: BackgroundType, backgroundValue: string) => {
+      if (!focusedCard) return;
+      try {
+        if (focusedCard.originBadge === 'my_tool') {
+          const service = createCardService();
+          await service.update(focusedCard.id, { backgroundType, backgroundValue } as any);
+        } else {
+          await upsertOverlay(focusedCard.id, backgroundType, backgroundValue);
+        }
+        await loadCards();
+      } catch {
+        Alert.alert('Error', 'Failed to update background.');
+      }
+    },
+    [focusedCard, loadCards]
+  );
+
+  const handleResetBackground = useCallback(
+    async () => {
+      if (!focusedCard) return;
+      try {
+        await removeOverlay(focusedCard.id);
+        await loadCards();
+      } catch {
+        Alert.alert('Error', 'Failed to reset background.');
+      }
+    },
+    [focusedCard, loadCards]
+  );
+
   const handleSwitchCard = useCallback(
     (id: string) => {
       focusCard(id);
@@ -256,6 +298,18 @@ export default function WalletScreen() {
           onViewUsageHistory={handleViewUsageHistory}
           onSetReminder={handleSetReminder}
           onArchive={handleArchive}
+          onCustomizeBackground={handleCustomizeBackground}
+        />
+      )}
+      {focusedCard && (
+        <BackgroundCustomizerSheet
+          visible={showBackgroundCustomizer}
+          currentBackgroundType={focusedCard.backgroundType}
+          currentBackgroundValue={focusedCard.backgroundValue}
+          showResetOption={focusedCard.originBadge !== 'my_tool'}
+          onApply={handleApplyBackground}
+          onReset={handleResetBackground}
+          onClose={() => setShowBackgroundCustomizer(false)}
         />
       )}
     </SafeAreaView>

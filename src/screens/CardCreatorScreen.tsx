@@ -30,6 +30,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
 import type { CardShell, Control, OriginBadge } from '@/types/index';
 import { createCardService } from '@/services/cardService';
+import { removeOverlay } from '@/services/backgroundOverlayService';
 import { getDatabase } from '@/data/database';
 import { useWalletStore } from '@/stores/walletStore';
 import Step1Shell from '@/components/creator/Step1Shell';
@@ -188,6 +189,9 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
           backgroundValue: shell.backgroundValue,
           categoryId,
         });
+
+        // Remove any stale background overlay so the direct value takes precedence
+        await removeOverlay(cardId);
 
         // Replace controls: delete old, insert new
         const db = await getDatabase();
