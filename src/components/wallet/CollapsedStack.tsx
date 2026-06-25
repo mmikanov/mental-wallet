@@ -14,6 +14,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import type { Card } from '@/types/index';
+import { isLightBackground } from '@/utils/cardColors';
 
 export interface CollapsedStackProps {
   cards: Card[];
@@ -26,20 +27,6 @@ export interface CollapsedStackProps {
 const EDGE_HEIGHT = 6;
 /** Height of the top card in the collapsed stack (partially visible) */
 const TOP_CARD_HEIGHT = 52;
-
-/**
- * Determines whether text should be light or dark based on background color brightness.
- */
-function isLightBackground(color: string): boolean {
-  if (!color || color === '#FFFFFF' || color === '#ffffff') return true;
-  const hex = color.replace('#', '');
-  if (hex.length < 6) return true;
-  const r = parseInt(hex.substring(0, 2), 16);
-  const g = parseInt(hex.substring(2, 4), 16);
-  const b = parseInt(hex.substring(4, 6), 16);
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.5;
-}
 
 export default function CollapsedStack({
   cards,

@@ -25,6 +25,7 @@ import {
 } from 'react-native';
 import { validateShell } from '@/services/cardService';
 import { SEED_CATEGORIES } from '@/data/seeds';
+import { CARD_BACKGROUND_COLORS } from '@/utils/cardColors';
 import BackgroundCustomizerSheet from '@/components/wallet/BackgroundCustomizerSheet';
 import type { BackgroundType, CardShell, ValidationError } from '@/types/index';
 
@@ -42,18 +43,7 @@ const EMOJI_OPTIONS = [
   '📚', '🌻', '☀️', '🍃', '💫', '🦋', '🌙', '🫧', '🤗', '💐',
 ];
 
-const PRESET_COLORS = [
-  { hex: '#4A90D9', name: 'Blue' },
-  { hex: '#5BA88B', name: 'Green' },
-  { hex: '#E88D67', name: 'Orange' },
-  { hex: '#D4A5C9', name: 'Pink' },
-  { hex: '#8B7EC8', name: 'Purple' },
-  { hex: '#E6C84C', name: 'Yellow' },
-  { hex: '#6B9EC4', name: 'Teal' },
-  { hex: '#FF6B6B', name: 'Red' },
-  { hex: '#4ECDC4', name: 'Mint' },
-  { hex: '#F5F5F5', name: 'Light Gray' },
-];
+
 
 export default function Step1Shell({
   shell,
@@ -172,7 +162,7 @@ export default function Step1Shell({
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Background *</Text>
         <View style={styles.colorGrid}>
-          {PRESET_COLORS.map((color) => (
+          {CARD_BACKGROUND_COLORS.map((color) => (
             <TouchableOpacity
               key={color.hex}
               style={[

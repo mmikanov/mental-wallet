@@ -20,6 +20,7 @@ import {
   ImageBackground,
 } from 'react-native';
 import type { Card } from '@/types/index';
+import { isLightBackground } from '@/utils/cardColors';
 
 export interface CardEdgeProps {
   card: Card;
@@ -30,21 +31,6 @@ export interface CardEdgeProps {
 
 /** Full card height in the stacked view */
 const CARD_EDGE_HEIGHT = 200;
-
-/**
- * Determines whether text should be light or dark based on background color brightness.
- */
-function isLightBackground(color: string): boolean {
-  if (!color || color === '#FFFFFF' || color === '#ffffff') return true;
-  const hex = color.replace('#', '');
-  if (hex.length < 6) return true;
-  const r = parseInt(hex.substring(0, 2), 16);
-  const g = parseInt(hex.substring(2, 4), 16);
-  const b = parseInt(hex.substring(4, 6), 16);
-  // Relative luminance formula
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.5;
-}
 
 export default function CardEdge({
   card,

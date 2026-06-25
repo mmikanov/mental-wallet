@@ -16,7 +16,7 @@
  * Validates: Requirements 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 7.10, 5.6, 5.7, 6.1, 6.4, 6.8, 9.2
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -124,43 +124,40 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
     return shellChanged || categoryChanged || controlsChanged;
   }
 
-  // Unsaved changes guard — intercept navigation away (swipe dismiss, back button, etc.)
+  // Unsaved changes guard — disable native gesture to prevent the native-stack
+  // desync issue where beforeRemove + e.preventDefault() doesn't work with
+  // native-stack modal presentation. Instead, we disable the gesture entirely
+  // when there are unsaved changes and handle dismiss via our own Cancel button.
+  const isDirty = useMemo(() => hasUnsavedChanges(), [shell, controls, categoryId]);
+
   useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-      // If already saved, allow navigation
-      if (hasBeenSavedRef.current) return;
-
-      // If no changes made, allow navigation
-      if (!hasUnsavedChanges()) return;
-
-      // Prevent default behavior (going back)
-      e.preventDefault();
-
-      // Show confirmation dialog
-      Alert.alert(
-        'Discard changes?',
-        'Your unsaved changes will be lost.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Discard',
-            style: 'destructive',
-            onPress: () => navigation.dispatch(e.data.action),
-          },
-        ]
-      );
+    navigation.setOptions({
+      gestureEnabled: !isDirty,
     });
-
-    return unsubscribe;
-  }, [navigation, shell, controls, categoryId]);
+  }, [isDirty, navigation]);
 
   const handleBack = useCallback(() => {
     if (currentStep === 1) {
-      navigation.goBack();
+      if (hasUnsavedChanges()) {
+        Alert.alert(
+          'Discard changes?',
+          'Your unsaved changes will be lost.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Discard',
+              style: 'destructive',
+              onPress: () => navigation.goBack(),
+            },
+          ]
+        );
+      } else {
+        navigation.goBack();
+      }
     } else {
       setCurrentStep((s) => s - 1);
     }
-  }, [currentStep, navigation]);
+  }, [currentStep, navigation, shell, controls, categoryId]);
 
   const handleNext = useCallback(() => {
     setCurrentStep((s) => s + 1);

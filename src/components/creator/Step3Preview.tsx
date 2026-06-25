@@ -19,6 +19,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import type { CardShell, Control } from '@/types/index';
+import { isLightBackground } from '@/utils/cardColors';
 import ControlRenderer from '@/components/controls/ControlRenderer';
 import OriginBadge from '@/components/wallet/OriginBadge';
 import PrimaryActionButton from '@/components/wallet/PrimaryActionButton';
@@ -73,6 +74,14 @@ export default function Step3Preview({
 
   const isImageBackground = shell.backgroundType === 'image' && shell.backgroundValue;
 
+  // Determine text color based on background brightness
+  const bgForContrast = shell.backgroundType === 'color' && shell.backgroundValue
+    ? shell.backgroundValue
+    : '#F5F5F5';
+  const isLight = isImageBackground ? false : isLightBackground(bgForContrast);
+  const textColor = isLight ? '#1F2937' : '#FFFFFF';
+  const subtitleColor = isLight ? '#4B5563' : 'rgba(255,255,255,0.8)';
+
   const cardContent = (
     <>
       {/* Origin Badge */}
@@ -83,13 +92,13 @@ export default function Step3Preview({
         {shell.iconValue ? (
           <Text style={styles.icon}>{shell.iconValue}</Text>
         ) : null}
-        <Text style={[styles.title, isImageBackground && styles.titleOnImage]} numberOfLines={2}>
+        <Text style={[styles.title, { color: textColor }, isImageBackground && styles.titleOnImage]} numberOfLines={2}>
           {shell.title || 'Untitled'}
         </Text>
       </View>
 
       {/* Description */}
-      <Text style={[styles.description, isImageBackground && styles.descriptionOnImage]} numberOfLines={3}>
+      <Text style={[styles.description, { color: subtitleColor }, isImageBackground && styles.descriptionOnImage]} numberOfLines={3}>
         {shell.description || 'No description'}
       </Text>
 

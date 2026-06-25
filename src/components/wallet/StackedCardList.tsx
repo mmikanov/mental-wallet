@@ -11,8 +11,13 @@
  * Validates: Requirements 1.1, 1.2, 1.3, 17.1
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
 import CardEdge, { CARD_EDGE_HEIGHT } from './CardEdge';
 import type { Card } from '@/types/index';
 
@@ -34,12 +39,30 @@ export default function StackedCardList({
   onCardPress,
   onCardLongPress,
 }: StackedCardListProps) {
+  // Slide-up animation when the stacked list appears
+  // Start from a moderate offset (not too far) since the collapsed stack
+  // was already visible near the bottom — this creates the illusion of
+  // the stack spreading upward while the focused card fades away at top
+  const translateY = useSharedValue(200);
+  const opacity = useSharedValue(0.5);
+
+  useEffect(() => {
+    translateY.value = withSpring(0, { damping: 22, stiffness: 80, mass: 1 });
+    opacity.value = withSpring(1, { damping: 20, stiffness: 120 });
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+    opacity: opacity.value,
+  }));
+
   // Reverse the order so the first card (top of deck) renders at the BOTTOM
   // of the screen, and cards below it in the stack render above it.
   // This way users see the top edge of each card to identify it.
   const reversedCards = [...cards].reverse();
 
   return (
+    <Animated.View style={[{ flex: 1 }, animatedStyle]}>
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.scrollContent}
@@ -68,6 +91,7 @@ export default function StackedCardList({
         );
       })}
     </ScrollView>
+    </Animated.View>
   );
 }
 

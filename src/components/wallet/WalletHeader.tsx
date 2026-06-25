@@ -20,12 +20,14 @@ export interface WalletHeaderProps {
   onArchivePress: () => void;
   onSettingsPress: () => void;
   onAddToolPress?: () => void;
+  onCreateToolPress?: () => void;
 }
 
 export default function WalletHeader({
   onArchivePress,
   onSettingsPress,
   onAddToolPress,
+  onCreateToolPress,
 }: WalletHeaderProps) {
   const [menuVisible, setMenuVisible] = useState(false);
 
@@ -69,6 +71,21 @@ export default function WalletHeader({
                   accessibilityLabel="Add Tool"
                 >
                   <Text style={styles.menuItemText}>Add Tool</Text>
+                </TouchableOpacity>
+
+                <View style={styles.menuDivider} />
+              </>
+            )}
+
+            {onCreateToolPress && (
+              <>
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => handleMenuOption(onCreateToolPress)}
+                  accessibilityRole="menuitem"
+                  accessibilityLabel="Create Tool"
+                >
+                  <Text style={styles.menuItemText}>Create Tool</Text>
                 </TouchableOpacity>
 
                 <View style={styles.menuDivider} />

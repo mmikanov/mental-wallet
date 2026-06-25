@@ -29,6 +29,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import type { Card } from '@/types/index';
+import { isLightBackground } from '@/utils/cardColors';
 import OriginBadge from './OriginBadge';
 import StatsRow from './StatsRow';
 import PrimaryActionButton from './PrimaryActionButton';
@@ -48,28 +49,14 @@ export interface FocusedCardViewProps {
 }
 
 const SPRING_CONFIG = {
-  damping: 20,
-  stiffness: 200,
-  mass: 0.8,
+  damping: 18,
+  stiffness: 80,
+  mass: 1.2,
 };
 
 const DISMISS_THRESHOLD = 100;
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const FOCUSED_CARD_HEIGHT = SCREEN_HEIGHT * 0.65;
-
-/**
- * Determines whether text should be light or dark based on background color brightness.
- */
-function isLightBackground(color: string): boolean {
-  if (!color || color === '#FFFFFF' || color === '#ffffff') return true;
-  const hex = color.replace('#', '');
-  if (hex.length < 6) return true;
-  const r = parseInt(hex.substring(0, 2), 16);
-  const g = parseInt(hex.substring(2, 4), 16);
-  const b = parseInt(hex.substring(4, 6), 16);
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.5;
-}
 
 export default function FocusedCardView({
   card,
@@ -82,8 +69,8 @@ export default function FocusedCardView({
   onPrimaryAction,
   onMenuPress,
 }: FocusedCardViewProps) {
-  const translateY = useSharedValue(300);
-  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(50);
+  const opacity = useSharedValue(0.3);
   const prevExpanded = useRef(isExpanded);
 
   useEffect(() => {

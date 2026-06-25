@@ -13,7 +13,7 @@
  */
 
 import React, { useEffect, useMemo, useCallback, useState } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet, Alert, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -42,6 +42,11 @@ const DEFAULT_CATEGORY_COLORS: Record<string, string> = {
   'self-compassion-reminders': '#D4A5C9',
   'lightweight-connection': '#E6C84C',
 };
+
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export default function WalletScreen() {
   const navigation = useNavigation<WalletNavigationProp>();
@@ -94,7 +99,12 @@ export default function WalletScreen() {
     navigation.navigate('LibraryBrowser');
   }
 
+  function handleCreateToolPress() {
+    navigation.navigate('CardCreator');
+  }
+
   function handleCardPress(id: string) {
+    LayoutAnimation.configureNext(LayoutAnimation.create(300, 'easeInEaseOut', 'opacity'));
     focusCard(id);
   }
 
@@ -102,8 +112,22 @@ export default function WalletScreen() {
     enterReorderMode();
   }
 
+  const [isDismissing, setIsDismissing] = useState(false);
+
   const handleDismiss = useCallback(() => {
-    returnToStack();
+    setIsDismissing(true);
+    // Allow the opacity transition to render, then switch view
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        setIsDismissing(false);
+        LayoutAnimation.configureNext({
+          duration: 400,
+          create: { type: 'easeInEaseOut', property: 'opacity' },
+          update: { type: 'spring', springDamping: 0.7 },
+        });
+        returnToStack();
+      }, 150);
+    });
   }, [returnToStack]);
 
   const handleExpand = useCallback(() => {
@@ -237,6 +261,7 @@ export default function WalletScreen() {
         onArchivePress={handleArchivePress}
         onSettingsPress={handleSettingsPress}
         onAddToolPress={handleAddToolPress}
+        onCreateToolPress={handleCreateToolPress}
       />
       <View style={styles.content}>
         {isReorderMode ? (
@@ -248,7 +273,7 @@ export default function WalletScreen() {
           />
         ) : focusedCard ? (
           // Focused card state: big card on top + thin strips at bottom
-          <View style={styles.focusedLayout}>
+          <View style={[styles.focusedLayout, { opacity: isDismissing ? 0.2 : 1 }]}>
             {/* Focused card area — takes up top portion */}
             <View style={styles.focusedCardArea}>
               <FocusedCardView

@@ -23,6 +23,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import type { BackgroundType } from '@/types/index';
+import { CARD_BACKGROUND_COLORS, isLightBackground } from '@/utils/cardColors';
 
 type BackgroundMode = 'color' | 'image';
 
@@ -38,21 +39,6 @@ interface BackgroundCustomizerSheetProps {
   onReset?: () => void;
   onClose: () => void;
 }
-
-const PRESET_COLORS = [
-  { hex: '#4A90D9', name: 'Blue' },
-  { hex: '#5BA88B', name: 'Green' },
-  { hex: '#E88D67', name: 'Orange' },
-  { hex: '#D4A5C9', name: 'Pink' },
-  { hex: '#8B7EC8', name: 'Purple' },
-  { hex: '#E6C84C', name: 'Yellow' },
-  { hex: '#6B9EC4', name: 'Teal' },
-  { hex: '#FF6B6B', name: 'Red' },
-  { hex: '#4ECDC4', name: 'Mint' },
-  { hex: '#2D3748', name: 'Dark' },
-  { hex: '#F5F5F5', name: 'Light Gray' },
-  { hex: '#1A1A2E', name: 'Navy' },
-];
 
 const MIN_IMAGE_WIDTH = 750;
 const MIN_IMAGE_HEIGHT = 500;
@@ -72,7 +58,7 @@ export default function BackgroundCustomizerSheet({
     imageOnly ? 'image' : (currentBackgroundType === 'image' ? 'image' : 'color')
   );
   const [selectedColor, setSelectedColor] = useState(
-    currentBackgroundType === 'color' ? currentBackgroundValue : PRESET_COLORS[0].hex
+    currentBackgroundType === 'color' ? currentBackgroundValue : CARD_BACKGROUND_COLORS[0].hex
   );
   const [customHex, setCustomHex] = useState('');
   const [selectedImageUri, setSelectedImageUri] = useState<string | null>(
@@ -212,7 +198,7 @@ export default function BackgroundCustomizerSheet({
             {mode === 'color' && (
               <View style={styles.section}>
                 <View style={styles.colorGrid}>
-                  {PRESET_COLORS.map((color) => (
+                  {CARD_BACKGROUND_COLORS.map((color) => (
                     <TouchableOpacity
                       key={color.hex}
                       style={[
@@ -247,7 +233,7 @@ export default function BackgroundCustomizerSheet({
                 </View>
                 {/* Preview */}
                 <View style={[styles.preview, { backgroundColor: selectedColor }]}>
-                  <Text style={styles.previewText}>Preview</Text>
+                  <Text style={[styles.previewText, { color: isLightBackground(selectedColor) ? '#1C1C1E' : '#FFFFFF' }]}>Preview</Text>
                 </View>
               </View>
             )}
@@ -443,11 +429,7 @@ const styles = StyleSheet.create({
   },
   previewText: {
     fontSize: 13,
-    color: '#FFFFFF',
     fontWeight: '500',
-    textShadowColor: 'rgba(0,0,0,0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
   imageButtonRow: {
     flexDirection: 'row',
