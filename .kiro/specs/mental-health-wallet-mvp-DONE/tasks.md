@@ -269,6 +269,41 @@ This plan implements the Mental Health Wallet MVP using React Native/Expo with S
 - [x] 18. Final checkpoint — full integration
   - Ensure all tests pass, ask the user if questions arise.
 
+- [x] 19. UX polish — unified colors, animations, and navigation fixes
+  - [x] 19.1 Unify color palette into shared module
+    - Create `src/utils/cardColors.ts` with single color palette (22 colors: pastels + bold/dark)
+    - Replace duplicate `PRESET_COLORS` arrays in Step1Shell, BackgroundCustomizerSheet, CardEdge, CollapsedStack, FocusedCardView
+    - Export `isLightBackground`, `getTextColorForBackground`, `getSubtitleColorForBackground` utilities
+    - _Requirements: 18.1_
+
+  - [x] 19.2 Implement adaptive text contrast across card surfaces
+    - Apply `isLightBackground` utility in CardEdge, CollapsedStack, FocusedCardView, Step3Preview
+    - Dark backgrounds → white text; light backgrounds → dark text
+    - Remove duplicate local `isLightBackground` functions from 3 components
+    - _Requirements: 18.2, 18.3, 18.4_
+
+  - [x] 19.3 Polish wallet animations
+    - Add slide-up spring animation to StackedCardList on return from focus state (Reanimated)
+    - Soften FocusedCardView entrance spring (lower stiffness=80, higher mass=1.2)
+    - Add LayoutAnimation transitions for card focus/dismiss in WalletScreen
+    - Enable LayoutAnimation on Android via UIManager
+    - _Requirements: 19.1, 19.2, 19.3, 19.4_
+
+  - [x] 19.4 Add "Create Tool" to wallet header kebab menu
+    - Add `onCreateToolPress` prop to WalletHeader
+    - Render "Create Tool" menu item that navigates to CardCreator screen
+    - _Requirements: 20.1, 20.2_
+
+  - [x] 19.5 Fix CardCreator navigation safety for native-stack modals
+    - Replace `beforeRemove` listener approach (crashes with native-stack modals) with `gestureEnabled` toggle
+    - Disable swipe gesture when unsaved changes exist (`isDirty` computed via useMemo)
+    - Move discard confirmation to Cancel button handler
+    - _Requirements: 21.1, 21.2, 21.3, 21.4_
+
+  - [x] 19.6 Fix deprecated SafeAreaView import in CardCreatorScreen
+    - Switch import from `react-native` to `react-native-safe-area-context`
+    - _Requirements: 22.1_
+
 ## Notes
 
 - Property-based test tasks have been moved to the `property-tests` spec
@@ -298,7 +333,8 @@ This plan implements the Mental Health Wallet MVP using React Native/Expo with S
     { "id": 12, "tasks": ["12.3", "12.4", "13.1", "13.2"] },
     { "id": 13, "tasks": ["13.3", "14.1"] },
     { "id": 14, "tasks": ["16.1", "16.2", "16.3"] },
-    { "id": 15, "tasks": ["17.1", "17.2", "17.3"] }
+    { "id": 15, "tasks": ["17.1", "17.2", "17.3"] },
+    { "id": 16, "tasks": ["19.1", "19.2", "19.3", "19.4", "19.5", "19.6"] }
   ]
 }
 ```

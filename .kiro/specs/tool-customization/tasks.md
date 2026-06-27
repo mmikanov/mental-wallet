@@ -131,7 +131,8 @@ Implementation proceeds in layers: types/migrations → services → UI componen
 
 - [x] 8.1 Implement background customizer UI
   - Create `src/components/wallet/BackgroundCustomizerSheet.tsx` (bottom sheet)
-  - Options: color picker (existing presets + hex input), image upload (photo library or camera)
+  - Options: color picker (shared palette from `src/utils/cardColors.ts` with presets + hex input), image upload (photo library or camera)
+  - Adaptive text contrast in color preview using `isLightBackground` utility
   - Image validation: min 750×500px, max 10MB
   - Resize uploaded image to max 1500px width before storage
   - _Requirements: 4.1, 4.2, 4.3, 4.4_

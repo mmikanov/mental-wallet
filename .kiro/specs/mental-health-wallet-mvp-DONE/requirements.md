@@ -240,3 +240,53 @@ Mental Health Wallet is a mobile-first application that unifies scattered mental
 2. THE App SHALL maintain a crash-free session rate of 99.9% or higher measured over any rolling 7-day period.
 3. THE App SHALL comply with WCAG 2.1 AA accessibility baseline standards including: minimum contrast ratio of 4.5:1 for text, minimum tap target size of 44×44 points, support for VoiceOver (iOS) and TalkBack (Android) screen readers with meaningful labels on all interactive elements, and support for Dynamic Type / system font scaling.
 4. THE App SHALL deliver push notifications with a delivery rate exceeding 90% measured over any rolling 7-day period across all users with notifications enabled.
+
+### Requirement 18: Unified Color Palette and Adaptive Text Contrast
+
+**User Story:** As a user, I want card text to be readable regardless of the background color, so that I can identify my tools at a glance without squinting.
+
+#### Acceptance Criteria
+
+1. THE App SHALL use a single shared color palette (including both light pastels and bold/dark options) across the card creator, background customizer, and all card rendering surfaces.
+2. WHEN a card has a dark background color (relative luminance ≤ 0.5), THE App SHALL render the card title, description, and overlay text in white or light-colored text.
+3. WHEN a card has a light background color (relative luminance > 0.5), THE App SHALL render the card title, description, and overlay text in dark-colored text.
+4. THE adaptive text contrast logic SHALL apply consistently across the Stacked_View card edges, Focused_Card view, card preview in the creation flow, and the background customizer preview.
+
+### Requirement 19: Wallet Animations and Transitions
+
+**User Story:** As a user, I want smooth, natural animations when interacting with my card stack, so that the app feels polished and responsive.
+
+#### Acceptance Criteria
+
+1. WHEN a card transitions from the Stacked_View to the Focused_Card state, THE App SHALL animate the transition using a spring animation with soft damping for a natural feel.
+2. WHEN the user dismisses the Focused_Card and returns to the Stacked_View, THE App SHALL animate the stacked card list sliding up from below with a spring animation.
+3. WHEN the user focuses or dismisses a card, THE App SHALL apply a LayoutAnimation transition for opacity and position changes to avoid abrupt visual jumps.
+4. THE App SHALL enable LayoutAnimation on Android via `UIManager.setLayoutAnimationEnabledExperimental`.
+
+### Requirement 20: Wallet Kebab Menu — Create Tool Shortcut
+
+**User Story:** As a user, I want to quickly create a new custom tool from the wallet screen, so that I don't have to navigate to the library first.
+
+#### Acceptance Criteria
+
+1. THE Wallet Kebab_Menu SHALL include a "Create Tool" option that navigates directly to the card creation flow.
+2. THE Wallet Kebab_Menu SHALL display options in this order: Add Tool, Create Tool, Archive, Settings.
+
+### Requirement 21: CardCreator Navigation Safety (Native Stack)
+
+**User Story:** As a user, I want the card creator to reliably prevent accidental dismissal when I have unsaved changes, even when presented as a native-stack modal.
+
+#### Acceptance Criteria
+
+1. WHEN the user has unsaved changes in the card creation or editing flow, THE App SHALL disable the native gesture (swipe-to-dismiss) on the modal to prevent accidental data loss.
+2. WHEN the user taps the "Cancel" button with unsaved changes, THE App SHALL display a confirmation dialog asking whether to discard changes.
+3. WHEN the user has no unsaved changes, THE App SHALL allow normal gesture-based dismissal of the card creation modal.
+4. THE unsaved changes detection SHALL compare the current shell fields, controls, and category against their initial values (empty for create mode, loaded values for edit mode).
+
+### Requirement 22: SafeAreaView Usage Convention
+
+**User Story:** As a developer, I want all screens to use the non-deprecated SafeAreaView from `react-native-safe-area-context`, so that the app is forward-compatible with future React Native releases.
+
+#### Acceptance Criteria
+
+1. THE App SHALL import SafeAreaView exclusively from `react-native-safe-area-context` in all screen components, never from the deprecated `react-native` export.

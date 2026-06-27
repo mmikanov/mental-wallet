@@ -53,6 +53,10 @@ npm run lint
 - iOS bundle ID: `com.mentalhealthwallet.app`
 - Android package: `com.mentalhealthwallet.app`
 
+## Important Conventions
+
+- **SafeAreaView**: Always import from `react-native-safe-area-context`, never from `react-native` (deprecated). Use it as the root wrapper in all screen components.
+
 ## Path Aliases
 
 - `@/*` maps to `src/*` (configured in tsconfig.json and jest.config.js)
