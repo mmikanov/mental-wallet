@@ -28,9 +28,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Crypto from 'expo-crypto';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
-import type { CardShell, Control, OriginBadge } from '@/types/index';
+import type { CardShell, Control, EmotionType, OriginBadge } from '@/types/index';
 import { createCardService } from '@/services/cardService';
 import { removeOverlay } from '@/services/backgroundOverlayService';
+import { getTagsForCard, setTagsForCard, clearTagsForCard } from '@/services/emotionTagService';
 import { getDatabase } from '@/data/database';
 import { useWalletStore } from '@/stores/walletStore';
 import Step1Shell from '@/components/creator/Step1Shell';
@@ -56,6 +57,7 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
   const [shell, setShell] = useState<CardShell>(INITIAL_SHELL);
   const [controls, setControls] = useState<Control[]>([]);
   const [categoryId, setCategoryId] = useState('grounding-calming');
+  const [selectedEmotionTags, setSelectedEmotionTags] = useState<EmotionType[]>([]);
   const [isLoading, setIsLoading] = useState(isEditMode);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -94,6 +96,15 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
         initialShellRef.current = loadedShell;
         initialControlsRef.current = card.controls;
         initialCategoryRef.current = card.categoryId;
+
+        // Load existing emotion tags (Req 9.4)
+        try {
+          const emotionTags = await getTagsForCard(id);
+          const emotions = emotionTags.map((t) => t.emotion);
+          setSelectedEmotionTags(emotions);
+        } catch {
+          // Non-blocking: emotion tags are optional
+        }
       }
     } catch {
       Alert.alert('Error', 'Failed to load card data.');
@@ -222,6 +233,13 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
           await db.execAsync('ROLLBACK');
           throw error;
         }
+
+        // Persist emotion tags in background (Req 9.6)
+        if (selectedEmotionTags.length > 0) {
+          setTagsForCard(cardId, selectedEmotionTags).catch(() => {});
+        } else {
+          clearTagsForCard(cardId).catch(() => {});
+        }
       } else {
         // Create mode: create new card with "my_tool" badge
         const controlsData = controls.map((c, i) => ({
@@ -231,7 +249,12 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
           isRequired: c.isRequired,
         }));
 
-        await service.create(shell, controlsData, 'my_tool' as OriginBadge);
+        const createdCard = await service.create(shell, controlsData, 'my_tool' as OriginBadge);
+
+        // Persist emotion tags in background (Req 9.6)
+        if (selectedEmotionTags.length > 0) {
+          setTagsForCard(createdCard.id, selectedEmotionTags).catch(() => {});
+        }
       }
 
       // Mark as saved so beforeRemove listener allows navigation
@@ -250,7 +273,7 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
     } finally {
       setIsSaving(false);
     }
-  }, [isSaving, isEditMode, cardId, shell, controls, categoryId, loadCards, navigation]);
+  }, [isSaving, isEditMode, cardId, shell, controls, categoryId, selectedEmotionTags, loadCards, navigation]);
 
   if (isLoading) {
     return (
@@ -313,6 +336,8 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
           categoryId={categoryId}
           onSave={handleSave}
           isSaving={isSaving}
+          selectedEmotionTags={selectedEmotionTags}
+          onEmotionTagsChange={setSelectedEmotionTags}
         />
       )}
     </SafeAreaView>

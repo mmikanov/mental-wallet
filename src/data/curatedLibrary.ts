@@ -8,7 +8,7 @@
  * Validates: Requirements 8.1, 8.5
  */
 
-import type { ControlType, ControlConfig } from '@/types/index';
+import type { ControlType, ControlConfig, EmotionType, ContextType, TimeType } from '@/types/index';
 
 export interface CuratedControlDefinition {
   type: ControlType;
@@ -28,6 +28,9 @@ export interface CuratedCardDefinition {
   categoryId: string;
   allowBackgroundCustomization: boolean;
   controls: CuratedControlDefinition[];
+  emotionTags?: EmotionType[];
+  contextTags?: ContextType[];
+  timeTags?: TimeType[];
 }
 
 /**
@@ -67,6 +70,9 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: false,
       },
     ],
+    emotionTags: ['stressed', 'overwhelmed', 'anxious'],
+    contextTags: ['at_work'],
+    timeTags: ['5_10_min'],
   },
   {
     id: 'lib-box-breathing',
@@ -90,6 +96,9 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: false,
       },
     ],
+    emotionTags: ['stressed', 'anxious'],
+    contextTags: ['at_work'],
+    timeTags: ['1_2_min'],
   },
   {
     id: 'lib-pmr',
@@ -113,6 +122,9 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: false,
       },
     ],
+    emotionTags: ['stressed', 'anxious', 'angry'],
+    contextTags: ['alone_at_home'],
+    timeTags: ['5_10_min'],
   },
 
   // ─── Cognitive Reframing (2) ───────────────────────────────────────────────
@@ -158,6 +170,9 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: true,
       },
     ],
+    emotionTags: ['anxious', 'sad', 'angry'],
+    contextTags: ['alone_at_home'],
+    timeTags: ['5_10_min'],
   },
   {
     id: 'lib-decatastrophizing',
@@ -189,6 +204,9 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: true,
       },
     ],
+    emotionTags: ['anxious', 'overwhelmed'],
+    contextTags: ['at_work'],
+    timeTags: ['5_10_min'],
   },
 
   // ─── Body & Sensory (1) ────────────────────────────────────────────────────
@@ -222,6 +240,9 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: false,
       },
     ],
+    emotionTags: ['stressed', 'overwhelmed', 'numb'],
+    contextTags: ['alone_at_home'],
+    timeTags: ['5_10_min'],
   },
 
   // ─── Daily Check-In & Journaling (2) ──────────────────────────────────────
@@ -257,6 +278,9 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: false,
       },
     ],
+    emotionTags: ['sad', 'numb'],
+    contextTags: ['alone_at_home'],
+    timeTags: ['1_2_min'],
   },
   {
     id: 'lib-win-of-day',
@@ -279,6 +303,9 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: true,
       },
     ],
+    emotionTags: ['sad', 'numb'],
+    contextTags: ['alone_at_home'],
+    timeTags: ['1_2_min'],
   },
 
   // ─── Self-Compassion & Reminders (2) ──────────────────────────────────────
@@ -304,6 +331,9 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: false,
       },
     ],
+    emotionTags: ['sad', 'overwhelmed', 'angry'],
+    contextTags: ['at_work', 'with_family'],
+    timeTags: ['1_2_min'],
   },
   {
     id: 'lib-not-alone',
@@ -326,6 +356,9 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: false,
       },
     ],
+    emotionTags: ['sad', 'numb', 'overwhelmed'],
+    contextTags: ['with_family', 'with_friends'],
+    timeTags: ['1_2_min'],
   },
 
   // ─── Lightweight Connection (1) ───────────────────────────────────────────
@@ -362,5 +395,8 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: false,
       },
     ],
+    emotionTags: ['sad', 'numb'],
+    contextTags: ['with_family', 'with_friends'],
+    timeTags: ['5_10_min'],
   },
 ];

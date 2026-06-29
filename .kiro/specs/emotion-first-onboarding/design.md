@@ -58,6 +58,8 @@ flowchart TD
 
 4. **Session state in Zustand** — Active session state (selected emotion, context, time, open tools) lives in a `sessionStore` for reactive UI updates, with persistence delegated to `emotionSessionService`.
 
+5. **`source_library_id` for stable deduplication** — When a library card is added to the wallet, its curated library ID is stored as `source_library_id` on the wallet card. The recommendation engine uses this field (with fallback to title matching) to exclude already-added library cards from the "Suggested" section. This ensures deduplication remains stable even if a curated card's title is renamed in a future seed update.
+
 ## Components and Interfaces
 
 ### New Screens / Components
@@ -71,6 +73,8 @@ flowchart TD
 | `TimeChips` | `src/components/session/TimeChips.tsx` | Single-select time chips |
 | `SessionView` | `src/components/session/SessionView.tsx` | Recommendations display + "End session" action |
 | `ToolPreviewCard` | `src/components/session/ToolPreviewCard.tsx` | Compact card preview (icon, title, truncated description) |
+| `LibraryToolPreview` | `src/components/session/LibraryToolPreview.tsx` | Inline preview of a library tool within the session, with "Add to wallet" footer action |
+| `SessionActiveBanner` | `src/components/session/SessionActiveBanner.tsx` | Floating "Session active · Tap to return" banner shown when viewing a wallet tool during an active session |
 | `StartExperienceSetting` | `src/components/settings/StartExperienceSetting.tsx` | Radio-style setting control for Start_Mode |
 
 ### New Services
@@ -149,7 +153,9 @@ export interface RecommendationService {
     emotion: EmotionType,
     contexts: ContextType[],
     time: TimeType | null,
-    walletCardIds: string[]
+    walletCardIds: string[],
+    walletSourceLibraryIds: string[],
+    walletCardTitles: string[]
   ): Promise<RecommendationResult>;
 }
 ```
@@ -232,6 +238,9 @@ export interface CardTimeTag {
 ALTER TABLE cards ADD COLUMN card_type TEXT NOT NULL DEFAULT 'standard'
   CHECK(card_type IN ('standard', 'session_launcher'));
 
+-- Add source_library_id for linking wallet cards back to their library source
+ALTER TABLE cards ADD COLUMN source_library_id TEXT;
+
 -- Emotion tags for cards (both wallet and library-sourced)
 CREATE TABLE IF NOT EXISTS emotion_tags (
   id TEXT PRIMARY KEY,
@@ -308,7 +317,7 @@ These are used by the recommendation engine to match library cards that haven't 
   backgroundValue: '#F0E6FF',
   categoryId: 'grounding-calming',
   cardType: 'session_launcher',
-  allowBackgroundCustomization: false,
+  allowBackgroundCustomization: true,
   controls: [
     {
       type: 'choice_buttons',
@@ -360,7 +369,7 @@ These are used by the recommendation engine to match library cards that haven't 
 ### Recommendation Algorithm
 
 ```
-function getRecommendations(emotion, contexts, time, walletCardIds):
+function getRecommendations(emotion, contexts, time, walletCardIds, walletSourceLibraryIds, walletCardTitles):
   1. Query emotion_tags WHERE emotion = selectedEmotion → matchingCardIds
   2. For wallet tools:
      a. Filter matchingCardIds to those in walletCardIds
@@ -370,7 +379,7 @@ function getRecommendations(emotion, contexts, time, walletCardIds):
      e. Take top 3
   3. For library tools:
      a. Filter CURATED_LIBRARY where emotionTags includes emotion
-     b. Exclude cards already in wallet (by curated library ID matching)
+     b. Exclude cards already in wallet by matching `source_library_id` with fallback to title matching
      c. If time selected: exclude cards without matching time tag
      d. Score each by context relevance
      e. Sort by contextScore DESC, then title ASC

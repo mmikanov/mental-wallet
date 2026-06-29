@@ -36,36 +36,35 @@ export function createCompletionService(): CompletionService {
       const completionId = Crypto.randomUUID();
       const completedAt = new Date().toISOString();
 
+      const controlValues: ControlValue[] = [];
+
       try {
-        await db.execAsync('BEGIN TRANSACTION');
-
-        // Insert completion record
-        await db.runAsync(
-          'INSERT INTO completions (id, card_id, completed_at) VALUES (?, ?, ?)',
-          [completionId, cardId, completedAt]
-        );
-
-        // Insert each control value
-        const controlValues: ControlValue[] = [];
-        for (const val of values) {
-          const valueId = Crypto.randomUUID();
+        await db.withTransactionAsync(async () => {
+          // Insert completion record
           await db.runAsync(
-            'INSERT INTO control_values (id, completion_id, control_id, control_type, value) VALUES (?, ?, ?, ?, ?)',
-            [valueId, completionId, val.controlId, val.controlType, val.value]
+            'INSERT INTO completions (id, card_id, completed_at) VALUES (?, ?, ?)',
+            [completionId, cardId, completedAt]
           );
-          controlValues.push({
-            id: valueId,
-            completionId,
-            controlId: val.controlId,
-            controlType: val.controlType,
-            value: val.value,
-          });
-        }
 
-        // Update streak for the card
-        await updateStreakInternal(db, cardId);
+          // Insert each control value
+          for (const val of values) {
+            const valueId = Crypto.randomUUID();
+            await db.runAsync(
+              'INSERT INTO control_values (id, completion_id, control_id, control_type, value) VALUES (?, ?, ?, ?, ?)',
+              [valueId, completionId, val.controlId, val.controlType, val.value]
+            );
+            controlValues.push({
+              id: valueId,
+              completionId,
+              controlId: val.controlId,
+              controlType: val.controlType,
+              value: val.value,
+            });
+          }
 
-        await db.execAsync('COMMIT');
+          // Update streak for the card
+          await updateStreakInternal(db, cardId);
+        });
 
         return {
           id: completionId,
@@ -74,7 +73,6 @@ export function createCompletionService(): CompletionService {
           values: controlValues,
         };
       } catch (error) {
-        await db.execAsync('ROLLBACK');
         throw AppError.persistence(
           ErrorCode.PERSISTENCE_TRANSACTION_FAILED,
           `Failed to record completion for card ${cardId}`,

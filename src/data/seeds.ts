@@ -10,7 +10,8 @@ export async function seedData(db: SQLiteDatabase): Promise<void> {
   );
 
   if (result) {
-    // Already seeded — skip
+    // Already seeded — skip initial seed but ensure session launcher exists (upgrade path)
+    await seedSessionLauncherCard(db);
     return;
   }
 
@@ -41,6 +42,9 @@ export async function seedData(db: SQLiteDatabase): Promise<void> {
       );
     }
 
+    // Seed Session Launcher Card
+    await insertSessionLauncherCard(db);
+
     // Mark as initialized
     await db.runAsync(
       `INSERT INTO settings (key, value) VALUES ('initialized', 'true')`
@@ -50,6 +54,76 @@ export async function seedData(db: SQLiteDatabase): Promise<void> {
   } catch (error) {
     await db.execAsync('ROLLBACK');
     throw error;
+  }
+}
+
+/**
+ * Seeds the Session Launcher Card if it doesn't already exist.
+ * Called both during initial seed and on subsequent launches (upgrade path).
+ * Idempotent — checks for existence before inserting.
+ */
+async function seedSessionLauncherCard(db: SQLiteDatabase): Promise<void> {
+  const existing = await db.getFirstAsync<{ id: string }>(
+    `SELECT id FROM cards WHERE id = ?`,
+    [SESSION_LAUNCHER_CARD.id]
+  );
+
+  if (existing) {
+    return;
+  }
+
+  await db.execAsync('BEGIN TRANSACTION');
+  try {
+    await insertSessionLauncherCard(db);
+    await db.execAsync('COMMIT');
+  } catch (error) {
+    await db.execAsync('ROLLBACK');
+    throw error;
+  }
+}
+
+/**
+ * Inserts the Session Launcher Card and its controls into the database.
+ * Must be called within an active transaction.
+ */
+async function insertSessionLauncherCard(db: SQLiteDatabase): Promise<void> {
+  const card = SESSION_LAUNCHER_CARD;
+
+  await db.runAsync(
+    `INSERT INTO cards (
+      id, title, description, icon_type, icon_value,
+      background_type, background_value, category_id, origin_badge,
+      stack_position, allow_background_customization, card_type
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      card.id,
+      card.title,
+      card.description,
+      card.iconType,
+      card.iconValue,
+      card.backgroundType,
+      card.backgroundValue,
+      card.categoryId,
+      'library',
+      card.stackPosition,
+      card.allowBackgroundCustomization ? 1 : 0,
+      card.cardType,
+    ]
+  );
+
+  // Seed controls for the Session Launcher Card
+  for (const control of SESSION_LAUNCHER_CONTROLS) {
+    await db.runAsync(
+      `INSERT INTO controls (id, card_id, type, position, config, is_required) VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        control.id,
+        card.id,
+        control.type,
+        control.position,
+        JSON.stringify(control.config),
+        control.isRequired ? 1 : 0,
+      ]
+    );
   }
 }
 
@@ -118,5 +192,84 @@ export const SEED_CRISIS_RESOURCES = [
     url: 'https://www.iasp.info/resources/Crisis_Centres/',
     isDefault: true,
     displayOrder: 2,
+  },
+] as const;
+
+/**
+ * Session Launcher Card definition.
+ * This special card initiates the emotion-first session flow.
+ * Positioned below Starter_Cards (stack_position = 99) so the
+ * Micro_Tutorial points at a coping tool rather than the session launcher.
+ *
+ * Validates: Requirements 4.1, 4.2, 5.6
+ */
+export const SESSION_LAUNCHER_CARD = {
+  id: 'session-launcher',
+  title: 'Start from how I feel',
+  description: 'Tell the app what you\'re dealing with to get suggested tools.',
+  iconType: 'emoji',
+  iconValue: '🫶',
+  backgroundType: 'color',
+  backgroundValue: '#F0E6FF',
+  categoryId: 'grounding-calming',
+  cardType: 'session_launcher',
+  allowBackgroundCustomization: true,
+  stackPosition: 99,
+} as const;
+
+/**
+ * Controls for the Session Launcher Card.
+ * These define the emotion picker, context chips, and time chips
+ * as card control data (same pattern as other cards), allowing
+ * future updates via the data layer without code changes.
+ *
+ * Validates: Requirements 5.6, 8.5, 8.6, 8.7
+ */
+export const SESSION_LAUNCHER_CONTROLS = [
+  {
+    id: 'ctrl-session-launcher-0',
+    type: 'choice_buttons' as const,
+    position: 0,
+    config: {
+      label: 'How are you feeling right now?',
+      options: [
+        { text: 'Stressed', icon: '😰' },
+        { text: 'Overwhelmed', icon: '🌊' },
+        { text: 'Anxious', icon: '😟' },
+        { text: 'Sad/low', icon: '😢' },
+        { text: 'Angry', icon: '😤' },
+        { text: 'Numb', icon: '😶' },
+      ],
+    },
+    isRequired: true,
+  },
+  {
+    id: 'ctrl-session-launcher-1',
+    type: 'choice_buttons' as const,
+    position: 1,
+    config: {
+      label: 'Where are you right now?',
+      options: [
+        { text: 'At work/school' },
+        { text: 'With family' },
+        { text: 'With friends/social' },
+        { text: 'Alone at home' },
+        { text: "I'm not sure" },
+      ],
+    },
+    isRequired: false,
+  },
+  {
+    id: 'ctrl-session-launcher-2',
+    type: 'choice_buttons' as const,
+    position: 2,
+    config: {
+      label: 'How much time do you have?',
+      options: [
+        { text: 'I have ~1–2 minutes' },
+        { text: 'I have ~5–10 minutes' },
+      ],
+    },
+    isRequired: false,
   },
 ] as const;

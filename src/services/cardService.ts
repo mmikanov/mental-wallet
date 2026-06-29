@@ -152,6 +152,7 @@ function mapRowToCard(row: Record<string, unknown>): Omit<Card, 'controls'> {
     archivedAt: (row.archived_at as string) || null,
     previousStackPosition: (row.previous_stack_position as number) ?? null,
     allowBackgroundCustomization: (row.allow_background_customization as number) === 1,
+    sourceLibraryId: (row.source_library_id as string) ?? null,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
@@ -189,7 +190,7 @@ export function createCardService(): CardService {
           c.background_type, c.background_value, c.category_id,
           c.origin_badge, c.stack_position, c.total_uses, c.current_streak,
           c.last_used_at, c.is_archived, c.archived_at, c.previous_stack_position,
-          c.allow_background_customization,
+          c.allow_background_customization, c.source_library_id,
           c.created_at, c.updated_at,
           bo.background_type AS overlay_background_type,
           bo.background_value AS overlay_background_value,
@@ -218,7 +219,7 @@ export function createCardService(): CardService {
           c.background_type, c.background_value, c.category_id,
           c.origin_badge, c.stack_position, c.total_uses, c.current_streak,
           c.last_used_at, c.is_archived, c.archived_at, c.previous_stack_position,
-          c.allow_background_customization,
+          c.allow_background_customization, c.source_library_id,
           c.created_at, c.updated_at,
           bo.background_type AS overlay_background_type,
           bo.background_value AS overlay_background_value,
@@ -247,7 +248,8 @@ export function createCardService(): CardService {
       shell: CardShell,
       controls: Omit<Control, 'id' | 'cardId'>[],
       originBadge: OriginBadge,
-      categoryId?: string
+      categoryId?: string,
+      sourceLibraryId?: string
     ): Promise<Card> {
       const shellValidation = validateShell(shell);
       if (!shellValidation.isValid) {
@@ -292,8 +294,8 @@ export function createCardService(): CardService {
 
         // Insert the card
         await db.runAsync(
-          `INSERT INTO cards (id, title, description, icon_type, icon_value, background_type, background_value, category_id, origin_badge, stack_position, total_uses, current_streak, last_used_at, is_archived, archived_at, previous_stack_position, allow_background_customization, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, NULL, 0, NULL, NULL, ?, ?, ?)`,
+          `INSERT INTO cards (id, title, description, icon_type, icon_value, background_type, background_value, category_id, origin_badge, stack_position, total_uses, current_streak, last_used_at, is_archived, archived_at, previous_stack_position, allow_background_customization, source_library_id, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, NULL, 0, NULL, NULL, ?, ?, ?, ?)`,
           [
             cardId,
             shell.title,
@@ -306,6 +308,7 @@ export function createCardService(): CardService {
             originBadge,
             stackPosition,
             originBadge === 'library' || originBadge === 'community' ? 1 : 0,
+            sourceLibraryId || null,
             now,
             now,
           ]
@@ -658,6 +661,7 @@ export function createCardService(): CardService {
     /**
      * Permanently delete a card and all associated data.
      * Cascade-deletes controls, completions, control_values, and reminders.
+     * Session_launcher cards cannot be permanently deleted (Req 4.6).
      */
     async delete(id: string): Promise<void> {
       const db = await getDatabase();
@@ -665,6 +669,18 @@ export function createCardService(): CardService {
       const existing = await this.getById(id);
       if (!existing) {
         throw AppError.persistence(ErrorCode.PERSISTENCE_NOT_FOUND, `Card not found: ${id}`);
+      }
+
+      // Block permanent deletion of session_launcher cards
+      const typeCheck = await db.getFirstAsync<{ card_type: string }>(
+        'SELECT card_type FROM cards WHERE id = ?',
+        [id]
+      );
+      if (typeCheck?.card_type === 'session_launcher') {
+        throw AppError.validation(
+          ErrorCode.VALIDATION_REQUIRED_FIELD,
+          'Cannot permanently delete the session launcher card'
+        );
       }
 
       await db.execAsync('BEGIN TRANSACTION');

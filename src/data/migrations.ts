@@ -6,6 +6,41 @@ import type { SQLiteDatabase } from 'expo-sqlite';
  */
 export async function runMigrations(db: SQLiteDatabase): Promise<void> {
   await db.execAsync(SCHEMA_SQL);
+  await runEmotionMigration(db);
+}
+
+/**
+ * Adds the card_type column to the cards table if it doesn't already exist.
+ * ALTER TABLE is not idempotent, so we check via PRAGMA table_info first.
+ */
+async function runEmotionMigration(db: SQLiteDatabase): Promise<void> {
+  const columns = await db.getAllAsync<{ name: string }>(
+    `PRAGMA table_info(cards)`
+  );
+  const hasCardType = columns.some((col) => col.name === 'card_type');
+
+  if (!hasCardType) {
+    await db.execAsync(
+      `ALTER TABLE cards ADD COLUMN card_type TEXT NOT NULL DEFAULT 'standard'
+         CHECK(card_type IN ('standard', 'session_launcher'))`
+    );
+  }
+
+  // Add source_library_id column (nullable, stores the original library card ID)
+  const hasSourceLibraryId = columns.some((col) => col.name === 'source_library_id');
+  if (!hasSourceLibraryId) {
+    await db.execAsync(
+      `ALTER TABLE cards ADD COLUMN source_library_id TEXT`
+    );
+  }
+
+  // Enable background customization for the session launcher card (upgrade path)
+  await db.runAsync(
+    `UPDATE cards SET allow_background_customization = 1 WHERE id = 'session-launcher' AND allow_background_customization = 0`
+  );
+
+  // Create emotion-related tables (idempotent via IF NOT EXISTS)
+  await db.execAsync(EMOTION_SCHEMA_SQL);
 }
 
 const SCHEMA_SQL = `
@@ -126,4 +161,49 @@ CREATE TABLE IF NOT EXISTS background_overlays (
 );
 
 CREATE INDEX IF NOT EXISTS idx_background_overlays_card ON background_overlays(card_id);
+`;
+
+const EMOTION_SCHEMA_SQL = `
+-- Emotion tags for cards (both wallet and library-sourced)
+CREATE TABLE IF NOT EXISTS emotion_tags (
+  id TEXT PRIMARY KEY,
+  card_id TEXT NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+  emotion TEXT NOT NULL CHECK(emotion IN (
+    'stressed', 'overwhelmed', 'anxious', 'sad', 'angry', 'numb'
+  )),
+  UNIQUE(card_id, emotion)
+);
+CREATE INDEX IF NOT EXISTS idx_emotion_tags_card ON emotion_tags(card_id);
+CREATE INDEX IF NOT EXISTS idx_emotion_tags_emotion ON emotion_tags(emotion);
+
+-- Context associations for cards (ranking signal)
+CREATE TABLE IF NOT EXISTS card_context_tags (
+  card_id TEXT NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+  context TEXT NOT NULL CHECK(context IN (
+    'at_work', 'with_family', 'with_friends', 'alone_at_home', 'not_sure'
+  )),
+  PRIMARY KEY(card_id, context)
+);
+
+-- Time associations for cards (filter)
+CREATE TABLE IF NOT EXISTS card_time_tags (
+  card_id TEXT NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+  time TEXT NOT NULL CHECK(time IN ('1_2_min', '5_10_min')),
+  PRIMARY KEY(card_id, time)
+);
+
+-- Emotion sessions
+CREATE TABLE IF NOT EXISTS emotion_sessions (
+  id TEXT PRIMARY KEY,
+  selected_emotion TEXT NOT NULL CHECK(selected_emotion IN (
+    'stressed', 'overwhelmed', 'anxious', 'sad', 'angry', 'numb'
+  )),
+  selected_contexts TEXT NOT NULL DEFAULT '[]',
+  selected_time TEXT,
+  tool_card_ids TEXT NOT NULL DEFAULT '[]',
+  started_at TEXT NOT NULL DEFAULT (datetime('now')),
+  ended_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_emotion_sessions_active ON emotion_sessions(ended_at)
+  WHERE ended_at IS NULL;
 `;

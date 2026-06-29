@@ -3,9 +3,16 @@
  * Defines the param lists for root stack and bottom tab navigators.
  */
 
+import type { NavigatorScreenParams } from '@react-navigation/native';
+
+export type MainTabParamList = {
+  Wallet: { focusCardId?: string; highlightSessionCard?: boolean } | undefined;
+};
+
 export type RootStackParamList = {
   Disclaimer: undefined;
-  MainTabs: undefined;
+  MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
+  ModeChoice: undefined;
   LibraryBrowser: undefined;
   CardCreator: { cardId?: string } | undefined;
   Archive: undefined;
@@ -13,8 +20,4 @@ export type RootStackParamList = {
   CrisisResources: undefined;
   UsageHistory: { cardId: string };
   ReminderConfig: { cardId: string };
-};
-
-export type MainTabParamList = {
-  Wallet: { focusCardId?: string } | undefined;
 };

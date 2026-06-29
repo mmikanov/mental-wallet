@@ -215,6 +215,110 @@ describe('CardService', () => {
     });
   });
 
+  describe('delete', () => {
+    it('throws an error when attempting to delete a session_launcher card', async () => {
+      const { getDatabase } = require('../../data/database');
+
+      const mockSessionLauncherCard = {
+        id: 'session-launcher',
+        title: 'Start from how I feel',
+        description: 'Tell the app what you are dealing with.',
+        icon_type: 'emoji',
+        icon_value: '🫶',
+        background_type: 'color',
+        background_value: '#F0E6FF',
+        category_id: 'grounding-calming',
+        origin_badge: 'library',
+        stack_position: 0,
+        total_uses: 0,
+        current_streak: 0,
+        last_used_at: null,
+        is_archived: 0,
+        archived_at: null,
+        previous_stack_position: null,
+        allow_background_customization: 0,
+        source_library_id: null,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+        control_id: null,
+        control_card_id: null,
+        control_type: null,
+        control_position: null,
+        control_config: null,
+        control_is_required: null,
+      };
+
+      const mockDb = {
+        getAllAsync: jest.fn().mockResolvedValue([mockSessionLauncherCard]),
+        getFirstAsync: jest.fn().mockResolvedValue({ card_type: 'session_launcher' }),
+        execAsync: jest.fn().mockResolvedValue(undefined),
+        runAsync: jest.fn().mockResolvedValue({ changes: 1 }),
+      };
+
+      getDatabase.mockResolvedValue(mockDb);
+
+      const service = createCardService();
+
+      await expect(service.delete('session-launcher')).rejects.toThrow(
+        'Cannot permanently delete the session launcher card'
+      );
+
+      // Verify no transaction was started (delete was blocked before transaction)
+      const execCalls = mockDb.execAsync.mock.calls.map((c: unknown[]) => c[0]);
+      expect(execCalls).not.toContain('BEGIN TRANSACTION');
+    });
+
+    it('allows deletion of standard cards', async () => {
+      const { getDatabase } = require('../../data/database');
+
+      const mockStandardCard = {
+        id: 'standard-card-1',
+        title: 'Breathing Exercise',
+        description: 'A simple breathing exercise',
+        icon_type: 'emoji',
+        icon_value: '🌬️',
+        background_type: 'color',
+        background_value: '#87CEEB',
+        category_id: 'grounding-calming',
+        origin_badge: 'my_tool',
+        stack_position: 1,
+        total_uses: 5,
+        current_streak: 1,
+        last_used_at: null,
+        is_archived: 0,
+        archived_at: null,
+        previous_stack_position: null,
+        allow_background_customization: 0,
+        source_library_id: null,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+        control_id: null,
+        control_card_id: null,
+        control_type: null,
+        control_position: null,
+        control_config: null,
+        control_is_required: null,
+      };
+
+      const mockDb = {
+        getAllAsync: jest.fn().mockResolvedValue([mockStandardCard]),
+        getFirstAsync: jest.fn().mockResolvedValue({ card_type: 'standard' }),
+        execAsync: jest.fn().mockResolvedValue(undefined),
+        runAsync: jest.fn().mockResolvedValue({ changes: 1 }),
+      };
+
+      getDatabase.mockResolvedValue(mockDb);
+
+      const service = createCardService();
+      await service.delete('standard-card-1');
+
+      // Verify transaction was started (delete proceeded)
+      const execCalls = mockDb.execAsync.mock.calls.map((c: unknown[]) => c[0]);
+      expect(execCalls).toContain('BEGIN TRANSACTION');
+      expect(execCalls).toContain('COMMIT');
+    });
+  });
+
   describe('duplicate', () => {
     it('creates a copy with reset stats and "my_tool" badge', async () => {
       const { getDatabase } = require('../../data/database');
@@ -236,6 +340,8 @@ describe('CardService', () => {
         is_archived: 0,
         archived_at: null,
         previous_stack_position: null,
+        allow_background_customization: 0,
+        source_library_id: null,
         created_at: '2024-01-01T00:00:00Z',
         updated_at: '2024-01-15T10:00:00Z',
         control_id: 'ctrl-1',

@@ -33,7 +33,8 @@ export interface CardService {
     shell: CardShell,
     controls: Omit<Control, 'id' | 'cardId'>[],
     originBadge: OriginBadge,
-    categoryId?: string
+    categoryId?: string,
+    sourceLibraryId?: string
   ): Promise<Card>;
 
   /** Update an existing card's fields. */

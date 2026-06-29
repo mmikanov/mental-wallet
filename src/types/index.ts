@@ -149,6 +149,7 @@ export interface Card extends CardShell {
   archivedAt: string | null;
   previousStackPosition: number | null;
   allowBackgroundCustomization: boolean;
+  sourceLibraryId?: string | null;
   controls: Control[];
   createdAt: string;
   updatedAt: string;
@@ -253,4 +254,53 @@ export interface BackgroundOverlay {
   backgroundValue: string;
   createdAt: string;
   updatedAt: string;
+}
+
+// --- Emotion-First Session Types ---
+
+export type EmotionType =
+  | 'stressed'
+  | 'overwhelmed'
+  | 'anxious'
+  | 'sad'
+  | 'angry'
+  | 'numb';
+
+export type ContextType =
+  | 'at_work'
+  | 'with_family'
+  | 'with_friends'
+  | 'alone_at_home'
+  | 'not_sure';
+
+export type TimeType = '1_2_min' | '5_10_min';
+
+export type StartMode = 'wallet' | 'emotion' | 'last_used';
+
+export type CardType = 'standard' | 'session_launcher';
+
+export interface EmotionTag {
+  id: string;
+  cardId: string;
+  emotion: EmotionType;
+}
+
+export interface CardContextTag {
+  cardId: string;
+  context: ContextType;
+}
+
+export interface CardTimeTag {
+  cardId: string;
+  time: TimeType;
+}
+
+export interface EmotionSessionRecord {
+  id: string;
+  selectedEmotion: EmotionType;
+  selectedContexts: ContextType[];
+  selectedTime: TimeType | null;
+  toolCardIds: string[];
+  startedAt: string;
+  endedAt: string | null;
 }

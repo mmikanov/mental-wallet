@@ -22,6 +22,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getDatabase } from '@/data/database';
+import { hasStartMode } from '@/services/settingsService';
 import type { RootStackParamList } from '@/navigation/types';
 
 type DisclaimerNavigationProp = NativeStackNavigationProp<
@@ -43,16 +44,27 @@ export default function DisclaimerScreen() {
         "INSERT OR REPLACE INTO settings (key, value) VALUES ('disclaimer_acknowledged', 'true')"
       );
 
-      // Navigate to main wallet and reset the stack so user can't go back
+      // After disclaimer, check if Start_Mode exists to decide next screen
+      const startModeExists = await hasStartMode();
+
+      if (startModeExists) {
+        // Skip ModeChoice → go straight to wallet
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'MainTabs' }],
+        });
+      } else {
+        // No Start_Mode → show ModeChoice (Req 1.9)
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'ModeChoice' }],
+        });
+      }
+    } catch {
+      // If storage fails, still let the user proceed — route to ModeChoice as safe default
       navigation.reset({
         index: 0,
-        routes: [{ name: 'MainTabs' }],
-      });
-    } catch (error) {
-      // If storage fails, still let the user proceed (non-blocking UX)
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'MainTabs' }],
+        routes: [{ name: 'ModeChoice' }],
       });
     }
   }

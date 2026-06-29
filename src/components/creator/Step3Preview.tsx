@@ -18,7 +18,7 @@ import {
   ImageBackground,
   StyleSheet,
 } from 'react-native';
-import type { CardShell, Control } from '@/types/index';
+import type { CardShell, Control, EmotionType } from '@/types/index';
 import { isLightBackground } from '@/utils/cardColors';
 import ControlRenderer from '@/components/controls/ControlRenderer';
 import OriginBadge from '@/components/wallet/OriginBadge';
@@ -30,6 +30,8 @@ interface Step3PreviewProps {
   categoryId: string;
   onSave: () => void;
   isSaving?: boolean;
+  selectedEmotionTags: EmotionType[];
+  onEmotionTagsChange: (tags: EmotionType[]) => void;
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -50,17 +52,38 @@ const CATEGORY_LABELS: Record<string, string> = {
   'lightweight-connection': 'Connection',
 };
 
+const EMOTION_CHIPS: { value: EmotionType; label: string }[] = [
+  { value: 'stressed', label: 'Stressed' },
+  { value: 'overwhelmed', label: 'Overwhelmed' },
+  { value: 'anxious', label: 'Anxious' },
+  { value: 'sad', label: 'Sad' },
+  { value: 'angry', label: 'Angry' },
+  { value: 'numb', label: 'Numb' },
+];
+
 export default function Step3Preview({
   shell,
   controls,
   categoryId,
   onSave,
   isSaving = false,
+  selectedEmotionTags,
+  onEmotionTagsChange,
 }: Step3PreviewProps) {
   const [values, setValues] = useState<Record<string, string>>({});
 
   const handleControlChange = (controlId: string, value: string) => {
     setValues((prev) => ({ ...prev, [controlId]: value }));
+  };
+
+  const handleEmotionToggle = (emotion: EmotionType) => {
+    if (selectedEmotionTags.includes(emotion)) {
+      onEmotionTagsChange(selectedEmotionTags.filter((e) => e !== emotion));
+    } else {
+      if (selectedEmotionTags.length < 6) {
+        onEmotionTagsChange([...selectedEmotionTags, emotion]);
+      }
+    }
   };
 
   const categoryColor = CATEGORY_COLORS[categoryId] || '#4A90D9';
@@ -151,6 +174,41 @@ export default function Step3Preview({
           </View>
         )}
       </ScrollView>
+
+      {/* Emotion Tagging Section (Req 9.1) */}
+      <View style={styles.emotionSection}>
+        <Text style={styles.emotionHeading}>When does this tool help?</Text>
+        <Text style={styles.emotionSubtext}>
+          Optional — tag with emotions so this tool appears in your sessions
+        </Text>
+        <View style={styles.emotionChipsRow}>
+          {EMOTION_CHIPS.map((chip) => {
+            const isSelected = selectedEmotionTags.includes(chip.value);
+            return (
+              <TouchableOpacity
+                key={chip.value}
+                style={[
+                  styles.emotionChip,
+                  isSelected && styles.emotionChipSelected,
+                ]}
+                onPress={() => handleEmotionToggle(chip.value)}
+                accessibilityRole="button"
+                accessibilityLabel={chip.label}
+                accessibilityState={{ selected: isSelected }}
+              >
+                <Text
+                  style={[
+                    styles.emotionChipText,
+                    isSelected && styles.emotionChipTextSelected,
+                  ]}
+                >
+                  {chip.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
 
       {/* Save Button (outside the card preview) */}
       <View style={styles.footer}>
@@ -264,6 +322,48 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 16,
     fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  emotionSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  emotionHeading: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  emotionSubtext: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 4,
+    marginBottom: 12,
+  },
+  emotionChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  emotionChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    backgroundColor: 'transparent',
+  },
+  emotionChipSelected: {
+    backgroundColor: '#7C3AED',
+    borderColor: '#7C3AED',
+  },
+  emotionChipText: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  emotionChipTextSelected: {
     color: '#FFFFFF',
   },
 });

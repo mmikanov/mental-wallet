@@ -46,6 +46,8 @@ export interface FocusedCardViewProps {
   onCollapse?: () => void;
   onPrimaryAction: () => void;
   onMenuPress: () => void;
+  /** Optional custom content renderer for the expanded state (e.g. SessionLauncherContent) */
+  renderExpandedContent?: () => React.ReactNode;
 }
 
 const SPRING_CONFIG = {
@@ -68,6 +70,7 @@ export default function FocusedCardView({
   onCollapse,
   onPrimaryAction,
   onMenuPress,
+  renderExpandedContent,
 }: FocusedCardViewProps) {
   const translateY = useSharedValue(50);
   const opacity = useSharedValue(0.3);
@@ -173,6 +176,55 @@ export default function FocusedCardView({
       </View>
     </View>
   );
+
+  // When expanded with custom content (e.g. SessionLauncherContent),
+  // render a compact header + full-height custom content instead of the
+  // normal card layout which wastes too much vertical space.
+  if (isExpanded && renderExpandedContent) {
+    return (
+      <GestureDetector gesture={panGesture}>
+        <Animated.View style={[styles.container, animatedStyle]}>
+          <View style={styles.cardOuter}>
+            <View
+              style={[
+                styles.cardShell,
+                { minHeight: FOCUSED_CARD_HEIGHT },
+                backgroundStyle,
+              ]}
+            >
+              {/* Compact header: category pill + icon + title + kebab */}
+              <View style={styles.compactHeader}>
+                <View style={styles.compactHeaderLeft}>
+                  <Text style={styles.compactIcon}>
+                    {card.iconType === 'emoji' ? card.iconValue : '📋'}
+                  </Text>
+                  <Text
+                    style={[styles.compactTitle, { color: textColor }]}
+                    numberOfLines={1}
+                  >
+                    {card.title}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.kebabButton}
+                  onPress={onMenuPress}
+                  accessibilityRole="button"
+                  accessibilityLabel="Card menu"
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                >
+                  <Text style={[styles.kebabIcon, { color: textColor }]}>⋮</Text>
+                </TouchableOpacity>
+              </View>
+              {/* Full-height custom expanded content */}
+              <View style={styles.customExpandedContent}>
+                {renderExpandedContent()}
+              </View>
+            </View>
+          </View>
+        </Animated.View>
+      </GestureDetector>
+    );
+  }
 
   return (
     <GestureDetector gesture={panGesture}>
@@ -340,6 +392,32 @@ const styles = StyleSheet.create({
   expandedContainer: {
     paddingHorizontal: 20,
     paddingBottom: 20,
+  },
+  customExpandedContent: {
+    flex: 1,
+    overflow: 'hidden',
+  },
+  compactHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  compactHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  compactIcon: {
+    fontSize: 24,
+    marginRight: 10,
+  },
+  compactTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    flex: 1,
   },
   imageBackground: {
     width: '100%',

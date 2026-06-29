@@ -20,6 +20,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { createExportService } from '../services/exportService';
 import { CommonActions } from '@react-navigation/native';
+import StartExperienceSetting from '@/components/settings/StartExperienceSetting';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 
@@ -106,6 +107,9 @@ export default function SettingsScreen({ navigation }: Props) {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
+        {/* Start Experience Section */}
+        <StartExperienceSetting />
+
         {/* Data Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Data</Text>

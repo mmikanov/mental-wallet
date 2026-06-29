@@ -11,12 +11,14 @@ const mockRunAsync = jest.fn().mockResolvedValue({ changes: 1 });
 const mockExecAsync = jest.fn().mockResolvedValue(undefined);
 const mockGetAllAsync = jest.fn().mockResolvedValue([]);
 const mockGetFirstAsync = jest.fn().mockResolvedValue(null);
+const mockWithTransactionAsync = jest.fn(async (fn: () => Promise<void>) => fn());
 
 const mockDb = {
   runAsync: mockRunAsync,
   execAsync: mockExecAsync,
   getAllAsync: mockGetAllAsync,
   getFirstAsync: mockGetFirstAsync,
+  withTransactionAsync: mockWithTransactionAsync,
 };
 
 jest.mock('../../data/database', () => ({
@@ -25,6 +27,7 @@ jest.mock('../../data/database', () => ({
     execAsync: (...args: any[]) => mockExecAsync(...args),
     getAllAsync: (...args: any[]) => mockGetAllAsync(...args),
     getFirstAsync: (...args: any[]) => mockGetFirstAsync(...args),
+    withTransactionAsync: (fn: () => Promise<void>) => mockWithTransactionAsync(fn),
   }),
 }));
 
@@ -138,9 +141,8 @@ describe('CompletionService', () => {
 
       const result = await service.record('card-1', values);
 
-      // Should begin and commit transaction
-      expect(mockExecAsync).toHaveBeenCalledWith('BEGIN TRANSACTION');
-      expect(mockExecAsync).toHaveBeenCalledWith('COMMIT');
+      // Should use withTransactionAsync
+      expect(mockWithTransactionAsync).toHaveBeenCalled();
 
       // Should insert completion
       expect(mockRunAsync).toHaveBeenCalledWith(
@@ -171,8 +173,7 @@ describe('CompletionService', () => {
         ])
       ).rejects.toThrow('Failed to record completion');
 
-      expect(mockExecAsync).toHaveBeenCalledWith('BEGIN TRANSACTION');
-      expect(mockExecAsync).toHaveBeenCalledWith('ROLLBACK');
+      expect(mockWithTransactionAsync).toHaveBeenCalled();
     });
   });
 

@@ -9,11 +9,14 @@ describe('runMigrations', () => {
   it('should call execAsync on the provided database object', async () => {
     const mockDb = {
       execAsync: jest.fn().mockResolvedValue(undefined),
+      getAllAsync: jest.fn().mockResolvedValue([]),
+      runAsync: jest.fn().mockResolvedValue(undefined),
     };
 
     await runMigrations(mockDb as any);
 
-    expect(mockDb.execAsync).toHaveBeenCalledTimes(1);
+    // First call is SCHEMA_SQL, second is EMOTION_SCHEMA_SQL
+    expect(mockDb.execAsync).toHaveBeenCalled();
     const sql = mockDb.execAsync.mock.calls[0][0] as string;
 
     // Verify all expected tables are in the schema
@@ -30,6 +33,8 @@ describe('runMigrations', () => {
   it('should create indexes for performance-critical queries', async () => {
     const mockDb = {
       execAsync: jest.fn().mockResolvedValue(undefined),
+      getAllAsync: jest.fn().mockResolvedValue([]),
+      runAsync: jest.fn().mockResolvedValue(undefined),
     };
 
     await runMigrations(mockDb as any);

@@ -6,14 +6,14 @@ This plan implements the emotion-first onboarding and session flow for the Menta
 
 ## Tasks
 
-- [ ] 1. Define types and extend database schema
-  - [ ] 1.1 Add new domain types to src/types/index.ts
+- [x] 1. Define types and extend database schema
+  - [x] 1.1 Add new domain types to src/types/index.ts
     - Add `EmotionType`, `ContextType`, `TimeType`, `StartMode`, `CardType` type aliases
     - Add `EmotionTag`, `CardContextTag`, `CardTimeTag` interfaces
     - Add `EmotionSessionRecord` interface
     - _Requirements: 5.1, 5.6, 6.2, 6.4, 8.1, 8.4, 11.4_
 
-  - [ ] 1.2 Add database migration for emotion tables and card_type column
+  - [x] 1.2 Add database migration for emotion tables and card_type column
     - Add `card_type` column to cards table (ALTER TABLE with DEFAULT 'standard')
     - Create `emotion_tags` table with card_id, emotion, and unique constraint
     - Create `card_context_tags` table with composite primary key
@@ -22,22 +22,22 @@ This plan implements the emotion-first onboarding and session flow for the Menta
     - Add indexes for efficient querying
     - _Requirements: 8.1, 8.2, 8.4, 11.4, 11.5_
 
-  - [ ] 1.3 Extend CuratedCardDefinition with emotion/context/time tag fields
+  - [x] 1.3 Extend CuratedCardDefinition with emotion/context/time tag fields
     - Add optional `emotionTags?: EmotionType[]`, `contextTags?: ContextType[]`, `timeTags?: TimeType[]` to `CuratedCardDefinition` interface in `src/data/curatedLibrary.ts`
     - Populate initial emotion tag mappings for all 11 curated cards per Requirement 8.5
     - Populate context associations per Requirement 8.6
     - Populate time associations per Requirement 8.7
     - _Requirements: 8.1, 8.2, 8.3, 8.5, 8.6, 8.7_
 
-  - [ ] 1.4 Seed the Session Launcher Card and emotion tag data
+  - [x] 1.4 Seed the Session Launcher Card and emotion tag data
     - Add Session Launcher Card definition to seed data (id: 'session-launcher', type: 'session_launcher')
     - Seed emotion_tags rows for all curated library cards when they are added to the wallet
     - Seed card_context_tags and card_time_tags for curated cards
     - Position Session Launcher Card below Starter_Cards in initial stack
     - _Requirements: 4.1, 4.2, 5.6, 8.5, 8.6, 8.7_
 
-- [ ] 2. Implement emotion tag and session services
-  - [ ] 2.1 Create emotionTagService (src/services/emotionTagService.ts)
+- [x] 2. Implement emotion tag and session services
+  - [x] 2.1 Create emotionTagService (src/services/emotionTagService.ts)
     - Implement `getTagsForCard(cardId): Promise<EmotionTag[]>`
     - Implement `getCardIdsByEmotion(emotion): Promise<string[]>`
     - Implement `setTagsForCard(cardId, emotions): Promise<void>` (upsert logic)
@@ -46,13 +46,13 @@ This plan implements the emotion-first onboarding and session flow for the Menta
     - Validate emotion tag count (1–4 per card) and context tag count (≤4)
     - _Requirements: 8.1, 8.4, 9.3, 9.4, 9.6_
 
-  - [ ]* 2.2 Write property tests for emotionTagService
+  - [x]* 2.2 Write property tests for emotionTagService
     - **Property 10: Curated card emotion tag count constraint** — for any tag set of length 1–4, persisting succeeds; for length 0 or >4, it is rejected
     - **Property 11: Card tag cardinality constraints** — for any card, context tags ≤ 4 and time tags ≤ 1
     - **Property 13: Emotion tag save/edit round-trip** — for any valid subset of emotions, save then read returns exact same set
     - **Validates: Requirements 8.1, 8.4, 9.3, 9.4**
 
-  - [ ] 2.3 Create emotionSessionService (src/services/emotionSessionService.ts)
+  - [x] 2.3 Create emotionSessionService (src/services/emotionSessionService.ts)
     - Implement `create(emotion): Promise<EmotionSessionRecord>` — creates session, closes any unterminated session first
     - Implement `addToolUsed(sessionId, cardId): Promise<void>` — appends to tool_card_ids JSON array
     - Implement `endSession(sessionId): Promise<void>` — sets ended_at timestamp
@@ -62,13 +62,13 @@ This plan implements the emotion-first onboarding and session flow for the Menta
     - Use transactions for multi-step operations
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7_
 
-  - [ ]* 2.4 Write property tests for emotionSessionService
+  - [x]* 2.4 Write property tests for emotionSessionService
     - **Property 14: Session tool list append-only** — for any sequence of tool IDs, each is appended and no previous entries are lost
     - **Property 16: EmotionSession record completeness** — for any created session, all required fields are non-null
     - **Property 17: Previous unterminated session is closed on new session start** — creating a new session closes any open session first
     - **Validates: Requirements 10.2, 11.4, 11.7**
 
-  - [ ] 2.5 Create recommendationService (src/services/recommendationService.ts)
+  - [x] 2.5 Create recommendationService (src/services/recommendationService.ts)
     - Implement `getRecommendations(emotion, contexts, time, walletCardIds): Promise<RecommendationResult>`
     - Filter by exact emotion match on emotion_tags
     - Rank by context relevance (count of matching context tags)
@@ -78,14 +78,14 @@ This plan implements the emotion-first onboarding and session flow for the Menta
     - Query wallet cards from DB, library cards from CURATED_LIBRARY in-memory
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8_
 
-  - [ ]* 2.6 Write property tests for recommendationService
+  - [x]* 2.6 Write property tests for recommendationService
     - **Property 8: Recommendation engine correctness** — every returned tool has the selected emotion; context-matching tools rank higher; time filtering excludes non-matching; max 3 per section; alphabetical tiebreaker
     - **Property 9: Fallback recommendations when no matches** — returns up to 3 broadly-tagged tools preferring non-wallet tools
     - **Property 12: Library-to-wallet emotion tag retention** — adding a library card preserves its emotion tags
     - **Validates: Requirements 7.3, 7.6, 7.7, 8.3, 8.8, 9.5**
 
-- [ ] 3. Implement settings and card service extensions
-  - [ ] 3.1 Create settingsService for Start_Mode (src/services/settingsService.ts)
+- [x] 3. Implement settings and card service extensions
+  - [x] 3.1 Create settingsService for Start_Mode (src/services/settingsService.ts)
     - Implement `getStartMode(): Promise<StartMode>` — reads from settings table, defaults to 'wallet' if missing/invalid
     - Implement `setStartMode(mode: StartMode): Promise<void>` — persists to settings table
     - Implement `getLastUsedMode(): Promise<'wallet' | 'emotion'>` — reads last_used_mode key
@@ -93,27 +93,27 @@ This plan implements the emotion-first onboarding and session flow for the Menta
     - Validate and sanitize invalid values to 'wallet'
     - _Requirements: 1.2, 1.3, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 3.4_
 
-  - [ ]* 3.2 Write property tests for settingsService
+  - [x]* 3.2 Write property tests for settingsService
     - **Property 1: Invalid Start_Mode resolves to "wallet"** — for any non-valid string, reading start mode returns 'wallet'
     - **Property 2: Start_Mode persistence round-trip** — for any valid StartMode, write then read returns same value
     - **Validates: Requirements 2.5, 3.2**
 
-  - [ ] 3.3 Extend cardService to block deletion of session_launcher cards
+  - [x] 3.3 Extend cardService to block deletion of session_launcher cards
     - Modify `delete()` method to check `card_type` column before allowing permanent deletion
     - Throw an error if card_type is 'session_launcher'
     - Ensure archive and restore still work for session_launcher cards
     - _Requirements: 4.4, 4.5, 4.6_
 
-  - [ ]* 3.4 Write property tests for cardService session_launcher protection
+  - [x]* 3.4 Write property tests for cardService session_launcher protection
     - **Property 3: Session_launcher cards are non-deletable** — for any card with card_type 'session_launcher', delete operation is rejected
     - **Property 15: No duplicate wallet cards from "Add to wallet"** — adding an already-present card does not create duplicates
     - **Validates: Requirements 4.6, 10.6**
 
-- [ ] 4. Checkpoint
+- [x] 4. Checkpoint
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 5. Create session store and integrate services
-  - [ ] 5.1 Create sessionStore (src/stores/sessionStore.ts)
+- [x] 5. Create session store and integrate services
+  - [x] 5.1 Create sessionStore (src/stores/sessionStore.ts)
     - Implement state: `isSessionActive`, `selectedEmotion`, `selectedContexts`, `selectedTime`, `recommendations`, `currentSessionId`, `toolsUsedInSession`
     - Implement `selectEmotion(emotion)` — creates session via emotionSessionService, sets state
     - Implement `deselectEmotion()` — clears emotion selection
@@ -126,15 +126,15 @@ This plan implements the emotion-first onboarding and session flow for the Menta
     - Implement `restoreUnterminatedSession()` — called on app launch to close stale sessions
     - _Requirements: 4.7, 4.9, 5.2, 5.3, 5.4, 6.3, 6.5, 6.6, 6.7, 7.1, 7.2, 10.2, 11.1, 11.2, 11.3, 12.3_
 
-  - [ ]* 5.2 Write property tests for sessionStore
+  - [x]* 5.2 Write property tests for sessionStore
     - **Property 4: Collapse discards all unsaved session selections** — dismissWithoutSession clears all selections and creates no DB record
     - **Property 5: Emotion single-selection invariant** — at most one emotion selected at any time; "Show me tools" enabled iff exactly one selected
     - **Property 6: Context chips toggle independently** — toggling one context does not affect others; multiple can be selected
     - **Property 7: Time chips single-select with deselect** — at most one time chip selected; re-tapping deselects
     - **Validates: Requirements 4.9, 5.2, 5.3, 5.4, 6.3, 6.5, 12.3**
 
-- [ ] 6. Build UI components for the session flow
-  - [ ] 6.1 Create EmotionPicker component (src/components/session/EmotionPicker.tsx)
+- [x] 6. Build UI components for the session flow
+  - [x] 6.1 Create EmotionPicker component (src/components/session/EmotionPicker.tsx)
     - Render emotion chips from control configuration (Stressed, Overwhelmed, Anxious, Sad/low, Angry, Numb)
     - Implement single-select behavior with visual distinction for selected chip
     - Display prompt "How are you feeling right now?"
@@ -142,23 +142,23 @@ This plan implements the emotion-first onboarding and session flow for the Menta
     - Use non-clinical language only
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.7, 12.1_
 
-  - [ ] 6.2 Create ContextChips component (src/components/session/ContextChips.tsx)
+  - [x] 6.2 Create ContextChips component (src/components/session/ContextChips.tsx)
     - Render context chip options with multi-select toggle behavior
     - Labels: "At work/school", "With family", "With friends/social", "Alone at home", "I'm not sure"
     - _Requirements: 6.1, 6.2, 6.3, 6.6_
 
-  - [ ] 6.3 Create TimeChips component (src/components/session/TimeChips.tsx)
+  - [x] 6.3 Create TimeChips component (src/components/session/TimeChips.tsx)
     - Render time chip options with single-select + deselect behavior
     - Labels: "I have ~1–2 minutes", "I have ~5–10 minutes"
     - _Requirements: 6.1, 6.4, 6.5, 6.6_
 
-  - [ ] 6.4 Create ToolPreviewCard component (src/components/session/ToolPreviewCard.tsx)
+  - [x] 6.4 Create ToolPreviewCard component (src/components/session/ToolPreviewCard.tsx)
     - Display card icon, title, and description (truncated to 80 chars)
     - Handle tap to navigate to full card expansion
     - Show "Add to wallet" option for library-sourced tools after returning from tool view
     - _Requirements: 7.1, 10.1, 10.4, 10.5_
 
-  - [ ] 6.5 Create SessionView component (src/components/session/SessionView.tsx)
+  - [x] 6.5 Create SessionView component (src/components/session/SessionView.tsx)
     - Render recommendations in two sections: "From your wallet" and "Suggested tools to try"
     - Display fallback message when no tools match
     - Keep selection controls visible and editable above recommendations
@@ -167,14 +167,14 @@ This plan implements the emotion-first onboarding and session flow for the Menta
     - Re-require "Show me tools" tap after selection changes
     - _Requirements: 7.1, 7.2, 7.4, 7.5, 7.6, 7.7, 7.8, 10.3, 11.1_
 
-  - [ ] 6.6 Create SessionLauncherContent component (src/components/session/SessionLauncherContent.tsx)
+  - [x] 6.6 Create SessionLauncherContent component (src/components/session/SessionLauncherContent.tsx)
     - Container component for the expanded Session Launcher Card
     - Composes EmotionPicker, ContextChips, TimeChips, and SessionView
     - Handles dismiss affordance ("Not right now" label) that collapses card without session creation
     - Manages transition between picker state and recommendations state
     - _Requirements: 4.7, 4.8, 4.9, 6.1, 12.2, 12.3_
 
-  - [ ]* 6.7 Write unit tests for session UI components
+  - [x]* 6.7 Write unit tests for session UI components
     - Test EmotionPicker selection/deselection behavior
     - Test ContextChips multi-select toggle
     - Test TimeChips single-select with deselect
@@ -182,11 +182,11 @@ This plan implements the emotion-first onboarding and session flow for the Menta
     - Test accessibility labels and states on emotion chips
     - _Requirements: 5.2, 5.3, 5.4, 5.7, 6.3, 6.5, 7.4, 7.5, 7.6_
 
-- [ ] 7. Checkpoint
+- [x] 7. Checkpoint
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 8. Implement onboarding mode choice and launch behavior
-  - [ ] 8.1 Create ModeChoiceScreen (src/screens/ModeChoiceScreen.tsx)
+- [x] 8. Implement onboarding mode choice and launch behavior
+  - [x] 8.1 Create ModeChoiceScreen (src/screens/ModeChoiceScreen.tsx)
     - Display "How would you like to start?" prompt
     - Two options: "Open my wallet of tools" and "Start from how I feel right now"
     - Display reassurance text: "You can always change this in Settings."
@@ -196,7 +196,7 @@ This plan implements the emotion-first onboarding and session flow for the Menta
     - Navigate to Wallet_Screen with appropriate behavior based on selection
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.7, 1.8_
 
-  - [ ] 8.2 Update RootNavigator for mode choice and launch routing
+  - [x] 8.2 Update RootNavigator for mode choice and launch routing
     - Add ModeChoice screen to the native stack
     - Check if Start_Mode exists in DB after disclaimer acknowledged
     - If no Start_Mode → navigate to ModeChoice after onboarding intent selection
@@ -205,35 +205,35 @@ This plan implements the emotion-first onboarding and session flow for the Menta
     - Call `endUnterminatedSessions()` on app launch
     - _Requirements: 1.1, 1.6, 1.9, 2.1, 2.2, 2.3, 2.4, 2.5, 11.3_
 
-  - [ ] 8.3 Update WalletScreen for Session Launcher Card highlight behavior
+  - [x] 8.3 Update WalletScreen for Session Launcher Card highlight behavior
     - When Start_Mode is "emotion" on launch, scroll to Session_Launcher_Card and apply 1-second visual highlight (elevation or pulse animation via Reanimated)
     - Defer Micro_Tutorial when "emotion" mode chosen during onboarding
     - Ensure Session_Launcher_Card renders with unique visual style (accent color, icon)
     - Handle expand/collapse of Session_Launcher_Card with SessionLauncherContent
     - _Requirements: 1.3, 2.2, 4.1, 4.7, 4.8, 4.10_
 
-  - [ ]* 8.4 Write unit tests for ModeChoiceScreen and launch routing
+  - [x]* 8.4 Write unit tests for ModeChoiceScreen and launch routing
     - Test navigation to wallet on "wallet" selection
     - Test navigation with highlight on "emotion" selection
     - Test error handling on persistence failure
     - Test skip behavior defaults to 'wallet'
     - _Requirements: 1.2, 1.3, 1.8, 1.9_
 
-- [ ] 9. Implement Settings Start Experience control
-  - [ ] 9.1 Create StartExperienceSetting component (src/components/settings/StartExperienceSetting.tsx)
+- [x] 9. Implement Settings Start Experience control
+  - [x] 9.1 Create StartExperienceSetting component (src/components/settings/StartExperienceSetting.tsx)
     - Display three radio-style options: "Start in my wallet", "Start from how I feel", "Start where I left off"
     - Show currently persisted value as selected
     - On selection change, persist via settingsService
     - Revert to previous selection and show error if persistence fails
     - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-  - [ ] 9.2 Integrate StartExperienceSetting into SettingsScreen
+  - [x] 9.2 Integrate StartExperienceSetting into SettingsScreen
     - Add "Start experience" section to existing SettingsScreen
     - Wire up settingsService for reading/writing Start_Mode
     - _Requirements: 3.1_
 
-- [ ] 10. Implement Card Creator emotion tagging
-  - [ ] 10.1 Add emotion tagging section to CardCreatorScreen
+- [x] 10. Implement Card Creator emotion tagging
+  - [x] 10.1 Add emotion tagging section to CardCreatorScreen
     - Display "When does this tool help?" section with emotion chips after controls configuration step
     - Allow multi-select (0–6 emotions)
     - Make section skippable (no emotions = empty array)
@@ -242,15 +242,15 @@ This plan implements the emotion-first onboarding and session flow for the Menta
     - Allow editing emotion tags on existing user-created cards
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6_
 
-- [ ] 11. Implement session view interactions and tool navigation
-  - [ ] 11.1 Implement tool card opening from SessionView
+- [x] 11. Implement session view interactions and tool navigation
+  - [x] 11.1 Implement tool card opening from SessionView
     - Navigate to full expanded card view from session context (sub-screen)
     - Track tool usage in session via sessionStore.openTool
     - Suppress pre-use mood slider during active session (pass session context flag)
     - Preserve Session_View state and scroll position on return
     - _Requirements: 10.1, 10.2, 10.3, 10.7_
 
-  - [ ] 11.2 Implement "Add to wallet" flow from SessionView
+  - [x] 11.2 Implement "Add to wallet" flow from SessionView
     - Show "Add to wallet" option for library tools after returning from expanded view
     - Add card to wallet with origin badge "library", persist with emotion/context/time tags
     - Move tool from "Suggested tools to try" to "From your wallet" section in current view
@@ -260,20 +260,20 @@ This plan implements the emotion-first onboarding and session flow for the Menta
     - Use SQLite transaction for atomicity
     - _Requirements: 10.4, 10.5, 10.6_
 
-  - [ ] 11.3 Implement session end and lifecycle handling
+  - [x] 11.3 Implement session end and lifecycle handling
     - "End session" navigates back to Wallet_Screen, marks session ended
     - Handle navigation away without explicit end (back nav, backgrounding)
     - Record last_used_mode on session end
     - _Requirements: 11.1, 11.2, 11.3, 11.6, 2.6_
 
-  - [ ]* 11.4 Write unit tests for session interactions
+  - [x]* 11.4 Write unit tests for session interactions
     - Test tool opening appends to session tool list
     - Test "Add to wallet" success flow and section transfer
     - Test duplicate detection
     - Test session end writes timestamp
     - _Requirements: 10.2, 10.5, 10.6, 11.2_
 
-- [ ] 12. Final checkpoint
+- [x] 12. Final checkpoint
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Cross-Spec Dependencies (implement these specs first)
