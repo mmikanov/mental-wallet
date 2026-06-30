@@ -150,6 +150,24 @@ export default function ArchiveScreen({ navigation }: Props) {
     return labels[categoryId] || categoryId;
   }
 
+  function getOriginLabel(origin: string): string {
+    const labels: Record<string, string> = {
+      library: 'Library',
+      my_tool: 'My Tool',
+      community: 'Community',
+    };
+    return labels[origin] || origin;
+  }
+
+  function getOriginColors(origin: string): { bg: string; text: string } {
+    const colors: Record<string, { bg: string; text: string }> = {
+      library: { bg: '#E5E5EA', text: '#636366' },
+      my_tool: { bg: '#D4EDDA', text: '#155724' },
+      community: { bg: '#E8D5F5', text: '#6A1B9A' },
+    };
+    return colors[origin] || { bg: '#E5E5EA', text: '#636366' };
+  }
+
   const renderCardItem = useCallback(
     ({ item }: { item: Card }) => (
       <View style={styles.cardItem}>
@@ -167,6 +185,16 @@ export default function ArchiveScreen({ navigation }: Props) {
                   {getCategoryLabel(item.categoryId)}
                 </Text>
               </View>
+              {item.originBadge && (
+                <View
+                  style={[styles.originBadge, { backgroundColor: getOriginColors(item.originBadge).bg }]}
+                  accessibilityLabel={`Origin: ${getOriginLabel(item.originBadge)}`}
+                >
+                  <Text style={[styles.originBadgeText, { color: getOriginColors(item.originBadge).text }]}>
+                    {getOriginLabel(item.originBadge)}
+                  </Text>
+                </View>
+              )}
               <Text style={styles.lastUsed}>{formatLastUsed(item.lastUsedAt)}</Text>
             </View>
           </View>
@@ -330,6 +358,15 @@ const styles = StyleSheet.create({
   lastUsed: {
     fontSize: 12,
     color: '#888888',
+  },
+  originBadge: {
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  originBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
   },
   actionRow: {
     flexDirection: 'row',
