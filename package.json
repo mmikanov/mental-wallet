@@ -43,6 +43,7 @@
   "devDependencies": {
     "@babel/core": "^7.25.0",
     "@jest/globals": "^29.7.0",
+    "@testing-library/react-native": "^14.0.1",
     "@types/react": "~19.1.10",
     "fast-check": "^3.22.0",
     "jest": "^29.7.0",
