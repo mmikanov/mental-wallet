@@ -53,7 +53,7 @@ Progressive onboarding flow for Mental Health Wallet that replaces the current s
 1. THE system SHALL store the starter card mappings in a configurable data source (database table or configuration file) so that the default cards for each intent can be updated without code changes.
 2. WHEN the user completes intent selection with "quick tools for overwhelm," THE Onboarding_Flow SHALL seed the wallet with the configured Starter_Cards for that intent. Initial defaults: "5-4-3-2-1 Grounding," "Box Breathing," and "Name It to Tame It."
 3. WHEN the user completes intent selection with "building a daily routine," THE Onboarding_Flow SHALL seed the wallet with the configured Starter_Cards for that intent. Initial defaults: "Daily Mood Check-In," "Win of the Day," and "Evening Gratitude."
-4. WHEN the user completes intent selection with "organizing collected tools," THE Onboarding_Flow SHALL seed the wallet with the configured Starter_Cards for that intent. Initial defaults: "5-4-3-2-1 Grounding," "Daily Mood Check-In," and "Self-Compassion Pause."
+4. WHEN the user completes intent selection with "organizing collected tools," THE Onboarding_Flow SHALL seed the wallet with the configured Starter_Cards for that intent. Initial defaults: "5-4-3-2-1 Grounding" (single example card to get started).
 5. WHEN the user completes intent selection with "exploring," THE Onboarding_Flow SHALL seed the wallet with the configured Starter_Cards for that intent. Initial defaults: "Box Breathing," "Thought – Feeling – Action," and "Win of the Day."
 6. WHEN the user uses Skip_Intro from the Welcome screen, THE Onboarding_Flow SHALL seed the wallet with the configured default Starter_Cards. Initial defaults: "5-4-3-2-1 Grounding," "Daily Mood Check-In," and "Self-Compassion Pause."
 7. THE seeded Starter_Cards SHALL be persisted to the database with origin badge "library" and appear in the wallet card stack.
@@ -66,9 +66,9 @@ Progressive onboarding flow for Mental Health Wallet that replaces the current s
 
 #### Acceptance Criteria
 
-1. WHEN the user transitions from onboarding to the wallet for the first time, THE Wallet_Screen SHALL display a non-modal informational banner at the top reading: "We added a few tools to get you started. You can add your own later."
-2. THE banner SHALL include a visible dismiss button (X icon). WHEN the user taps the dismiss button, navigates away, or the Micro_Tutorial begins, THE banner SHALL be dismissed and not displayed again.
-3. THE Starter Wallet display SHALL be the real Wallet_Screen — not a separate tutorial or simplified simulation screen.
+1. WHEN the user transitions from onboarding to the wallet for the first time, THE Micro_Tutorial SHALL start immediately without requiring any banner dismissal.
+2. THE Starter Wallet display SHALL be the real Wallet_Screen — not a separate tutorial or simplified simulation screen.
+3. THE OnboardingBanner component exists but is bypassed in the current flow — the tutorial starts automatically.
 
 ### Requirement 5: Micro-Tutorial Tooltips
 
@@ -76,7 +76,7 @@ Progressive onboarding flow for Mental Health Wallet that replaces the current s
 
 #### Acceptance Criteria
 
-1. WHEN the user arrives at the Wallet_Screen for the first time during onboarding (after banner is shown or dismissed), THE Micro_Tutorial SHALL display an in-context tooltip pointing to the Frontmost_Card in the stack with the text: "This is your current tool. Tap it to open."
+1. WHEN the user arrives at the Wallet_Screen for the first time during onboarding, THE Micro_Tutorial SHALL immediately display an in-context tooltip spotlighting the Frontmost_Card with the text: "Here's an example tool to get started. Tap the card to try it out."
 2. WHEN the user taps the Frontmost_Card as instructed, THE Micro_Tutorial SHALL dismiss the first tooltip and display a second tooltip pointing to the expanded card's primary action button with the text: "Try it out! Tap here to complete the exercise."
 3. WHEN the user taps "Skip tips" at any point during the Micro_Tutorial, THE Micro_Tutorial SHALL dismiss all remaining tooltips and not display further tutorial overlays.
 4. THE Micro_Tutorial tooltips SHALL be rendered as overlays on the Wallet_Screen — not as separate full-screen tutorial pages.
@@ -88,14 +88,16 @@ Progressive onboarding flow for Mental Health Wallet that replaces the current s
 
 #### Acceptance Criteria
 
-1. WHEN the Micro_Tutorial is complete (all tooltips dismissed or skipped), THE First_Action_Checklist SHALL display a 3-item inline checklist on the Wallet_Screen: "Open your first tool," "Try the exercise (about 60 seconds)," and "Add one tool you already know."
+1. WHEN the Micro_Tutorial is complete (all tooltips dismissed or skipped), THE First_Action_Checklist SHALL display a collapsible 3-item inline checklist on the Wallet_Screen: "Open your first tool," "Complete a tool," and "Discover a new tool."
 2. WHEN the user taps a checklist item, THE Wallet_Screen SHALL navigate to the relevant action: tapping item 1 focuses the Frontmost_Card, tapping item 2 expands the focused card, tapping item 3 opens the Library Browser.
-3. WHEN the user focuses any card, THE First_Action_Checklist SHALL auto-mark item 1 as done.
-4. WHEN the user records a completion on any card (via the primary action button), THE First_Action_Checklist SHALL auto-mark item 2 as done and display a positive reinforcement message: "Nice! You've just used your first tool."
+3. WHEN the user focuses any card (including during the Micro_Tutorial), THE First_Action_Checklist SHALL auto-mark item 1 as done.
+4. WHEN any card's totalUses increases, THE First_Action_Checklist SHALL auto-mark item 2 as done and display a positive reinforcement message: "Nice! You've just used your first tool."
 5. WHEN the user adds a card from the Library Browser OR creates a new personal tool, THE First_Action_Checklist SHALL auto-mark item 3 as done.
-6. WHEN all 3 checklist items are marked as done, THE First_Action_Checklist SHALL display a completion celebration and then dismiss itself.
+6. WHEN all 3 checklist items are marked as done, THE First_Action_Checklist SHALL display a completion celebration ("🎉 Great start! You've taken your first step toward organizing your mental health. Come back regularly to keep the momentum going.") with a dismiss X button, and auto-dismiss after 12 seconds.
 7. IF the user has not completed all checklist items after 3 app sessions, THEN THE First_Action_Checklist SHALL dismiss itself permanently.
 8. THE First_Action_Checklist SHALL persist its progress across app sessions using the Onboarding_Store.
+9. THE First_Action_Checklist SHALL be hidden when a card is focused (to give space for the expanded card) and reappear when the user returns to the stack view.
+10. THE First_Action_Checklist SHALL start expanded and allow the user to manually collapse it to a compact progress bar.
 
 ### Requirement 7: Onboarding State Persistence
 
@@ -148,3 +150,5 @@ The following features were considered but deferred for future implementation:
 - **Content Filters (Preferences screen)**: Allow users to indicate categories they want to avoid (body-focused exercises, breathing exercises, spiritual language). Would filter starter card selection and potentially the library browser. Requires a filter-to-card-ID mapping in the configurable data source.
 - **Usage Frequency preference**: Collect how often the user intends to use the wallet. Could drive reminder defaults or notification frequency.
 - **Signup After Value prompt**: After first tool use or first personal card creation, prompt "Want to keep your tools across devices?" Requires server sync infrastructure.
+- **"Create Your Own Tool" discoverability for organize-intent users**: Add a 4th checklist item ("Create your own tool") for users who selected "I have tools already — help me organize." Tapping it would navigate to the Card Creator with guidance. Requires the Card Creator flow to be polished enough for first-time users and potentially a brief tutorial overlay explaining the control system.
+- **Collapsed stack tooltip (3rd tooltip)**: After the user expands a card during the micro-tutorial, the other cards collapse to the bottom. A 3rd tooltip could highlight the collapsed stack and explain "Tap here to return to your full wallet." This would help users who don't realize the collapsed strips are tappable. Consider adding if user testing shows people get stuck after expanding a card.

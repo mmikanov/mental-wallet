@@ -16,7 +16,7 @@
  */
 
 import React, { useEffect, useMemo, useCallback, useState, useRef } from 'react';
-import { View, StyleSheet, Alert, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { View, StyleSheet, Alert, LayoutAnimation, Platform, UIManager, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -31,12 +31,18 @@ import CardKebabMenu from '@/components/wallet/CardKebabMenu';
 import BackgroundCustomizerSheet from '@/components/wallet/BackgroundCustomizerSheet';
 import SessionLauncherContent from '@/components/session/SessionLauncherContent';
 import SessionActiveBanner from '@/components/session/SessionActiveBanner';
+import OnboardingBanner from '@/components/onboarding/OnboardingBanner';
+import TooltipOverlay from '@/components/onboarding/TooltipOverlay';
+import FirstActionChecklist from '@/components/onboarding/FirstActionChecklist';
+import { useMicroTutorial } from '@/hooks/useMicroTutorial';
+import { useOnboardingStore } from '@/stores/onboardingStore';
 import { useWalletStore } from '@/stores/walletStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { createCardService } from '@/services/cardService';
 import { upsertOverlay, removeOverlay } from '@/services/backgroundOverlayService';
 import type { BackgroundType } from '@/types/index';
 import type { RootStackParamList, MainTabParamList } from '@/navigation/types';
+import type { ChecklistItem } from '@/components/onboarding/FirstActionChecklist';
 
 type WalletNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type WalletRouteProp = RouteProp<MainTabParamList, 'Wallet'>;
@@ -79,6 +85,39 @@ export default function WalletScreen() {
 
   const isSessionActive = useSessionStore((s) => s.isSessionActive);
 
+  // --- Onboarding state ---
+  const onboardingScreensComplete = useOnboardingStore((s) => s.onboardingScreensComplete);
+  const tutorialComplete = useOnboardingStore((s) => s.tutorialComplete);
+  const bannerDismissed = useOnboardingStore((s) => s.bannerDismissed);
+  const isChecklistVisible = useOnboardingStore((s) => s.isChecklistVisible);
+  const isChecklistComplete = useOnboardingStore((s) => s.isChecklistComplete);
+  const checklist = useOnboardingStore((s) => s.checklist);
+  const markChecklistItem = useOnboardingStore((s) => s.markChecklistItem);
+  const dismissBanner = useOnboardingStore((s) => s.dismissBanner);
+  const dismissChecklist = useOnboardingStore((s) => s.dismissChecklist);
+  const incrementSessionCount = useOnboardingStore((s) => s.incrementSessionCount);
+
+  // --- Micro-tutorial hook ---
+  const tutorial = useMicroTutorial();
+
+  // --- Checklist local dismiss state (keeps component mounted for celebration) ---
+  // checklistSessionCount >= 3 means dismissChecklist() was called (celebration already shown)
+  const checklistSessionCount = useOnboardingStore((s) => s.checklistSessionCount);
+  const alreadyDismissedPreviously = checklistSessionCount >= 3;
+  const [celebrationShown, setCelebrationShown] = useState(false);
+  const [checklistDismissed, setChecklistDismissed] = useState(alreadyDismissedPreviously);
+  const handleChecklistDismiss = useCallback(() => {
+    setChecklistDismissed(true);
+    setCelebrationShown(true);
+    dismissChecklist();
+  }, [dismissChecklist]);
+
+  // --- Tooltip positioning state ---
+  const { width: screenWidth } = Dimensions.get('window');
+  const [frontmostCardLayout, setFrontmostCardLayout] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const [actionButtonLayout, setActionButtonLayout] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const stackedCardListRef = useRef<View>(null);
+
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [showBackgroundCustomizer, setShowBackgroundCustomizer] = useState(false);
 
@@ -93,7 +132,7 @@ export default function WalletScreen() {
   // Handle highlightSessionCard route param — scroll to and highlight the session launcher card
   useEffect(() => {
     const shouldHighlight = route.params?.highlightSessionCard;
-    if (shouldHighlight && cards.length > 0 && !highlightHandled.current) {
+    if (shouldHighlight && cards.length > 0 && !highlightHandled.current && !tutorial.isActive && tutorialComplete) {
       const sessionCard = cards.find((c) => c.id === SESSION_LAUNCHER_CARD_ID);
       if (sessionCard) {
         highlightHandled.current = true;
@@ -107,12 +146,137 @@ export default function WalletScreen() {
         return () => clearTimeout(timer);
       }
     }
-  }, [route.params?.highlightSessionCard, cards, focusCard]);
+  }, [route.params?.highlightSessionCard, cards, focusCard, tutorial.isActive, tutorialComplete]);
 
   // TODO: Defer Micro_Tutorial when "emotion" mode chosen during onboarding.
   // The Micro_Tutorial is not yet implemented (onboarding spec dependency).
   // When it lands, check if highlightSessionCard param is true and skip the tutorial
   // on this first wallet visit — trigger it the next time the user lands without an active session.
+
+  // --- Onboarding: Start tutorial immediately when wallet loads after onboarding ---
+  useEffect(() => {
+    if (onboardingScreensComplete && !tutorialComplete) {
+      // Auto-dismiss banner and start tutorial right away
+      if (!bannerDismissed) {
+        queueMicrotask(() => dismissBanner());
+      }
+      queueMicrotask(() => tutorial.start());
+    }
+  }, [onboardingScreensComplete, tutorialComplete, bannerDismissed, dismissBanner]);
+
+  const handleBannerDismiss = useCallback(() => {
+    dismissBanner();
+  }, [dismissBanner]);
+
+  // --- Onboarding: Auto-mark checklist items ---
+
+  // Track focusedCardId transitions: null → value marks openTool
+  // Mark it even during tutorial — the action counts regardless of checklist visibility
+  const prevFocusedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (prevFocusedRef.current === null && focusedCardId !== null && !checklist.openTool) {
+      queueMicrotask(() => markChecklistItem('openTool'));
+    }
+    prevFocusedRef.current = focusedCardId;
+  }, [focusedCardId, checklist.openTool, markChecklistItem]);
+
+  // Track card count increases to mark addTool
+  const prevCardCountRef = useRef(cards.length);
+  useEffect(() => {
+    if (cards.length > prevCardCountRef.current && isChecklistVisible && !checklist.addTool) {
+      queueMicrotask(() => markChecklistItem('addTool'));
+    }
+    prevCardCountRef.current = cards.length;
+  }, [cards.length, isChecklistVisible, checklist.addTool, markChecklistItem]);
+
+  // Track totalUses changes across cards to mark tryExercise
+  const prevTotalUsesRef = useRef<Record<string, number>>({});
+  useEffect(() => {
+    if (isChecklistVisible && !checklist.tryExercise) {
+      for (const card of cards) {
+        const prev = prevTotalUsesRef.current[card.id] ?? card.totalUses;
+        if (card.totalUses > prev) {
+          queueMicrotask(() => markChecklistItem('tryExercise'));
+          break;
+        }
+      }
+    }
+    const newMap: Record<string, number> = {};
+    for (const card of cards) {
+      newMap[card.id] = card.totalUses;
+    }
+    prevTotalUsesRef.current = newMap;
+  }, [cards, isChecklistVisible, checklist.tryExercise, markChecklistItem]);
+
+  // Increment session count on mount when checklist is visible
+  const sessionCountIncrementedRef = useRef(false);
+  useEffect(() => {
+    if (isChecklistVisible && !sessionCountIncrementedRef.current) {
+      sessionCountIncrementedRef.current = true;
+      incrementSessionCount();
+    }
+  }, [isChecklistVisible, incrementSessionCount]);
+
+  // --- Onboarding: Handle tooltip target press (advance tutorial + perform action) ---
+  const handleTooltipTargetPress = useCallback(() => {
+    if (tutorial.targetRef === 'frontmost_card') {
+      // Advance tutorial AND focus the first card in the stack
+      tutorial.advance();
+      if (cards.length > 0) {
+        queueMicrotask(() => focusCard(cards[0].id));
+      }
+    } else if (tutorial.targetRef === 'action_button') {
+      // Advance tutorial AND expand the focused card
+      tutorial.advance();
+      queueMicrotask(() => expandCard());
+    }
+  }, [tutorial, cards, focusCard, expandCard]);
+  const handleStackedCardListLayout = useCallback(() => {
+    if (stackedCardListRef.current) {
+      stackedCardListRef.current.measureInWindow((x, y, _width, _height) => {
+        if (_width > 0) {
+          // Each card peeks 60px, frontmost card is 200px tall.
+          // The frontmost card (cards[0]) starts after all other cards' peek areas.
+          const PEEK = 60;
+          const CARD_HEIGHT = 205;
+          const frontmostTop = y + (cards.length - 1) * PEEK;
+          setFrontmostCardLayout({
+            x,
+            y: frontmostTop + 10,
+            width: _width,
+            height: CARD_HEIGHT,
+          });
+        }
+      });
+    }
+  }, [cards.length]);
+
+  // Approximate action button layout when card is focused (the expand arrow)
+  useEffect(() => {
+    if (focusedCardId && !isExpanded) {
+      // The expand arrow (▼) sits just below the stats row
+      queueMicrotask(() => setActionButtonLayout({ x: screenWidth / 2 - 30, y: 500, width: 60, height: 40 }));
+    } else {
+      queueMicrotask(() => setActionButtonLayout(null));
+    }
+  }, [focusedCardId, isExpanded, screenWidth]);
+
+  // --- Onboarding: Checklist items and handler ---
+  const checklistItems: ChecklistItem[] = useMemo(() => [
+    { id: 'open_tool', label: 'Open your first tool', isDone: checklist.openTool },
+    { id: 'try_exercise', label: 'Complete a tool', isDone: checklist.tryExercise },
+    { id: 'add_tool', label: 'Discover a new tool', isDone: checklist.addTool },
+  ], [checklist.openTool, checklist.tryExercise, checklist.addTool]);
+
+  const handleChecklistItemPress = useCallback((id: ChecklistItem['id']) => {
+    if (id === 'open_tool' && cards.length > 0) {
+      focusCard(cards[0].id);
+    } else if (id === 'try_exercise' && focusedCardId) {
+      expandCard();
+    } else if (id === 'add_tool') {
+      navigation.navigate('LibraryBrowser');
+    }
+  }, [cards, focusedCardId, focusCard, expandCard, navigation]);
 
   const categoryColors = useMemo(() => {
     const colors: Record<string, string> = { ...DEFAULT_CATEGORY_COLORS };
@@ -344,6 +508,14 @@ export default function WalletScreen() {
         onAddToolPress={handleAddToolPress}
         onCreateToolPress={handleCreateToolPress}
       />
+      {/* First Action Checklist — show when store says visible, or briefly for celebration before dismiss */}
+      {(isChecklistVisible || (isChecklistComplete && !checklistDismissed)) && (!focusedCardId || isChecklistComplete) && (
+        <FirstActionChecklist
+          items={checklistItems}
+          onItemPress={handleChecklistItemPress}
+          onDismiss={handleChecklistDismiss}
+        />
+      )}
       <View style={styles.content}>
         {isSessionActive && focusedCardId !== SESSION_LAUNCHER_CARD_ID && (
           <SessionActiveBanner onReturnToSession={handleReturnToSession} />
@@ -360,7 +532,7 @@ export default function WalletScreen() {
           <View style={[styles.focusedLayout, { opacity: isDismissing ? 0.2 : 1 }]}>
             {/* Focused card area — takes up top portion */}
             <View style={styles.focusedCardArea}>
-              <View style={isHighlighting ? styles.highlightWrapper : undefined}>
+              <View style={isHighlighting && !tutorial.isActive ? styles.highlightWrapper : undefined}>
                 <FocusedCardView
                   card={focusedCard}
                   categoryColor={categoryColors[focusedCard.categoryId] || '#9CA3AF'}
@@ -399,12 +571,14 @@ export default function WalletScreen() {
             )}
           </View>
         ) : hasCards ? (
-          <StackedCardList
-            cards={cards}
-            categoryColors={categoryColors}
-            onCardPress={handleCardPress}
-            onCardLongPress={handleCardLongPress}
-          />
+          <View ref={stackedCardListRef} onLayout={handleStackedCardListLayout} style={styles.stackedCardWrapper}>
+            <StackedCardList
+              cards={cards}
+              categoryColors={categoryColors}
+              onCardPress={handleCardPress}
+              onCardLongPress={handleCardLongPress}
+            />
+          </View>
         ) : (
           <EmptyWalletState onAddToolPress={handleAddToolPress} />
         )}
@@ -433,6 +607,15 @@ export default function WalletScreen() {
           onClose={() => setShowBackgroundCustomizer(false)}
         />
       )}
+      {/* Tutorial Tooltip Overlay — rendered last for z-order */}
+      <TooltipOverlay
+        visible={tutorial.isActive}
+        targetLayout={tutorial.targetRef === 'frontmost_card' ? frontmostCardLayout : actionButtonLayout}
+        text={tutorial.tooltipText}
+        position="below"
+        onTargetPress={handleTooltipTargetPress}
+        onSkip={tutorial.skip}
+      />
     </SafeAreaView>
   );
 }
@@ -469,5 +652,8 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 12,
     marginHorizontal: 2,
+  },
+  stackedCardWrapper: {
+    flex: 1,
   },
 });

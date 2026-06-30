@@ -127,6 +127,43 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
     timeTags: ['5_10_min'],
   },
 
+  {
+    id: 'lib-name-it-tame-it',
+    title: 'Name It to Tame It',
+    description: 'Label your emotions to reduce their intensity — naming a feeling activates the rational brain and calms the emotional brain.',
+    iconType: 'emoji',
+    iconValue: '🏷️',
+    backgroundType: 'color',
+    backgroundValue: '#E0F2F1',
+    categoryId: 'grounding-calming',
+    allowBackgroundCustomization: true,
+    controls: [
+      {
+        type: 'static_text',
+        position: 0,
+        config: {
+          title: 'How It Works',
+          body: '1. Pause and notice what you are feeling\n2. Give the feeling a specific name (e.g., "frustration," "dread," "loneliness")\n3. Say to yourself: "I notice I am feeling ___"\n4. Observe if the intensity shifts once you label it',
+          fontSize: 'medium',
+        },
+        isRequired: false,
+      },
+      {
+        type: 'text_input',
+        position: 1,
+        config: {
+          label: 'What emotion are you feeling right now?',
+          placeholder: 'Name the feeling...',
+          maxLength: 200,
+        },
+        isRequired: false,
+      },
+    ],
+    emotionTags: ['stressed', 'overwhelmed', 'anxious', 'angry'],
+    contextTags: ['at_work', 'alone_at_home'],
+    timeTags: ['1_2_min'],
+  },
+
   // ─── Cognitive Reframing (2) ───────────────────────────────────────────────
   {
     id: 'lib-thought-feeling-action',
@@ -304,6 +341,53 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
       },
     ],
     emotionTags: ['sad', 'numb'],
+    contextTags: ['alone_at_home'],
+    timeTags: ['1_2_min'],
+  },
+
+  {
+    id: 'lib-evening-gratitude',
+    title: 'Evening Gratitude',
+    description: 'Wind down your day by reflecting on moments of gratitude and setting a calm intention for sleep.',
+    iconType: 'emoji',
+    iconValue: '🌙',
+    backgroundType: 'color',
+    backgroundValue: '#EDE7F6',
+    categoryId: 'daily-checkin-journaling',
+    allowBackgroundCustomization: true,
+    controls: [
+      {
+        type: 'static_text',
+        position: 0,
+        config: {
+          title: 'Evening Wind-Down',
+          body: 'Take a moment before sleep to reflect on your day with kindness. There is no right or wrong answer — just notice what comes up.',
+          fontSize: 'medium',
+        },
+        isRequired: false,
+      },
+      {
+        type: 'text_input',
+        position: 1,
+        config: {
+          label: 'What are you grateful for today?',
+          placeholder: 'Something that made today a little better...',
+          maxLength: 200,
+        },
+        isRequired: false,
+      },
+      {
+        type: 'text_input',
+        position: 2,
+        config: {
+          label: 'What can you let go of tonight?',
+          placeholder: 'A worry or tension to release...',
+          maxLength: 200,
+        },
+        isRequired: false,
+      },
+    ],
+    emotionTags: ['stressed', 'sad', 'overwhelmed'],
     contextTags: ['alone_at_home'],
     timeTags: ['1_2_min'],
   },

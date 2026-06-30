@@ -21,6 +21,8 @@ import type { RootStackParamList } from '../navigation/types';
 import { createExportService } from '../services/exportService';
 import { CommonActions } from '@react-navigation/native';
 import StartExperienceSetting from '@/components/settings/StartExperienceSetting';
+import { getDatabase } from '@/data/database';
+import { useOnboardingStore } from '@/stores/onboardingStore';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 
@@ -89,6 +91,45 @@ export default function SettingsScreen({ navigation }: Props) {
 
   function handleCrisisResources() {
     navigation.navigate('CrisisResources');
+  }
+
+  async function handleResetOnboarding() {
+    Alert.alert(
+      'Reset Onboarding',
+      'This will clear onboarding state, delete all cards, and restart at the Welcome screen.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            const db = await getDatabase();
+            await db.runAsync("DELETE FROM settings WHERE key IN ('onboarding_state', 'disclaimer_acknowledged', 'start_mode')");
+            await db.runAsync('DELETE FROM control_values');
+            await db.runAsync('DELETE FROM completions');
+            await db.runAsync('DELETE FROM reminders');
+            await db.runAsync('DELETE FROM controls');
+            await db.runAsync('DELETE FROM background_overlays');
+            await db.runAsync('DELETE FROM cards');
+            // Reset Zustand store in-memory state
+            useOnboardingStore.setState({
+              disclaimerAcknowledged: false,
+              onboardingScreensComplete: false,
+              selectedIntent: null,
+              tutorialComplete: false,
+              checklist: { openTool: false, tryExercise: false, addTool: false },
+              checklistSessionCount: 0,
+              bannerDismissed: false,
+              isChecklistVisible: false,
+              isChecklistComplete: false,
+            });
+            navigation.dispatch(
+              CommonActions.reset({ index: 0, routes: [{ name: 'Onboarding' }] })
+            );
+          },
+        },
+      ]
+    );
   }
 
   return (
@@ -180,6 +221,24 @@ export default function SettingsScreen({ navigation }: Props) {
             <Text style={styles.versionValue}>1.0.0</Text>
           </View>
         </View>
+
+        {/* Dev-only tools — hidden in production */}
+        {__DEV__ && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Developer</Text>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={handleResetOnboarding}
+              accessibilityLabel="Reset onboarding"
+              accessibilityRole="button"
+            >
+              <Text style={styles.menuItemIcon}>🔄</Text>
+              <Text style={[styles.menuItemText, styles.destructiveText]}>
+                Reset Onboarding
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

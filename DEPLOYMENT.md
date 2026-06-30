@@ -138,6 +138,24 @@ eas submit --platform ios
 
 ---
 
+## Reset App for Testing (Simulator)
+
+To re-test onboarding or start fresh on the iOS simulator:
+
+**Option 1: Delete and reinstall the app**
+
+1. In the simulator, long-press the app icon → "Remove App" → "Delete App"
+2. Run `npm run ios` to rebuild and reinstall
+
+**Option 2: Reset the entire simulator**
+
+1. In the Simulator menu bar: **Device → Erase All Content and Settings...**
+2. Run `npm run ios` to reinstall
+
+Both options wipe the SQLite database (settings, cards, onboarding state), giving you a clean first-launch experience.
+
+---
+
 ## Useful Commands
 
 ```bash

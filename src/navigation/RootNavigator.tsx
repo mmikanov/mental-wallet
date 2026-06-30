@@ -2,9 +2,9 @@
  * RootNavigator — Native stack navigator managing all top-level screens.
  *
  * Flow:
- * - If disclaimer not acknowledged → DisclaimerScreen (initial)
- * - If disclaimer acknowledged but no Start_Mode → ModeChoice
- * - If disclaimer acknowledged AND Start_Mode exists → MainTabs
+ * - If onboarding not complete → OnboardingNavigator (Welcome → IntentSelection)
+ * - If onboarding complete but no Start_Mode → ModeChoice
+ * - If onboarding complete AND Start_Mode exists → MainTabs
  * - Modal presentations: LibraryBrowser, CardCreator
  * - Push screens: Archive, Settings
  *
@@ -13,13 +13,12 @@
  * Deep link handling: `card_reminder` notification taps navigate to
  * WalletScreen with the focused card ID.
  *
- * Validates: Requirements 1.1, 1.6, 1.9, 2.1, 2.2, 2.3, 2.4, 2.5, 11.3, 12.4, 15.1
+ * Validates: Requirements 1.1, 1.5, 1.6, 1.9, 2.1, 2.2, 2.3, 2.4, 2.5, 7.2, 8.1, 8.3, 11.3, 12.4, 15.1
  */
 
 import React, { useEffect, useState } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, AppState, AppStateStatus, View, StyleSheet } from 'react-native';
-import DisclaimerScreen from '@/screens/DisclaimerScreen';
 import ModeChoiceScreen from '@/screens/ModeChoiceScreen';
 import CardCreatorScreen from '@/screens/CardCreatorScreen';
 import LibraryBrowserScreen from '@/screens/LibraryBrowserScreen';
@@ -28,20 +27,21 @@ import ReminderConfigScreen from '@/screens/ReminderConfigScreen';
 import ArchiveScreen from '@/screens/ArchiveScreen';
 import SettingsScreen from '@/screens/SettingsScreen';
 import CrisisResourcesScreen from '@/screens/CrisisResourcesScreen';
+import OnboardingNavigator from './OnboardingNavigator';
 import MainTabNavigator from './MainTabNavigator';
-import { getDatabase } from '@/data/database';
 import { hasStartMode, getStartMode, getLastUsedMode } from '@/services/settingsService';
 import { endUnterminatedSessions } from '@/services/emotionSessionService';
 import { useSessionStore } from '@/stores/sessionStore';
+import { useOnboardingStore } from '@/stores/onboardingStore';
 import type { RootStackParamList } from './types';
 
-type InitialRoute = 'Disclaimer' | 'ModeChoice' | 'MainTabs';
+type InitialRoute = 'Onboarding' | 'ModeChoice' | 'MainTabs';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function RootNavigator() {
   const [isLoading, setIsLoading] = useState(true);
-  const [initialRoute, setInitialRoute] = useState<InitialRoute>('Disclaimer');
+  const [initialRoute, setInitialRoute] = useState<InitialRoute>('Onboarding');
   const [initialMainTabsParams, setInitialMainTabsParams] = useState<
     RootStackParamList['MainTabs']
   >(undefined);
@@ -70,17 +70,15 @@ export default function RootNavigator() {
         // Fire-and-forget: non-critical cleanup
       });
 
-      // Check disclaimer status
-      const db = await getDatabase();
-      const disclaimerResult = await db.getFirstAsync<{ value: string }>(
-        "SELECT value FROM settings WHERE key = 'disclaimer_acknowledged'"
-      );
-      const disclaimerAcknowledged = disclaimerResult?.value === 'true';
+      // Load onboarding state (handles legacy migration internally)
+      await useOnboardingStore.getState().loadState();
+      const { disclaimerAcknowledged, onboardingScreensComplete } = useOnboardingStore.getState();
 
-      if (!disclaimerAcknowledged) {
-        setInitialRoute('Disclaimer');
+      if (!disclaimerAcknowledged || !onboardingScreensComplete) {
+        // Onboarding not finished — show onboarding flow (Req 7.2)
+        setInitialRoute('Onboarding');
       } else {
-        // Disclaimer acknowledged — check Start_Mode (Req 1.6, 2.1–2.5)
+        // Onboarding complete — check Start_Mode (Req 1.6, 2.1–2.5)
         const startModeExists = await hasStartMode();
 
         if (!startModeExists) {
@@ -110,8 +108,8 @@ export default function RootNavigator() {
         }
       }
     } catch {
-      // On error (e.g., first launch before DB is ready), show disclaimer
-      setInitialRoute('Disclaimer');
+      // On error, show onboarding (safest default for new users)
+      setInitialRoute('Onboarding');
     } finally {
       setIsLoading(false);
     }
@@ -130,7 +128,7 @@ export default function RootNavigator() {
       initialRouteName={initialRoute}
       screenOptions={{ headerShown: false }}
     >
-      <Stack.Screen name="Disclaimer" component={DisclaimerScreen} />
+      <Stack.Screen name="Onboarding" component={OnboardingNavigator} />
       <Stack.Screen name="ModeChoice" component={ModeChoiceScreen} />
       <Stack.Screen
         name="MainTabs"

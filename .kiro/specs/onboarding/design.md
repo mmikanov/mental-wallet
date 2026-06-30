@@ -204,16 +204,22 @@ function useMicroTutorial(): UseMicroTutorialReturn;
 ```
 
 State transitions:
-- `idle` → `tooltip_frontmost_card`: triggered by `start()` (after banner shown/dismissed)
-- `tooltip_frontmost_card` → `tooltip_action_button`: user taps the frontmost card
-- `tooltip_action_button` → `complete`: user taps the action button
+- `idle` → `tooltip_frontmost_card`: triggered by `start()` (immediately when wallet loads after onboarding)
+- `tooltip_frontmost_card` → `tooltip_action_button`: user taps the frontmost card spotlight
+- `tooltip_action_button` → `complete`: user taps the expand arrow
 - Any step → `complete`: user taps "Skip tips"
 
 On reaching `complete`, the hook calls `onboardingStore.completeTutorial()`.
 
 ### FirstActionChecklist Component
 
-Inline component rendered at the top of WalletScreen content area (below the header, above the card stack) when the tutorial is complete but the checklist is not.
+Collapsible inline component rendered at the top of WalletScreen content area (below the header, above the card stack) when the tutorial is complete but the checklist is not. Hidden automatically when a card is focused to give space for the expanded card.
+
+Features:
+- Starts expanded with a "Getting started" header and collapse toggle
+- User can manually collapse to a compact progress bar ("Getting started 1/3 ▼")
+- Shows celebration message ("🎉 Great start!...") when all items complete, with X to dismiss manually and 12-second auto-dismiss
+- Hidden when a card is focused, shown when returning to stack view
 
 ```typescript
 // src/components/onboarding/FirstActionChecklist.tsx
@@ -230,23 +236,19 @@ interface FirstActionChecklistProps {
 }
 ```
 
-Auto-marking logic lives in `WalletScreen` by subscribing to wallet store events:
-- `open_tool`: marked when `focusedCardId` transitions from null to any value
-- `try_exercise`: marked when a completion is recorded (subscribe to completionStore)
+Checklist items:
+1. "Open your first tool" — tapping focuses the frontmost card
+2. "Complete a tool" — tapping expands the focused card
+3. "Discover a new tool" — tapping opens Library Browser
+
+Auto-marking logic lives in `WalletScreen` by subscribing to wallet store events (using `queueMicrotask` to avoid setState-during-render):
+- `open_tool`: marked when `focusedCardId` transitions from null to any value (fires even during tutorial)
+- `try_exercise`: marked when any card's `totalUses` increases
 - `add_tool`: marked when card count increases (new card added from library or created)
 
 ### OnboardingBanner
 
-Non-modal informational banner displayed once on first wallet arrival:
-
-```typescript
-interface OnboardingBannerProps {
-  visible: boolean;
-  onDismiss: () => void;
-}
-```
-
-Auto-dismisses when: user taps X, navigates away, or micro-tutorial begins.
+Non-modal informational banner (currently bypassed — tutorial starts immediately without requiring banner dismissal). The component exists but is not rendered in the current flow. The tutorial starts automatically via `queueMicrotask` when the wallet loads after onboarding completes.
 
 ## Data Models
 
@@ -333,8 +335,8 @@ export const INTENT_OPTIONS: StarterCardMapping[] = [
   {
     intentId: 'organize',
     label: 'I have tools already — help me organize',
-    description: 'A starter set to build on with your own tools',
-    cardIds: ['lib-grounding-54321', 'lib-daily-mood', 'lib-self-compassion-pause'],
+    description: 'An example to get you started — add your own from the library',
+    cardIds: ['lib-grounding-54321'],
   },
   {
     intentId: 'explore',
@@ -511,3 +513,11 @@ Tag format: `Feature: onboarding, Property {N}: {title}`
 - Full onboarding flow: launch → welcome → intent → wallet with seeded cards visible
 - Card seeding performance: < 500ms for 3 cards
 - State persistence: close app mid-onboarding, reopen, resume at correct stage
+
+## Implementation Notes
+
+- The old `DisclaimerScreen.tsx` has been deleted (not just dead code — removed entirely)
+- A dev-only "Reset Onboarding" button is available in Settings (visible only when `__DEV__` is true) — clears all onboarding state, cards, and navigates to the Welcome screen
+- The tooltip positions are calculated using approximate layout measurements with `measureInWindow` — the frontmost card position is computed from `(cards.length - 1) * PEEK_HEIGHT` where PEEK is 60px
+- All onboarding-related state updates in WalletScreen use `queueMicrotask()` to avoid "Cannot update a component while rendering" errors
+- The TooltipOverlay uses `left: 16, right: 16` for full-width positioning to prevent text overflow on smaller screens

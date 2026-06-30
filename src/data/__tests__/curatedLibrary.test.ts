@@ -27,9 +27,8 @@ const VALID_CONTROL_TYPES: ControlType[] = [
 const VALID_CATEGORY_IDS = SEED_CATEGORIES.map((c) => c.id);
 
 describe('Curated Library Validation', () => {
-  it('should have 18-21 curated cards', () => {
+  it('should have at least 18 curated cards', () => {
     expect(CURATED_LIBRARY.length).toBeGreaterThanOrEqual(18);
-    expect(CURATED_LIBRARY.length).toBeLessThanOrEqual(21);
   });
 
   it('should have all unique IDs', () => {
