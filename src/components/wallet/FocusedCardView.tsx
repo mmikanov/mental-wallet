@@ -48,6 +48,12 @@ export interface FocusedCardViewProps {
   onMenuPress: () => void;
   /** Optional custom content renderer for the expanded state (e.g. SessionLauncherContent) */
   renderExpandedContent?: () => React.ReactNode;
+  /** Optional footer rendered below the expanded content (e.g. settings link) */
+  renderFooter?: () => React.ReactNode;
+  /** Optional inline suffix rendered inside the description text (e.g. info icon) */
+  renderDescriptionSuffix?: (color: string) => React.ReactNode;
+  /** Optional tooltip content rendered below the description (inside the card layout) */
+  renderTooltip?: () => React.ReactNode;
 }
 
 const SPRING_CONFIG = {
@@ -71,6 +77,9 @@ export default function FocusedCardView({
   onPrimaryAction,
   onMenuPress,
   renderExpandedContent,
+  renderFooter,
+  renderDescriptionSuffix,
+  renderTooltip,
 }: FocusedCardViewProps) {
   const translateY = useSharedValue(50);
   const opacity = useSharedValue(0.3);
@@ -168,7 +177,11 @@ export default function FocusedCardView({
       {/* Description */}
       <Text style={[styles.description, { color: subtitleColor }]} numberOfLines={4}>
         {card.description}
+        {renderDescriptionSuffix?.(subtitleColor)}
       </Text>
+
+      {/* Optional tooltip rendered below description */}
+      {renderTooltip?.()}
 
       {/* Origin badge */}
       <View style={styles.badgeRow}>
@@ -267,6 +280,7 @@ export default function FocusedCardView({
             {isExpanded ? (
               <View style={styles.expandedContainer}>
                 <ExpandedContent card={card} />
+                {renderFooter?.()}
               </View>
             ) : (
               <View style={styles.actionsContainer}>

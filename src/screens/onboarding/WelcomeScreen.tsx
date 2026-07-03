@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useOnboardingStore } from '@/stores/onboardingStore';
+import { useKpiStore } from '@/stores/kpiStore';
 import { createOnboardingService } from '@/services/onboardingService';
 import type { OnboardingStackParamList } from '@/navigation/OnboardingNavigator';
 
@@ -38,7 +39,10 @@ export default function WelcomeScreen() {
   const handleSkip = async () => {
     await acknowledgeDisclaimer();
     await onboardingService.seedStarterCards(null);
+    await useKpiStore.getState().setKpi('Feeling good overall');
+    await onboardingService.seedKpiCard('Feeling good overall');
     await completeOnboardingScreens(null);
+    await useOnboardingStore.getState().completeKpiSelection();
     navigation.dispatch(
       CommonActions.reset({ index: 0, routes: [{ name: 'MainTabs' }] }),
     );

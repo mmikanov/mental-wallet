@@ -5,7 +5,7 @@
  * Validates: Requirements 15.2, 15.4, 16.2, 16.3
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -21,14 +21,21 @@ import type { RootStackParamList } from '../navigation/types';
 import { createExportService } from '../services/exportService';
 import { CommonActions } from '@react-navigation/native';
 import StartExperienceSetting from '@/components/settings/StartExperienceSetting';
-import { getDatabase } from '@/data/database';
+import { getDatabase, closeDatabase } from '@/data/database';
 import { useOnboardingStore } from '@/stores/onboardingStore';
+import { useKpiStore } from '@/stores/kpiStore';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 
 export default function SettingsScreen({ navigation }: Props) {
   const [isExporting, setIsExporting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const { personalKpi, isLoading: isKpiLoading, loadKpi } = useKpiStore();
+
+  useEffect(() => {
+    loadKpi();
+  }, []);
 
   const exportService = createExportService();
 
@@ -116,6 +123,7 @@ export default function SettingsScreen({ navigation }: Props) {
               disclaimerAcknowledged: false,
               onboardingScreensComplete: false,
               selectedIntent: null,
+              kpiSelectionComplete: false,
               tutorialComplete: false,
               checklist: { openTool: false, tryExercise: false, addTool: false },
               checklistSessionCount: 0,
@@ -123,6 +131,63 @@ export default function SettingsScreen({ navigation }: Props) {
               isChecklistVisible: false,
               isChecklistComplete: false,
             });
+            // Clear the cached DB singleton so seedData re-runs and re-creates session launcher
+            await closeDatabase();
+            navigation.dispatch(
+              CommonActions.reset({ index: 0, routes: [{ name: 'Onboarding' }] })
+            );
+          },
+        },
+      ]
+    );
+  }
+
+  async function handleResetEntireApp() {
+    Alert.alert(
+      'Reset Entire App',
+      'This will DELETE ALL DATA (cards, completions, KPI records, settings, emotion sessions) and restart from scratch. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Nuke Everything',
+          style: 'destructive',
+          onPress: async () => {
+            const db = await getDatabase();
+            // Clear all data tables
+            await db.runAsync('DELETE FROM control_values');
+            await db.runAsync('DELETE FROM completions');
+            await db.runAsync('DELETE FROM kpi_records');
+            await db.runAsync('DELETE FROM reminders');
+            await db.runAsync('DELETE FROM controls');
+            await db.runAsync('DELETE FROM background_overlays');
+            await db.runAsync('DELETE FROM cards');
+            await db.runAsync('DELETE FROM settings');
+            // Clear emotion tables if they exist
+            try {
+              await db.runAsync('DELETE FROM emotion_sessions');
+              await db.runAsync('DELETE FROM emotion_entries');
+            } catch {
+              // Tables may not exist — that's fine
+            }
+            // Reset all Zustand stores
+            useOnboardingStore.setState({
+              disclaimerAcknowledged: false,
+              onboardingScreensComplete: false,
+              selectedIntent: null,
+              kpiSelectionComplete: false,
+              tutorialComplete: false,
+              checklist: { openTool: false, tryExercise: false, addTool: false },
+              checklistSessionCount: 0,
+              bannerDismissed: false,
+              isChecklistVisible: false,
+              isChecklistComplete: false,
+            });
+            useKpiStore.setState({
+              personalKpi: null,
+              isLoading: false,
+            });
+            // Clear the cached DB singleton so seedData re-runs on next access
+            await closeDatabase();
             navigation.dispatch(
               CommonActions.reset({ index: 0, routes: [{ name: 'Onboarding' }] })
             );
@@ -150,6 +215,27 @@ export default function SettingsScreen({ navigation }: Props) {
       <ScrollView contentContainerStyle={styles.content}>
         {/* Start Experience Section */}
         <StartExperienceSetting />
+
+        {/* Focus Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Focus</Text>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('KpiChange')}
+            accessibilityLabel={`What I'm focusing on: ${personalKpi ?? 'Not set'}. Tap to change.`}
+            accessibilityRole="button"
+          >
+            <Text style={styles.menuItemIcon}>🎯</Text>
+            <View style={styles.menuItemContent}>
+              <Text style={styles.menuItemText}>What I'm focusing on</Text>
+              <Text style={styles.menuItemSubtitle} numberOfLines={1}>
+                {isKpiLoading ? 'Loading…' : (personalKpi ?? 'Not set')}
+              </Text>
+            </View>
+            <Text style={styles.menuItemChevron}>›</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Data Section */}
         <View style={styles.section}>
@@ -237,6 +323,17 @@ export default function SettingsScreen({ navigation }: Props) {
                 Reset Onboarding
               </Text>
             </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={handleResetEntireApp}
+              accessibilityLabel="Reset entire app"
+              accessibilityRole="button"
+            >
+              <Text style={styles.menuItemIcon}>💣</Text>
+              <Text style={[styles.menuItemText, styles.destructiveText]}>
+                Reset Entire App
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
@@ -316,6 +413,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1A1A1A',
     fontWeight: '500',
+  },
+  menuItemContent: {
+    flex: 1,
+  },
+  menuItemSubtitle: {
+    fontSize: 14,
+    color: '#888888',
+    marginTop: 2,
   },
   destructiveText: {
     color: '#E53935',

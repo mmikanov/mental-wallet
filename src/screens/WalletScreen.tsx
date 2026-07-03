@@ -16,9 +16,10 @@
  */
 
 import React, { useEffect, useMemo, useCallback, useState, useRef } from 'react';
-import { View, StyleSheet, Alert, LayoutAnimation, Platform, UIManager, Dimensions } from 'react-native';
+import { View, StyleSheet, Alert, LayoutAnimation, Platform, UIManager, Dimensions, TouchableOpacity, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import WalletHeader from '@/components/wallet/WalletHeader';
@@ -38,6 +39,7 @@ import { useMicroTutorial } from '@/hooks/useMicroTutorial';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import { useWalletStore } from '@/stores/walletStore';
 import { useSessionStore } from '@/stores/sessionStore';
+import { useKpiStore } from '@/stores/kpiStore';
 import { createCardService } from '@/services/cardService';
 import { upsertOverlay, removeOverlay } from '@/services/backgroundOverlayService';
 import type { BackgroundType } from '@/types/index';
@@ -49,6 +51,9 @@ type WalletRouteProp = RouteProp<MainTabParamList, 'Wallet'>;
 
 /** ID of the session launcher card from seed data */
 const SESSION_LAUNCHER_CARD_ID = 'session-launcher';
+
+/** source_library_id for the KPI check-in card */
+const KPI_CARD_SOURCE_ID = 'lib-personal-kpi';
 
 // Category colors matching the seeded category IDs from the database.
 const DEFAULT_CATEGORY_COLORS: Record<string, string> = {
@@ -63,6 +68,39 @@ const DEFAULT_CATEGORY_COLORS: Record<string, string> = {
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+/** Info tooltip for the KPI card — shows ⓘ inline, opens popover with explanation + settings link */
+// Component removed — tooltip logic handled inline in WalletScreen
+
+/** Animated FAB for KPI check-in — scales/fades in and out with spring physics */
+function KpiFab({ visible, onPress }: { visible: boolean; onPress: () => void }) {
+  const scale = useSharedValue(visible ? 1 : 0);
+  const opacity = useSharedValue(visible ? 1 : 0);
+
+  useEffect(() => {
+    scale.value = withSpring(visible ? 1 : 0, { damping: 15, stiffness: 150 });
+    opacity.value = withSpring(visible ? 1 : 0, { damping: 20, stiffness: 200 });
+  }, [visible]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  return (
+    <Animated.View style={[styles.kpiFab, animatedStyle]} pointerEvents={visible ? 'auto' : 'none'}>
+      <TouchableOpacity
+        onPress={onPress}
+        style={styles.kpiFabTouchable}
+        accessibilityLabel="Check in on how you're doing"
+        accessibilityRole="button"
+        activeOpacity={0.8}
+      >
+        <Text style={styles.kpiFabIcon}>🌱</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
 }
 
 export default function WalletScreen() {
@@ -84,6 +122,10 @@ export default function WalletScreen() {
   } = useWalletStore();
 
   const isSessionActive = useSessionStore((s) => s.isSessionActive);
+
+  // --- KPI state ---
+  const personalKpi = useKpiStore((s) => s.personalKpi);
+  const loadKpi = useKpiStore((s) => s.loadKpi);
 
   // --- Onboarding state ---
   const onboardingScreensComplete = useOnboardingStore((s) => s.onboardingScreensComplete);
@@ -120,14 +162,31 @@ export default function WalletScreen() {
 
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [showBackgroundCustomizer, setShowBackgroundCustomizer] = useState(false);
+  const [showKpiInfoTooltip, setShowKpiInfoTooltip] = useState(false);
 
   // Session Launcher Card highlight state (Req 2.2)
   const [isHighlighting, setIsHighlighting] = useState(false);
   const highlightHandled = useRef(false);
 
+  useFocusEffect(
+    useCallback(() => {
+      loadCards();
+      loadKpi();
+    }, [loadCards, loadKpi])
+  );
+
+  // Reload cards when personalKpi changes (e.g. after KpiChangeScreen updates it)
+  // Skip initial mount since useFocusEffect already loads cards
+  const kpiLoadedRef = useRef(false);
   useEffect(() => {
-    loadCards();
-  }, [loadCards]);
+    if (!kpiLoadedRef.current) {
+      kpiLoadedRef.current = true;
+      return;
+    }
+    if (personalKpi) {
+      loadCards();
+    }
+  }, [personalKpi, loadCards]);
 
   // Handle highlightSessionCard route param — scroll to and highlight the session launcher card
   useEffect(() => {
@@ -239,7 +298,7 @@ export default function WalletScreen() {
           // The frontmost card (cards[0]) starts after all other cards' peek areas.
           const PEEK = 60;
           const CARD_HEIGHT = 205;
-          const frontmostTop = y + (cards.length - 1) * PEEK;
+          const frontmostTop = y + (stackCards.length - 1) * PEEK;
           setFrontmostCardLayout({
             x,
             y: frontmostTop + 10,
@@ -291,9 +350,49 @@ export default function WalletScreen() {
   // Whether the focused card is the session launcher (renders custom content when expanded)
   const isSessionLauncherFocused = focusedCardId === SESSION_LAUNCHER_CARD_ID;
 
+  // The KPI card is not shown in the stack — it's accessed via the FAB
+  const kpiCard = useMemo(
+    () => cards.find((c) => c.sourceLibraryId === KPI_CARD_SOURCE_ID) ?? null,
+    [cards]
+  );
+
+  // Whether the currently focused card is the KPI check-in card
+  const isKpiCardFocused = kpiCard !== null && focusedCardId === kpiCard.id;
+
+  // Personalized KPI card: use "Daily check-in" as the title with the user's focus as subtitle
+  const personalizedFocusedCard = useMemo(() => {
+    if (!focusedCard) return null;
+    if (!isKpiCardFocused || !personalKpi) return focusedCard;
+
+    // Map the KPI label to a natural short phrase for the description
+    const kpiSubtitle: Record<string, string> = {
+      'Feeling calmer': 'Checking in on your calm',
+      'Sleeping better': 'Checking in on your sleep',
+      'Being more present': 'Checking in on being present',
+      'Having more energy': 'Checking in on your energy',
+      'Feeling more connected': 'Checking in on connection',
+      'Managing stress better': 'Checking in on your stress',
+      'Feeling good overall': 'Checking in on how you feel',
+    };
+
+    const description = kpiSubtitle[personalKpi] ?? `Checking in on: ${personalKpi.toLowerCase()}`;
+
+    return {
+      ...focusedCard,
+      title: 'Daily check-in',
+      description,
+    };
+  }, [focusedCard, isKpiCardFocused, personalKpi]);
+
+  // Cards visible in the stack (excluding KPI card)
+  const stackCards = useMemo(
+    () => cards.filter((c) => c.sourceLibraryId !== KPI_CARD_SOURCE_ID),
+    [cards]
+  );
+
   const otherCards = useMemo(
-    () => (focusedCardId ? cards.filter((c) => c.id !== focusedCardId) : []),
-    [focusedCardId, cards]
+    () => (focusedCardId ? stackCards.filter((c) => c.id !== focusedCardId) : []),
+    [focusedCardId, stackCards]
   );
 
   function handleArchivePress() {
@@ -321,10 +420,24 @@ export default function WalletScreen() {
     enterReorderMode();
   }
 
+  /** Opens the KPI check-in card from the FAB */
+  const handleKpiFabPress = useCallback(() => {
+    if (kpiCard) {
+      LayoutAnimation.configureNext(LayoutAnimation.create(300, 'easeInEaseOut', 'opacity'));
+      focusCard(kpiCard.id);
+    }
+  }, [kpiCard, focusCard]);
+
+  /** Navigate to KPI change screen from the check-in card */
+  const handleKpiSettingsLink = useCallback(() => {
+    navigation.navigate('KpiChange');
+  }, [navigation]);
+
   const [isDismissing, setIsDismissing] = useState(false);
 
   const handleDismiss = useCallback(() => {
     setIsDismissing(true);
+    setShowKpiInfoTooltip(false);
     // Allow the opacity transition to render, then switch view
     requestAnimationFrame(() => {
       setTimeout(() => {
@@ -498,7 +611,7 @@ export default function WalletScreen() {
     cancelReorder();
   }, [cancelReorder]);
 
-  const hasCards = cards.length > 0;
+  const hasCards = stackCards.length > 0;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -522,7 +635,7 @@ export default function WalletScreen() {
         )}
         {isReorderMode ? (
           <ReorderMode
-            cards={cards}
+            cards={stackCards}
             categoryColors={categoryColors}
             onCommit={handleCommitReorder}
             onCancel={handleCancelReorder}
@@ -534,7 +647,7 @@ export default function WalletScreen() {
             <View style={styles.focusedCardArea}>
               <View style={isHighlighting && !tutorial.isActive ? styles.highlightWrapper : undefined}>
                 <FocusedCardView
-                  card={focusedCard}
+                  card={personalizedFocusedCard || focusedCard}
                   categoryColor={categoryColors[focusedCard.categoryId] || '#9CA3AF'}
                   isExpanded={isExpanded}
                   onExpand={handleExpand}
@@ -549,6 +662,41 @@ export default function WalletScreen() {
                             onDismiss={handleSessionLauncherDismiss}
                             onNavigateToTool={handleNavigateToTool}
                           />
+                        )
+                      : undefined
+                  }
+                  renderDescriptionSuffix={
+                    isKpiCardFocused
+                      ? () => (
+                          <Text
+                            onPress={() => setShowKpiInfoTooltip(!showKpiInfoTooltip)}
+                            style={styles.kpiInfoIcon}
+                            accessibilityRole="button"
+                            accessibilityLabel="More info about this check-in"
+                          >
+                            {' '}ⓘ
+                          </Text>
+                        )
+                      : undefined
+                  }
+                  renderTooltip={
+                    isKpiCardFocused && showKpiInfoTooltip
+                      ? () => (
+                          <View style={styles.kpiTooltip}>
+                            <Text style={styles.kpiTooltipText}>
+                              This is based on what you chose during setup. You can{' '}
+                              <Text
+                                style={styles.kpiTooltipLink}
+                                onPress={() => {
+                                  setShowKpiInfoTooltip(false);
+                                  handleKpiSettingsLink();
+                                }}
+                                accessibilityRole="link"
+                              >
+                                change it in Settings
+                              </Text>
+                            </Text>
+                          </View>
                         )
                       : undefined
                   }
@@ -573,7 +721,7 @@ export default function WalletScreen() {
         ) : hasCards ? (
           <View ref={stackedCardListRef} onLayout={handleStackedCardListLayout} style={styles.stackedCardWrapper}>
             <StackedCardList
-              cards={cards}
+              cards={stackCards}
               categoryColors={categoryColors}
               onCardPress={handleCardPress}
               onCardLongPress={handleCardLongPress}
@@ -607,6 +755,8 @@ export default function WalletScreen() {
           onClose={() => setShowBackgroundCustomizer(false)}
         />
       )}
+      {/* KPI Check-In FAB — animates in when stack is shown, out when a card is focused */}
+      {kpiCard && <KpiFab visible={!focusedCardId && !isReorderMode} onPress={handleKpiFabPress} />}
       {/* Tutorial Tooltip Overlay — rendered last for z-order */}
       <TooltipOverlay
         visible={tutorial.isActive}
@@ -655,5 +805,50 @@ const styles = StyleSheet.create({
   },
   stackedCardWrapper: {
     flex: 1,
+  },
+  kpiFab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#E8F5E9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+    zIndex: 50,
+  },
+  kpiFabTouchable: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  kpiFabIcon: {
+    fontSize: 28,
+  },
+  kpiInfoIcon: {
+    fontSize: 15,
+    color: '#9CA3AF',
+  },
+  kpiTooltip: {
+    backgroundColor: '#1F2937',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: -4,
+    marginBottom: 8,
+  },
+  kpiTooltipText: {
+    fontSize: 13,
+    color: '#F3F4F6',
+    lineHeight: 18,
+  },
+  kpiTooltipLink: {
+    color: '#93C5FD',
+    textDecorationLine: 'underline',
   },
 });

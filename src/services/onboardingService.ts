@@ -13,6 +13,7 @@ import {
   type IntentId,
 } from '@/data/onboardingConfig';
 import { createCardService } from '@/services/cardService';
+import { createKpiService } from '@/services/kpiService';
 import type { CardShell, Control } from '@/types/index';
 
 export interface OnboardingState {
@@ -50,6 +51,9 @@ export interface OnboardingService {
   /** Seed starter cards into the wallet for the given intent (or defaults) */
   seedStarterCards(intentId: IntentId | null): Promise<void>;
 
+  /** Seed the personal KPI card into the wallet at position 1 */
+  seedKpiCard(kpiLabel: string): Promise<void>;
+
   /** Persist onboarding state to settings table */
   saveState(state: Partial<OnboardingState>): Promise<void>;
 
@@ -65,6 +69,7 @@ export interface OnboardingService {
  */
 export function createOnboardingService(): OnboardingService {
   const cardService = createCardService();
+  const kpiService = createKpiService();
 
   return {
     /**
@@ -134,6 +139,21 @@ export function createOnboardingService(): OnboardingService {
           );
           // Skip failed cards and continue with remaining valid ones
         }
+      }
+    },
+
+    /**
+     * Seeds the personal KPI card into the wallet by delegating to kpiService.
+     * Errors are caught and logged without crashing (fire-and-forget pattern).
+     */
+    async seedKpiCard(kpiLabel: string): Promise<void> {
+      try {
+        await kpiService.seedKpiCard(kpiLabel);
+      } catch (error) {
+        console.warn(
+          `[OnboardingService] Failed to seed KPI card with label "${kpiLabel}":`,
+          error
+        );
       }
     },
 

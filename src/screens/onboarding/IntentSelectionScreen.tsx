@@ -21,7 +21,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CommonActions, useNavigation } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import { createOnboardingService } from '@/services/onboardingService';
 import { INTENT_OPTIONS, type IntentId } from '@/data/onboardingConfig';
@@ -52,12 +52,7 @@ export default function IntentSelectionScreen() {
     await onboardingService.seedStarterCards(intentId);
     await completeOnboardingScreens(intentId);
 
-    navigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{ name: 'MainTabs' }],
-      })
-    );
+    navigation.navigate('KpiSelection');
   };
 
   const handleBack = () => {

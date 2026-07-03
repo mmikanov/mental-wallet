@@ -4,7 +4,7 @@
  * Persists state as a JSON blob in the `settings` table under key 'onboarding_state'.
  * Also writes the legacy 'disclaimer_acknowledged' key for backward compatibility.
  *
- * Validates: Requirements 7.1, 7.2, 7.3, 8.2
+ * Validates: Requirements 7.1, 7.2, 7.3, 8.2, 8.3, 8.4
  */
 
 import { create } from 'zustand';
@@ -15,6 +15,7 @@ export interface OnboardingState {
   disclaimerAcknowledged: boolean;
   onboardingScreensComplete: boolean;
   selectedIntent: string | null;
+  kpiSelectionComplete: boolean;
   tutorialComplete: boolean;
   checklist: {
     openTool: boolean;
@@ -31,6 +32,7 @@ export interface OnboardingState {
   // Actions
   acknowledgeDisclaimer: () => Promise<void>;
   completeOnboardingScreens: (intent: string | null) => Promise<void>;
+  completeKpiSelection: () => Promise<void>;
   completeTutorial: () => Promise<void>;
   markChecklistItem: (item: 'openTool' | 'tryExercise' | 'addTool') => Promise<void>;
   dismissChecklist: () => Promise<void>;
@@ -46,6 +48,7 @@ interface PersistedState {
   disclaimerAcknowledged: boolean;
   onboardingScreensComplete: boolean;
   selectedIntent: string | null;
+  kpiSelectionComplete: boolean;
   tutorialComplete: boolean;
   checklist: {
     openTool: boolean;
@@ -60,6 +63,7 @@ const DEFAULT_STATE: PersistedState = {
   disclaimerAcknowledged: false,
   onboardingScreensComplete: false,
   selectedIntent: null,
+  kpiSelectionComplete: false,
   tutorialComplete: false,
   checklist: {
     openTool: false,
@@ -127,6 +131,7 @@ function getPersistedFields(state: OnboardingState): PersistedState {
     disclaimerAcknowledged: state.disclaimerAcknowledged,
     onboardingScreensComplete: state.onboardingScreensComplete,
     selectedIntent: state.selectedIntent,
+    kpiSelectionComplete: state.kpiSelectionComplete,
     tutorialComplete: state.tutorialComplete,
     checklist: { ...state.checklist },
     checklistSessionCount: state.checklistSessionCount,
@@ -152,6 +157,16 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
       ...current,
       onboardingScreensComplete: true,
       selectedIntent: intent,
+    };
+    set({ ...updated, ...computeDerived(updated) });
+    await persistState(updated);
+  },
+
+  async completeKpiSelection() {
+    const current = getPersistedFields(get());
+    const updated: PersistedState = {
+      ...current,
+      kpiSelectionComplete: true,
     };
     set({ ...updated, ...computeDerived(updated) });
     await persistState(updated);
@@ -215,6 +230,7 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
           disclaimerAcknowledged: parsed.disclaimerAcknowledged ?? false,
           onboardingScreensComplete: parsed.onboardingScreensComplete ?? false,
           selectedIntent: parsed.selectedIntent ?? null,
+          kpiSelectionComplete: parsed.kpiSelectionComplete ?? false,
           tutorialComplete: parsed.tutorialComplete ?? false,
           checklist: {
             openTool: parsed.checklist?.openTool ?? false,
@@ -224,6 +240,14 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
           checklistSessionCount: parsed.checklistSessionCount ?? 0,
           bannerDismissed: parsed.bannerDismissed ?? false,
         };
+
+        // Legacy detection (Req 8.4): if onboarding was already complete but
+        // kpiSelectionComplete is not present in the stored JSON, treat the user
+        // as having completed KPI selection to avoid showing the screen again.
+        if (state.onboardingScreensComplete && parsed.kpiSelectionComplete === undefined) {
+          state.kpiSelectionComplete = true;
+        }
+
         set({ ...state, ...computeDerived(state) });
         return;
       } catch {
@@ -245,6 +269,7 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
         ...DEFAULT_STATE,
         disclaimerAcknowledged: true,
         onboardingScreensComplete: true,
+        kpiSelectionComplete: true,
       };
       set({ ...legacyState, ...computeDerived(legacyState) });
       return;

@@ -26,6 +26,7 @@ import UsageHistoryScreen from '@/screens/UsageHistoryScreen';
 import ReminderConfigScreen from '@/screens/ReminderConfigScreen';
 import ArchiveScreen from '@/screens/ArchiveScreen';
 import SettingsScreen from '@/screens/SettingsScreen';
+import KpiChangeScreen from '@/screens/KpiChangeScreen';
 import CrisisResourcesScreen from '@/screens/CrisisResourcesScreen';
 import OnboardingNavigator from './OnboardingNavigator';
 import MainTabNavigator from './MainTabNavigator';
@@ -72,10 +73,10 @@ export default function RootNavigator() {
 
       // Load onboarding state (handles legacy migration internally)
       await useOnboardingStore.getState().loadState();
-      const { disclaimerAcknowledged, onboardingScreensComplete } = useOnboardingStore.getState();
+      const { disclaimerAcknowledged, onboardingScreensComplete, kpiSelectionComplete } = useOnboardingStore.getState();
 
-      if (!disclaimerAcknowledged || !onboardingScreensComplete) {
-        // Onboarding not finished — show onboarding flow (Req 7.2)
+      if (!disclaimerAcknowledged || !onboardingScreensComplete || !kpiSelectionComplete) {
+        // Onboarding not finished — show onboarding flow (Req 7.2, 8.2, 8.3)
         setInitialRoute('Onboarding');
       } else {
         // Onboarding complete — check Start_Mode (Req 1.6, 2.1–2.5)
@@ -147,6 +148,7 @@ export default function RootNavigator() {
       />
       <Stack.Screen name="Archive" component={ArchiveScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="KpiChange" component={KpiChangeScreen} />
       <Stack.Screen name="CrisisResources" component={CrisisResourcesScreen} />
       <Stack.Screen name="UsageHistory" component={UsageHistoryScreen} />
       <Stack.Screen name="ReminderConfig" component={ReminderConfigScreen} />

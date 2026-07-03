@@ -20,4 +20,5 @@ export type RootStackParamList = {
   CrisisResources: undefined;
   UsageHistory: { cardId: string };
   ReminderConfig: { cardId: string };
+  KpiChange: undefined;
 };

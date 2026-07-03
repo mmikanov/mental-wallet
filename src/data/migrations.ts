@@ -7,6 +7,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 export async function runMigrations(db: SQLiteDatabase): Promise<void> {
   await db.execAsync(SCHEMA_SQL);
   await runEmotionMigration(db);
+  await runKpiMigration(db);
 }
 
 /**
@@ -206,4 +207,25 @@ CREATE TABLE IF NOT EXISTS emotion_sessions (
 );
 CREATE INDEX IF NOT EXISTS idx_emotion_sessions_active ON emotion_sessions(ended_at)
   WHERE ended_at IS NULL;
+`;
+
+
+/**
+ * Creates the kpi_records table for storing Personal KPI entries.
+ * Uses CREATE TABLE/INDEX IF NOT EXISTS for idempotency.
+ */
+export async function runKpiMigration(db: SQLiteDatabase): Promise<void> {
+  await db.execAsync(KPI_SCHEMA_SQL);
+}
+
+const KPI_SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS kpi_records (
+  id TEXT PRIMARY KEY,
+  value INTEGER NOT NULL CHECK(value >= 1 AND value <= 10),
+  note TEXT,
+  kpi_label TEXT NOT NULL,
+  recorded_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_kpi_records_recorded_at ON kpi_records(recorded_at);
 `;
