@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { createCardService } from '../services/cardService';
+import { logEvent } from '@/services/analyticsEventLogger';
 import { getDatabase } from '../data/database';
 import type { Card } from '../types/index';
 
@@ -44,7 +45,7 @@ export default function ArchiveScreen({ navigation }: Props) {
           c.background_type, c.background_value, c.category_id,
           c.origin_badge, c.stack_position, c.total_uses, c.current_streak,
           c.last_used_at, c.is_archived, c.archived_at, c.previous_stack_position,
-          c.created_at, c.updated_at
+          c.source_library_id, c.created_at, c.updated_at
         FROM cards c
         WHERE c.is_archived = 1
         ORDER BY c.archived_at DESC`
@@ -68,6 +69,7 @@ export default function ArchiveScreen({ navigation }: Props) {
         archivedAt: (row.archived_at as string) || null,
         previousStackPosition: (row.previous_stack_position as number) ?? null,
         allowBackgroundCustomization: (row.allow_background_customization as number) === 1,
+        sourceLibraryId: (row.source_library_id as string) ?? null,
         controls: [],
         createdAt: row.created_at as string,
         updatedAt: row.updated_at as string,
@@ -93,6 +95,12 @@ export default function ArchiveScreen({ navigation }: Props) {
             try {
               await cardService.restore(card.id);
               setArchivedCards((prev) => prev.filter((c) => c.id !== card.id));
+
+              void logEvent('tool_unarchived', {
+                card_id: card.sourceLibraryId || card.id,
+                card_category: card.categoryId,
+                origin_badge: card.originBadge,
+              });
             } catch {
               Alert.alert('Error', 'Failed to restore card. Please try again.');
             }

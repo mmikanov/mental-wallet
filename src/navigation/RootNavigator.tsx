@@ -28,6 +28,8 @@ import ArchiveScreen from '@/screens/ArchiveScreen';
 import SettingsScreen from '@/screens/SettingsScreen';
 import KpiChangeScreen from '@/screens/KpiChangeScreen';
 import CrisisResourcesScreen from '@/screens/CrisisResourcesScreen';
+import PrivacyPolicyScreen from '@/screens/PrivacyPolicyScreen';
+import DevEventViewerScreen from '@/screens/DevEventViewerScreen';
 import OnboardingNavigator from './OnboardingNavigator';
 import MainTabNavigator from './MainTabNavigator';
 import { hasStartMode, getStartMode, getLastUsedMode } from '@/services/settingsService';
@@ -152,6 +154,10 @@ export default function RootNavigator() {
       <Stack.Screen name="CrisisResources" component={CrisisResourcesScreen} />
       <Stack.Screen name="UsageHistory" component={UsageHistoryScreen} />
       <Stack.Screen name="ReminderConfig" component={ReminderConfigScreen} />
+      <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+      {__DEV__ && (
+        <Stack.Screen name="DevEventViewer" component={DevEventViewerScreen} />
+      )}
     </Stack.Navigator>
   );
 }

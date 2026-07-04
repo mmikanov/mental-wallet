@@ -10,6 +10,7 @@ import * as emotionSessionService from '@/services/emotionSessionService';
 import * as recommendationService from '@/services/recommendationService';
 import * as settingsService from '@/services/settingsService';
 import { createCompletionService } from '@/services/completionService';
+import { logEvent } from '@/services/analyticsEventLogger';
 import { useWalletStore } from '@/stores/walletStore';
 import type { EmotionType, ContextType, TimeType } from '@/types/index';
 import type { RecommendationResult } from '@/services/recommendationService';
@@ -55,12 +56,20 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   ...INITIAL_STATE,
 
   async selectEmotion(emotion: EmotionType) {
+    const { isSessionActive } = get();
+
     // Optimistically set state (Req 11.6 — don't block UI on persistence failure)
     set({
       isSessionActive: true,
       selectedEmotion: emotion,
       recommendations: null,
     });
+
+    // Log analytics event for session start (Requirements 3.11)
+    // Only log session_started on the first emotion selection (not on re-selection)
+    if (!isSessionActive) {
+      logEvent('session_started');
+    }
 
     try {
       const session = await emotionSessionService.create(emotion);
@@ -166,6 +175,20 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     if (currentSessionId) {
       await emotionSessionService.endSession(currentSessionId);
     }
+
+    // Log analytics event for session end (Requirements 3.11)
+    // session_duration_ms is computed automatically by the event logger
+    const sessionEndProps: Record<string, string | number> = {};
+    if (selectedEmotion) {
+      sessionEndProps.emotion = selectedEmotion;
+    }
+    if (selectedContexts.length > 0) {
+      sessionEndProps.contexts = selectedContexts.join(',');
+    }
+    if (selectedTime) {
+      sessionEndProps.time = selectedTime;
+    }
+    logEvent('session_ended', sessionEndProps);
 
     // Record a completion for the session-launcher card so it shows in usage history
     try {

@@ -12,7 +12,7 @@
  * Validates: Requirements 2.1, 2.2, 2.3, 2.4, 2.5, 9.1, 9.3, 9.4, 9.5
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -25,6 +25,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import { createOnboardingService } from '@/services/onboardingService';
 import { INTENT_OPTIONS, type IntentId } from '@/data/onboardingConfig';
+import { logEvent } from '@/services/analyticsEventLogger';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { OnboardingStackParamList } from '@/navigation/OnboardingNavigator';
 
@@ -38,6 +39,14 @@ export default function IntentSelectionScreen() {
 
   const [selectedIntent, setSelectedIntent] = useState<IntentId | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+
+  useEffect(() => {
+    try {
+      void logEvent('onboarding_step_viewed', { step_name: 'intent_selection' });
+    } catch {
+      // Analytics must never disrupt onboarding
+    }
+  }, []);
 
   const handleSelect = async (intentId: IntentId) => {
     if (isTransitioning) return;

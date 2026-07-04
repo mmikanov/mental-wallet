@@ -14,6 +14,7 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, TouchableOpacity, Linking, Alert, StyleSheet } from 'react-native';
 import type { Control, LinkButtonConfig } from '@/types/index';
+import { logEvent } from '@/services/analyticsEventLogger';
 
 interface LinkButtonControlProps {
   control: Control;
@@ -58,6 +59,10 @@ export default function LinkButtonControl({
 
     if (targetOpened) {
       console.log(`[LinkButton] Success: opened target URL ${config.targetUrl}`);
+      void logEvent('external_resource_opened', {
+        resource_url: config.targetUrl,
+        resource_name: config.label,
+      });
       onChange('opened');
       setOpening(false);
       return;
@@ -70,6 +75,10 @@ export default function LinkButtonControl({
 
       if (fallbackOpened) {
         console.log(`[LinkButton] Success: opened fallback URL ${config.fallbackUrl}`);
+        void logEvent('external_resource_opened', {
+          resource_url: config.fallbackUrl!,
+          resource_name: config.label,
+        });
         onChange('opened');
         setOpening(false);
         return;

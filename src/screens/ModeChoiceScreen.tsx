@@ -18,6 +18,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as settingsService from '@/services/settingsService';
+import { logEvent } from '@/services/analyticsEventLogger';
 import type { RootStackParamList } from '@/navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ModeChoice'>;
@@ -41,6 +42,11 @@ export default function ModeChoiceScreen({ navigation }: Props) {
 
       try {
         await settingsService.setStartMode(mode);
+
+        // Log analytics event for mode selection (Requirements 3.4)
+        logEvent('start_mode_selected', {
+          mode: mode === 'wallet' ? 'wallet_first' : 'emotion_first',
+        });
 
         if (mode === 'wallet') {
           // Req 1.2: Navigate to Wallet with standard stacked card view

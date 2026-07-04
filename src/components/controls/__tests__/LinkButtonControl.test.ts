@@ -27,6 +27,11 @@ jest.mock('react-native', () => ({
   },
 }));
 
+// Mock analyticsEventLogger to avoid expo-crypto dependency
+jest.mock('@/services/analyticsEventLogger', () => ({
+  logEvent: jest.fn(),
+}));
+
 describe('tryOpenUrl', () => {
   beforeEach(() => {
     jest.clearAllMocks();

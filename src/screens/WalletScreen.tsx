@@ -45,6 +45,7 @@ import { upsertOverlay, removeOverlay } from '@/services/backgroundOverlayServic
 import type { BackgroundType } from '@/types/index';
 import type { RootStackParamList, MainTabParamList } from '@/navigation/types';
 import type { ChecklistItem } from '@/components/onboarding/FirstActionChecklist';
+import { logEvent } from '@/services/analyticsEventLogger';
 
 type WalletNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type WalletRouteProp = RouteProp<MainTabParamList, 'Wallet'>;
@@ -453,12 +454,28 @@ export default function WalletScreen() {
   }, [returnToStack]);
 
   const handleExpand = useCallback(() => {
+    if (focusedCard) {
+      const cardId = focusedCard.sourceLibraryId || focusedCard.id;
+      void logEvent('tool_opened', {
+        card_id: cardId,
+        card_category: focusedCard.categoryId,
+        origin_badge: focusedCard.originBadge,
+      });
+    }
     expandCard();
-  }, [expandCard]);
+  }, [expandCard, focusedCard]);
 
   const handlePrimaryAction = useCallback(() => {
+    if (focusedCard) {
+      const cardId = focusedCard.sourceLibraryId || focusedCard.id;
+      void logEvent('tool_opened', {
+        card_id: cardId,
+        card_category: focusedCard.categoryId,
+        origin_badge: focusedCard.originBadge,
+      });
+    }
     expandCard();
-  }, [expandCard]);
+  }, [expandCard, focusedCard]);
 
   const handleMenuPress = useCallback(() => {
     if (focusedCard) {
@@ -483,19 +500,37 @@ export default function WalletScreen() {
         const service = createCardService();
         const duplicated = await service.duplicate(cardId);
         await loadCards();
+
+        const card = cards.find((c) => c.id === cardId);
+        if (card) {
+          void logEvent('tool_copied', {
+            card_id: card.sourceLibraryId || card.id,
+            card_category: card.categoryId,
+            origin_badge: card.originBadge,
+          });
+        }
+
         Alert.alert('Duplicated', `Created "${duplicated.title}"`);
       } catch {
         Alert.alert('Error', 'Failed to duplicate card. Please try again.');
       }
     },
-    [loadCards]
+    [cards, loadCards]
   );
 
   const handleViewUsageHistory = useCallback(
     (cardId: string) => {
+      const card = cards.find((c) => c.id === cardId);
+      if (card) {
+        void logEvent('tool_history_viewed', {
+          card_id: card.sourceLibraryId || card.id,
+          card_category: card.categoryId,
+          origin_badge: card.originBadge,
+        });
+      }
       navigation.navigate('UsageHistory', { cardId });
     },
-    [navigation]
+    [cards, navigation]
   );
 
   const handleSetReminder = useCallback(
@@ -508,15 +543,24 @@ export default function WalletScreen() {
   const handleArchive = useCallback(
     async (cardId: string) => {
       try {
+        const card = cards.find((c) => c.id === cardId);
         const service = createCardService();
         await service.archive(cardId);
         returnToStack();
         await loadCards();
+
+        if (card) {
+          void logEvent('tool_archived', {
+            card_id: card.sourceLibraryId || card.id,
+            card_category: card.categoryId,
+            origin_badge: card.originBadge,
+          });
+        }
       } catch {
         Alert.alert('Error', 'Failed to archive card. Please try again.');
       }
     },
-    [loadCards, returnToStack]
+    [cards, loadCards, returnToStack]
   );
 
   const handleCustomizeBackground = useCallback(

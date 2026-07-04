@@ -13,14 +13,14 @@ import * as fc from 'fast-check';
  * Within the Onboarding navigator, the initial screen shown depends on
  * disclaimerAcknowledged:
  *   - false → Welcome screen (first screen in OnboardingNavigator)
- *   - true but screens not complete → IntentSelection (via navigator state or resume logic)
+ *   - true but screens not complete → PrivacyNotice (resume point after Welcome)
  *
  * For this property test we model the effective user-facing route as:
  *   - 'Welcome' if disclaimer not acknowledged
- *   - 'IntentSelection' if disclaimer acknowledged but screens not complete
+ *   - 'PrivacyNotice' if disclaimer acknowledged but screens not complete
  *   - 'MainTabs' if screens complete (disclaimer is necessarily also true)
  */
-type EffectiveRoute = 'Welcome' | 'IntentSelection' | 'MainTabs';
+type EffectiveRoute = 'Welcome' | 'PrivacyNotice' | 'MainTabs';
 
 function resolveInitialRoute(
   disclaimerAcknowledged: boolean,
@@ -30,7 +30,7 @@ function resolveInitialRoute(
     return 'Welcome';
   }
   if (!onboardingScreensComplete) {
-    return 'IntentSelection';
+    return 'PrivacyNotice';
   }
   return 'MainTabs';
 }
@@ -43,7 +43,7 @@ describe('Feature: onboarding, Property 7: State-to-route resolution', () => {
    * (disclaimerAcknowledged, onboardingScreensComplete), the resolved
    * initial navigation route SHALL be deterministic:
    *   - Welcome if disclaimer not acknowledged
-   *   - IntentSelection if disclaimer acknowledged but screens not complete
+   *   - PrivacyNotice if disclaimer acknowledged but screens not complete
    *   - MainTabs (WalletScreen) if screens complete
    */
   it('route resolution is deterministic for any valid flag combination', () => {
@@ -57,7 +57,7 @@ describe('Feature: onboarding, Property 7: State-to-route resolution', () => {
           if (!disclaimerAcknowledged) {
             expect(route).toBe('Welcome');
           } else if (!onboardingScreensComplete) {
-            expect(route).toBe('IntentSelection');
+            expect(route).toBe('PrivacyNotice');
           } else {
             expect(route).toBe('MainTabs');
           }
@@ -96,14 +96,14 @@ describe('Feature: onboarding, Property 7: State-to-route resolution', () => {
             expect(onboardingScreensComplete).toBe(true);
           }
 
-          // If disclaimer not acknowledged, route must be Welcome (never IntentSelection or MainTabs)
+          // If disclaimer not acknowledged, route must be Welcome (never PrivacyNotice or MainTabs)
           if (!disclaimerAcknowledged) {
             expect(route).toBe('Welcome');
           }
 
-          // If screens not complete and disclaimer acknowledged, route must be IntentSelection
+          // If screens not complete and disclaimer acknowledged, route must be PrivacyNotice
           if (disclaimerAcknowledged && !onboardingScreensComplete) {
-            expect(route).toBe('IntentSelection');
+            expect(route).toBe('PrivacyNotice');
           }
         }
       ),

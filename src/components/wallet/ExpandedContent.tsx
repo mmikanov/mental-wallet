@@ -16,8 +16,10 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import ControlRenderer from '@/components/controls/ControlRenderer';
 import PrimaryActionButton from './PrimaryActionButton';
+import OutcomePrompt from './OutcomePrompt';
 import { useCompletionStore } from '@/stores/completionStore';
 import { useWalletStore } from '@/stores/walletStore';
+import { logEvent } from '@/services/analyticsEventLogger';
 import type { Card, Control } from '@/types/index';
 
 interface ExpandedContentProps {
@@ -106,6 +108,7 @@ export default function ExpandedContent({ card }: ExpandedContentProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showOutcomePrompt, setShowOutcomePrompt] = useState(false);
 
   // Get stored input values for this card
   const currentInputValues = useCompletionStore((s) => s.currentInputValues);
@@ -151,9 +154,16 @@ export default function ExpandedContent({ card }: ExpandedContentProps) {
 
     try {
       await submitCompletion(card.id, card.controls);
+      // Log tool_completed analytics event
+      const analyticsCardId = card.sourceLibraryId || card.id;
+      void logEvent('tool_completed', {
+        card_id: analyticsCardId,
+        card_category: card.categoryId,
+        origin_badge: card.originBadge,
+      });
       // Reload cards to reflect updated stats (totalUses, streak, lastUsedAt)
       await loadCards();
-      // Show brief success feedback then collapse back to focused state
+      // Show brief success feedback then collapse
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
@@ -198,6 +208,15 @@ export default function ExpandedContent({ card }: ExpandedContentProps) {
           <Text style={styles.successText}>✓ Completed!</Text>
         </View>
       )}
+
+      {/* Outcome prompt — disabled for now. The OutcomePrompt component and
+          outcome_response event logging are fully implemented and ready to
+          re-enable when the UX is finalized. To bring it back:
+          1. Restore setShowOutcomePrompt(true) in handleSubmit after success
+          2. Uncomment the JSX below */}
+      {/* {showOutcomePrompt && (
+        <OutcomePrompt onDismiss={() => { setShowOutcomePrompt(false); collapseCard(); }} />
+      )} */}
 
       {/* Primary action button */}
       <View style={styles.actionContainer}>

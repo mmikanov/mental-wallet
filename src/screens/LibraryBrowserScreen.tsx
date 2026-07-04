@@ -30,6 +30,7 @@ import { SEED_CATEGORIES } from '@/data/seeds';
 import { createCardService } from '@/services/cardService';
 import { getDatabase } from '@/data/database';
 import { useWalletStore } from '@/stores/walletStore';
+import { logEvent } from '@/services/analyticsEventLogger';
 import { getLibraryCardButtonState, sortNewestFirst } from './libraryBrowserHelpers';
 import type { SortMode } from './libraryBrowserHelpers';
 import type { CuratedCardDefinition } from '@/data/curatedLibrary';
@@ -193,6 +194,12 @@ export default function LibraryBrowserScreen() {
         // Refresh archived cards map
         await loadArchivedCards();
 
+        void logEvent('tool_added', {
+          card_id: card.id,
+          card_category: card.categoryId,
+          origin_badge: 'library',
+        });
+
         Alert.alert('Added', `"${card.title}" has been added to your wallet.`);
       } catch (error) {
         Alert.alert('Error', 'Failed to add card to wallet. Please try again.');
@@ -223,6 +230,12 @@ export default function LibraryBrowserScreen() {
         await loadCards();
         // Refresh archived cards map (remove restored entry)
         await loadArchivedCards();
+
+        void logEvent('tool_unarchived', {
+          card_id: card.id,
+          card_category: card.categoryId,
+          origin_badge: 'library',
+        });
 
         Alert.alert('Restored', `"${card.title}" has been restored to your wallet.`);
       } catch (error) {

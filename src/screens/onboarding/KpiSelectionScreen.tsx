@@ -10,7 +10,7 @@
  *            6.1, 6.2, 6.3, 6.4, 6.5, 7.1, 7.2, 7.3, 7.5, 7.6, 8.1, 8.5
  */
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -24,6 +24,7 @@ import { CommonActions, useNavigation } from '@react-navigation/native';
 import { useKpiStore } from '@/stores/kpiStore';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import { createOnboardingService } from '@/services/onboardingService';
+import { logEvent } from '@/services/analyticsEventLogger';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { OnboardingStackParamList } from '@/navigation/OnboardingNavigator';
 
@@ -53,6 +54,14 @@ export default function KpiSelectionScreen() {
   const [validationError, setValidationError] = useState('');
   const [isTransitioning, setIsTransitioning] = useState(false);
 
+  useEffect(() => {
+    try {
+      void logEvent('onboarding_step_viewed', { step_name: 'kpi_selection' });
+    } catch {
+      // Analytics must never disrupt onboarding
+    }
+  }, []);
+
   const textInputRef = useRef<TextInput>(null);
 
   const trimmedCustomText = customText.trim();
@@ -77,11 +86,21 @@ export default function KpiSelectionScreen() {
       const onboardingService = createOnboardingService();
       await onboardingService.seedKpiCard(label);
       await completeKpiSelection();
+      try {
+        void logEvent('onboarding_completed');
+      } catch {
+        // Analytics must never disrupt onboarding
+      }
       navigateForward();
     } catch {
       // If seeding fails, still complete selection and navigate (Req error handling)
       try {
         await completeKpiSelection();
+        try {
+          void logEvent('onboarding_completed');
+        } catch {
+          // Analytics must never disrupt onboarding
+        }
       } catch {
         // proceed anyway
       }

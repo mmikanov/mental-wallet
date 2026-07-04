@@ -21,6 +21,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { createReminderService } from '../services/reminderService';
 import { createNotificationService } from '../services/notificationService';
+import { logEvent } from '@/services/analyticsEventLogger';
 import type { Reminder, ReminderFrequencyType } from '../types/index';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ReminderConfig'>;
@@ -119,6 +120,7 @@ export default function ReminderConfigScreen({ route, navigation }: Props) {
       } else {
         await reminderService.setCardReminder(cardId, config);
       }
+      void logEvent('reminder_set', { card_id: cardId, frequency });
       navigation.goBack();
     } catch {
       Alert.alert('Error', 'Failed to save reminder. Please try again.');
@@ -139,6 +141,7 @@ export default function ReminderConfigScreen({ route, navigation }: Props) {
           onPress: async () => {
             try {
               await reminderService.deleteReminder(existingReminder.id);
+              void logEvent('reminder_deleted', { card_id: cardId });
               navigation.goBack();
             } catch {
               Alert.alert('Error', 'Failed to delete reminder.');

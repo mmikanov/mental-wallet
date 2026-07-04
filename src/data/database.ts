@@ -8,6 +8,7 @@ const DB_NAME = 'mental_wallet.db';
 const ENCRYPTION_KEY_ALIAS = 'mental_wallet_db_key';
 
 let dbInstance: SQLite.SQLiteDatabase | null = null;
+let dbInitPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
 /**
  * Retrieves or generates the database encryption key.
@@ -35,12 +36,31 @@ async function getOrCreateEncryptionKey(): Promise<string> {
 /**
  * Opens the encrypted SQLite database, runs migrations, and seeds
  * initial data on first launch. Returns a singleton database instance.
+ * Safe to call concurrently — only the first call triggers initialization.
  */
 export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
   if (dbInstance) {
     return dbInstance;
   }
 
+  // Prevent concurrent initialization: reuse the in-flight promise
+  if (dbInitPromise) {
+    return dbInitPromise;
+  }
+
+  dbInitPromise = initializeDatabase();
+
+  try {
+    const db = await dbInitPromise;
+    return db;
+  } catch (error) {
+    // Reset so next call can retry
+    dbInitPromise = null;
+    throw error;
+  }
+}
+
+async function initializeDatabase(): Promise<SQLite.SQLiteDatabase> {
   const encryptionKey = await getOrCreateEncryptionKey();
 
   const db = await SQLite.openDatabaseAsync(DB_NAME, {
@@ -74,5 +94,6 @@ export async function closeDatabase(): Promise<void> {
   if (dbInstance) {
     await dbInstance.closeAsync();
     dbInstance = null;
+    dbInitPromise = null;
   }
 }

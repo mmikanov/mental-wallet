@@ -14,6 +14,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import type { PlatformType } from '@/types/index';
+import { logEvent } from '@/services/analyticsEventLogger';
 
 interface PlatformEmbedProps {
   url: string;
@@ -82,14 +83,23 @@ export default function PlatformEmbed({
   const deepLink = getDeepLink(url, platform);
 
   const handleOpenExternal = async () => {
+    const platformLabel = platform.charAt(0).toUpperCase() + platform.slice(1);
     // Try deep link first, then fall back to web URL
     if (deepLink) {
       const canOpen = await Linking.canOpenURL(deepLink);
       if (canOpen) {
+        void logEvent('external_resource_opened', {
+          resource_url: deepLink,
+          resource_name: label || `${platformLabel} content`,
+        });
         await Linking.openURL(deepLink);
         return;
       }
     }
+    void logEvent('external_resource_opened', {
+      resource_url: url,
+      resource_name: label || `${platformLabel} content`,
+    });
     await Linking.openURL(url);
   };
 

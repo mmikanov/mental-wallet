@@ -33,3 +33,6 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+# Mock analytics server data
+tools/mock-analytics-server/received_events.json

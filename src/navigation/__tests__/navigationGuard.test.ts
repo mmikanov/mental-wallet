@@ -66,10 +66,10 @@ function resolveRootRoute(
  *
  * From OnboardingNavigator.tsx:
  *   - onboardingScreensComplete && !kpiSelectionComplete → 'KpiSelection'
- *   - disclaimerAcknowledged && !onboardingScreensComplete → 'IntentSelection'
+ *   - disclaimerAcknowledged && !onboardingScreensComplete → 'PrivacyNotice'
  *   - Otherwise → 'Welcome'
  */
-type OnboardingRoute = 'Welcome' | 'IntentSelection' | 'KpiSelection';
+type OnboardingRoute = 'Welcome' | 'PrivacyNotice' | 'IntentSelection' | 'KpiSelection';
 
 function resolveOnboardingRoute(
   disclaimerAcknowledged: boolean,
@@ -80,7 +80,7 @@ function resolveOnboardingRoute(
     return 'KpiSelection';
   }
   if (disclaimerAcknowledged && !onboardingScreensComplete) {
-    return 'IntentSelection';
+    return 'PrivacyNotice';
   }
   return 'Welcome';
 }
@@ -118,9 +118,9 @@ describe('Navigation guard: wallet requires both flags true (Req 8.2)', () => {
     expect(route).toBe('KpiSelection');
   });
 
-  it('within Onboarding, routes to IntentSelection when disclaimer acknowledged but screens not complete', () => {
+  it('within Onboarding, routes to PrivacyNotice when disclaimer acknowledged but screens not complete', () => {
     const route = resolveOnboardingRoute(true, false, false);
-    expect(route).toBe('IntentSelection');
+    expect(route).toBe('PrivacyNotice');
   });
 
   it('within Onboarding, routes to Welcome when nothing is done', () => {

@@ -156,6 +156,65 @@ Both options wipe the SQLite database (settings, cards, onboarding state), givin
 
 ---
 
+## Mock Analytics Backend (Dev Only)
+
+A local mock server receives and displays analytics events during development.
+
+### Start the server
+
+```bash
+npm run mock-analytics
+```
+
+This starts an Express server on port 3001. The app automatically sends events there in dev builds.
+
+### Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/events` | POST | Receives batch payloads from the app |
+| `/events` | GET | Returns all received events as JSON |
+| `/events` | DELETE | Clears all stored events |
+| `/dashboard` | GET | HTML page with computed KPIs |
+
+### View the dashboard
+
+Open http://localhost:3001/dashboard in your browser to see:
+- Total events received
+- Unique anonymous users
+- Onboarding completion rate
+- Mode split (wallet_first vs emotion_first)
+- Tool completion rate per card
+- Outcome positivity rate
+- Retention by days_since_install buckets
+
+### Simulate failures
+
+Set the `ERROR_RATE` environment variable (0–100) to simulate random 500 errors for testing retry logic:
+
+```bash
+ERROR_RATE=20 npm run mock-analytics
+```
+
+### End-to-end testing workflow
+
+1. Start the mock server: `npm run mock-analytics`
+2. Run the app in the simulator
+3. Use the app (open tools, complete them, navigate around)
+4. Events flush every 60s or when 10+ are queued
+5. Check http://localhost:3001/dashboard to see KPIs update
+6. Or use the stress test (triple-tap Settings header → Stress Test) to generate bulk data
+
+### Developer Event Viewer
+
+Access the in-app event viewer by triple-tapping the "Settings" header text. From there you can:
+- See queue contents and status
+- Export the queue as JSON
+- Clear the queue
+- Run the stress test with configurable user count, events per user, and time span
+
+---
+
 ## Useful Commands
 
 ```bash

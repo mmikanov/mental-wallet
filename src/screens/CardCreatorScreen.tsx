@@ -32,6 +32,7 @@ import type { CardShell, Control, EmotionType, OriginBadge } from '@/types/index
 import { createCardService } from '@/services/cardService';
 import { removeOverlay } from '@/services/backgroundOverlayService';
 import { getTagsForCard, setTagsForCard, clearTagsForCard } from '@/services/emotionTagService';
+import { logEvent } from '@/services/analyticsEventLogger';
 import { getDatabase } from '@/data/database';
 import { useWalletStore } from '@/stores/walletStore';
 import Step1Shell from '@/components/creator/Step1Shell';
@@ -250,6 +251,13 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
         }));
 
         const createdCard = await service.create(shell, controlsData, 'my_tool' as OriginBadge);
+
+        // Log tool_created analytics event
+        void logEvent('tool_created', {
+          card_id: createdCard.id,
+          card_category: createdCard.categoryId,
+          origin_badge: 'my_tool',
+        });
 
         // Persist emotion tags in background (Req 9.6)
         if (selectedEmotionTags.length > 0) {

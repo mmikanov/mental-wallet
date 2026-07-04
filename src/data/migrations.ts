@@ -8,6 +8,7 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
   await db.execAsync(SCHEMA_SQL);
   await runEmotionMigration(db);
   await runKpiMigration(db);
+  await runAnalyticsMigration(db);
 }
 
 /**
@@ -228,4 +229,25 @@ CREATE TABLE IF NOT EXISTS kpi_records (
 );
 
 CREATE INDEX IF NOT EXISTS idx_kpi_records_recorded_at ON kpi_records(recorded_at);
+`;
+
+/**
+ * Creates the analytics_event_queue table for storing analytics events
+ * before batch transmission. Uses CREATE TABLE/INDEX IF NOT EXISTS for idempotency.
+ */
+export async function runAnalyticsMigration(db: SQLiteDatabase): Promise<void> {
+  await db.execAsync(ANALYTICS_SCHEMA_SQL);
+}
+
+const ANALYTICS_SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS analytics_event_queue (
+  id TEXT PRIMARY KEY,
+  payload TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK(status IN ('pending', 'sending', 'failed'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_queue_status_created
+  ON analytics_event_queue(status, created_at);
 `;

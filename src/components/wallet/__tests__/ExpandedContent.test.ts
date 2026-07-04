@@ -12,6 +12,9 @@ jest.mock('@/services/completionService', () => ({
 jest.mock('@/services/cardService', () => ({
   createCardService: jest.fn(),
 }));
+jest.mock('@/services/analyticsEventLogger', () => ({
+  logEvent: jest.fn(),
+}));
 
 import { validateControls } from '../ExpandedContent';
 import type { Control } from '@/types/index';

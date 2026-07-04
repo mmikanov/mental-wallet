@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics Dashboard — Mental Health Wallet</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f7fa;
+      color: #1a1a2e;
+      padding: 24px;
+      line-height: 1.5;
+    }
+    h1 {
+      font-size: 1.75rem;
+      margin-bottom: 4px;
+      color: #16213e;
+    }
+    .subtitle {
+      color: #6c757d;
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    .card h3 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #6c757d;
+      margin-bottom: 8px;
+    }
+    .card .value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #16213e;
+    }
+    .card .detail {
+      font-size: 0.85rem;
+      color: #6c757d;
+      margin-top: 4px;
+    }
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #16213e;
+    }
+    .retention-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      margin-bottom: 32px;
+    }
+    .retention-table th, .retention-table td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    .retention-table th {
+      background: #f8f9fa;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #6c757d;
+    }
+    .retention-table td {
+      font-size: 0.95rem;
+    }
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 16px;
+      padding: 8px 12px;
+      background: #e8f5e9;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      color: #2e7d32;
+    }
+    .status-bar .dot {
+      width: 8px;
+      height: 8px;
+      background: #4caf50;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .actions {
+      margin-top: 16px;
+    }
+    .actions button {
+      background: #e53935;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    .actions button:hover { background: #c62828; }
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: #6c757d;
+    }
+    .empty-state p { margin-top: 8px; }
+    .clickable { cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; }
+    .clickable:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .detail-panel {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      margin-bottom: 24px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .detail-panel h3 {
+      font-size: 1rem;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .detail-panel .close-btn {
+      background: #eee;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 10px;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+    .detail-panel table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .detail-panel th, .detail-panel td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #f0f0f0; }
+    .detail-panel th { color: #6c757d; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; }
+  </style>
+</head>
+<body>
+  <h1>📊 Analytics Dashboard</h1>
+  <p class="subtitle">Mental Health Wallet — Mock Backend</p>
+
+  <div class="status-bar">
+    <span class="dot"></span>
+    <span>Auto-refreshing every 5 seconds</span>
+    <span id="last-updated" style="margin-left: auto;"></span>
+  </div>
+
+  <div id="dashboard-content">
+    <div class="empty-state">
+      <p>Loading events...</p>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button onclick="clearEvents()">Clear All Events</button>
+  </div>
+
+  <script>
+    async function fetchEvents() {
+      try {
+        const res = await fetch('/events');
+        return await res.json();
+      } catch (e) {
+        console.error('Failed to fetch events:', e);
+        return [];
+      }
+    }
+
+    function computeKPIs(events) {
+      const totalEvents = events.length;
+      const uniqueUsers = new Set(events.map(e => e.anonymous_user_id)).size;
+
+      // Onboarding completion rate
+      const usersWithAppOpened = new Set(
+        events.filter(e => e.event_type === 'app_opened').map(e => e.anonymous_user_id)
+      );
+      const usersWithOnboardingCompleted = new Set(
+        events.filter(e => e.event_type === 'onboarding_completed').map(e => e.anonymous_user_id)
+      );
+      const onboardingRate = usersWithAppOpened.size > 0
+        ? (usersWithOnboardingCompleted.size / usersWithAppOpened.size) * 100
+        : 0;
+
+      // Mode split
+      const modeEvents = events.filter(e => e.event_type === 'start_mode_selected');
+      const walletFirst = modeEvents.filter(e => e.properties && e.properties.mode === 'wallet_first').length;
+      const emotionFirst = modeEvents.filter(e => e.properties && e.properties.mode === 'emotion_first').length;
+      const totalModes = walletFirst + emotionFirst;
+      const walletPct = totalModes > 0 ? (walletFirst / totalModes) * 100 : 0;
+      const emotionPct = totalModes > 0 ? (emotionFirst / totalModes) * 100 : 0;
+
+      // Tool completion rate
+      const toolOpened = events.filter(e => e.event_type === 'tool_opened').length;
+      const toolCompleted = events.filter(e => e.event_type === 'tool_completed').length;
+      const toolCompletionRate = toolOpened > 0 ? (toolCompleted / toolOpened) * 100 : 0;
+
+      // Outcome positivity rate
+      const outcomeEvents = events.filter(e => e.event_type === 'outcome_response');
+      const positiveOutcomes = outcomeEvents.filter(e =>
+        e.properties && ['calmer', 'clearer', 'hopeful'].includes(e.properties.response)
+      ).length;
+      const outcomePositivity = outcomeEvents.length > 0
+        ? (positiveOutcomes / outcomeEvents.length) * 100
+        : 0;
+
+      // Retention by days_since_install buckets
+      const retentionBuckets = { D0: new Set(), D1: new Set(), D7: new Set(), D30: new Set() };
+      const appOpenedEvents = events.filter(e => e.event_type === 'app_opened');
+      for (const event of appOpenedEvents) {
+        const days = event.properties && event.properties.days_since_install;
+        if (days === 0) retentionBuckets.D0.add(event.anonymous_user_id);
+        if (days === 1) retentionBuckets.D1.add(event.anonymous_user_id);
+        if (days >= 1 && days <= 7) retentionBuckets.D7.add(event.anonymous_user_id);
+        if (days >= 1 && days <= 30) retentionBuckets.D30.add(event.anonymous_user_id);
+      }
+
+      return {
+        totalEvents,
+        uniqueUsers,
+        onboardingRate,
+        walletPct,
+        emotionPct,
+        totalModes,
+        toolOpened,
+        toolCompleted,
+        toolCompletionRate,
+        outcomePositivity,
+        positiveOutcomes,
+        totalOutcomes: outcomeEvents.length,
+        retentionBuckets: {
+          D0: retentionBuckets.D0.size,
+          D1: retentionBuckets.D1.size,
+          D7: retentionBuckets.D7.size,
+          D30: retentionBuckets.D30.size,
+        },
+      };
+    }
+
+    function render(kpis) {
+      if (kpis.totalEvents === 0) {
+        document.getElementById('dashboard-content').innerHTML = `
+          <div class="empty-state">
+            <h2>No events received yet</h2>
+            <p>Start the app and interact with it, or run the stress test to generate sample data.</p>
+          </div>
+        `;
+        return;
+      }
+
+      document.getElementById('dashboard-content').innerHTML = `
+        <div class="grid">
+          <div class="card clickable" onclick="window.location.href='/events'">
+            <h3>Total Events</h3>
+            <div class="value">${kpis.totalEvents.toLocaleString()}</div>
+            <div class="detail">Click to view raw events</div>
+          </div>
+          <div class="card clickable" onclick="showDetail('users')">
+            <h3>Unique Users</h3>
+            <div class="value">${kpis.uniqueUsers.toLocaleString()}</div>
+            <div class="detail">Click to view user list</div>
+          </div>
+          <div class="card clickable" onclick="showDetail('onboarding')">
+            <h3>Onboarding Completion</h3>
+            <div class="value">${kpis.onboardingRate.toFixed(1)}%</div>
+            <div class="detail">Users completing onboarding / users who opened app</div>
+          </div>
+          <div class="card clickable" onclick="showDetail('modes')">
+            <h3>Mode Split</h3>
+            <div class="value">${kpis.walletPct.toFixed(1)}% / ${kpis.emotionPct.toFixed(1)}%</div>
+            <div class="detail">Wallet-first vs Emotion-first (${kpis.totalModes} selections)</div>
+          </div>
+          <div class="card clickable" onclick="showDetail('tools')">
+            <h3>Tool Completion Rate</h3>
+            <div class="value">${kpis.toolCompletionRate.toFixed(1)}%</div>
+            <div class="detail">${kpis.toolCompleted} completed / ${kpis.toolOpened} opened</div>
+          </div>
+          <div class="card clickable" onclick="showDetail('outcomes')">
+            <h3>Outcome Positivity</h3>
+            <div class="value">${kpis.outcomePositivity.toFixed(1)}%</div>
+            <div class="detail">${kpis.positiveOutcomes} positive / ${kpis.totalOutcomes} total responses</div>
+          </div>
+        </div>
+
+        <div id="detail-panel"></div>
+
+        <div class="section-title">Retention (unique users by days since install)</div>
+        <table class="retention-table">
+          <thead>
+            <tr>
+              <th>Bucket</th>
+              <th>Description</th>
+              <th>Unique Users</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>D0</strong></td>
+              <td>Install day</td>
+              <td>${kpis.retentionBuckets.D0}</td>
+            </tr>
+            <tr>
+              <td><strong>D1</strong></td>
+              <td>Day 1 after install</td>
+              <td>${kpis.retentionBuckets.D1}</td>
+            </tr>
+            <tr>
+              <td><strong>D7</strong></td>
+              <td>Within first 7 days</td>
+              <td>${kpis.retentionBuckets.D7}</td>
+            </tr>
+            <tr>
+              <td><strong>D30</strong></td>
+              <td>Within first 30 days</td>
+              <td>${kpis.retentionBuckets.D30}</td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+    }
+
+    let cachedEvents = [];
+    let activeDetail = null; // Track which detail panel is open
+
+    async function refresh() {
+      cachedEvents = await fetchEvents();
+      const kpis = computeKPIs(cachedEvents);
+      render(kpis);
+      // Re-open the detail panel if one was active
+      if (activeDetail) {
+        showDetail(activeDetail);
+      }
+      document.getElementById('last-updated').textContent =
+        'Last updated: ' + new Date().toLocaleTimeString();
+    }
+
+    function showDetail(type) {
+      activeDetail = type;
+      const panel = document.getElementById('detail-panel');
+      if (!panel) return;
+
+      let html = '';
+
+      if (type === 'users') {
+        const userMap = {};
+        for (const e of cachedEvents) {
+          const uid = e.anonymous_user_id;
+          if (!userMap[uid]) {
+            userMap[uid] = { id: uid, firstSeen: e.timestamp, eventCount: 0, lastSeen: e.timestamp };
+          }
+          userMap[uid].eventCount++;
+          if (e.timestamp < userMap[uid].firstSeen) userMap[uid].firstSeen = e.timestamp;
+          if (e.timestamp > userMap[uid].lastSeen) userMap[uid].lastSeen = e.timestamp;
+        }
+        const users = Object.values(userMap).sort((a, b) => b.eventCount - a.eventCount);
+        html = `<div class="detail-panel">
+          <h3>Unique Users (${users.length}) <button class="close-btn" onclick="closeDetail()">Close</button></h3>
+          <table><thead><tr><th>User ID</th><th>Events</th><th>First Seen</th><th>Last Seen</th></tr></thead><tbody>
+          ${users.map(u => `<tr><td>${u.id.slice(0,8)}...</td><td>${u.eventCount}</td><td>${new Date(u.firstSeen).toLocaleString()}</td><td>${new Date(u.lastSeen).toLocaleString()}</td></tr>`).join('')}
+          </tbody></table></div>`;
+      }
+
+      if (type === 'onboarding') {
+        const opened = cachedEvents.filter(e => e.event_type === 'app_opened');
+        const completed = cachedEvents.filter(e => e.event_type === 'onboarding_completed');
+        const steps = cachedEvents.filter(e => e.event_type === 'onboarding_step_viewed');
+        const stepCounts = {};
+        for (const s of steps) {
+          const name = s.properties && s.properties.step_name || 'unknown';
+          stepCounts[name] = (stepCounts[name] || 0) + 1;
+        }
+        html = `<div class="detail-panel">
+          <h3>Onboarding Details <button class="close-btn" onclick="closeDetail()">Close</button></h3>
+          <p style="margin-bottom:12px;">Users opened app: ${new Set(opened.map(e=>e.anonymous_user_id)).size} | Completed onboarding: ${new Set(completed.map(e=>e.anonymous_user_id)).size}</p>
+          <table><thead><tr><th>Step Name</th><th>Views</th></tr></thead><tbody>
+          ${Object.entries(stepCounts).sort((a,b) => b[1]-a[1]).map(([name, count]) => `<tr><td>${name}</td><td>${count}</td></tr>`).join('')}
+          </tbody></table></div>`;
+      }
+
+      if (type === 'modes') {
+        const modeEvents = cachedEvents.filter(e => e.event_type === 'start_mode_selected');
+        html = `<div class="detail-panel">
+          <h3>Mode Selections (${modeEvents.length}) <button class="close-btn" onclick="closeDetail()">Close</button></h3>
+          <table><thead><tr><th>User ID</th><th>Mode</th><th>Timestamp</th></tr></thead><tbody>
+          ${modeEvents.slice(0, 100).map(e => `<tr><td>${e.anonymous_user_id.slice(0,8)}...</td><td>${e.properties && e.properties.mode}</td><td>${new Date(e.timestamp).toLocaleString()}</td></tr>`).join('')}
+          </tbody></table></div>`;
+      }
+
+      if (type === 'tools') {
+        const toolCompleted = cachedEvents.filter(e => e.event_type === 'tool_completed');
+        const byCard = {};
+        for (const e of toolCompleted) {
+          const id = e.properties && e.properties.card_id || 'unknown';
+          if (!byCard[id]) byCard[id] = { card_id: id, category: e.properties && e.properties.card_category, completions: 0, totalDuration: 0 };
+          byCard[id].completions++;
+          byCard[id].totalDuration += (e.properties && e.properties.duration_ms) || 0;
+        }
+        const cards = Object.values(byCard).sort((a, b) => b.completions - a.completions);
+        html = `<div class="detail-panel">
+          <h3>Tool Completions by Card <button class="close-btn" onclick="closeDetail()">Close</button></h3>
+          <table><thead><tr><th>Card ID</th><th>Category</th><th>Completions</th><th>Avg Duration</th></tr></thead><tbody>
+          ${cards.map(c => `<tr><td>${c.card_id.slice(0,20)}</td><td>${c.category || '-'}</td><td>${c.completions}</td><td>${c.completions > 0 ? Math.round(c.totalDuration / c.completions / 1000) + 's' : '-'}</td></tr>`).join('')}
+          </tbody></table></div>`;
+      }
+
+      if (type === 'outcomes') {
+        const outcomes = cachedEvents.filter(e => e.event_type === 'outcome_response');
+        const counts = { calmer: 0, clearer: 0, hopeful: 0, same: 0, worse: 0 };
+        for (const e of outcomes) {
+          const r = e.properties && e.properties.response;
+          if (r && counts.hasOwnProperty(r)) counts[r]++;
+        }
+        html = `<div class="detail-panel">
+          <h3>Outcome Responses (${outcomes.length}) <button class="close-btn" onclick="closeDetail()">Close</button></h3>
+          <table><thead><tr><th>Response</th><th>Count</th><th>Percentage</th></tr></thead><tbody>
+          ${Object.entries(counts).map(([r, c]) => `<tr><td>${r}</td><td>${c}</td><td>${outcomes.length > 0 ? (c/outcomes.length*100).toFixed(1) + '%' : '-'}</td></tr>`).join('')}
+          </tbody></table></div>`;
+      }
+
+      panel.innerHTML = html;
+    }
+
+    function closeDetail() {
+      activeDetail = null;
+      const panel = document.getElementById('detail-panel');
+      if (panel) panel.innerHTML = '';
+    }
+
+    async function clearEvents() {
+      if (!confirm('Clear all received events?')) return;
+      try {
+        await fetch('/events', { method: 'DELETE' });
+        await refresh();
+      } catch (e) {
+        alert('Failed to clear events: ' + e.message);
+      }
+    }
+
+    // Initial load and auto-refresh
+    refresh();
+    setInterval(refresh, 5000);
+  </script>
+</body>
+</html>

@@ -7,7 +7,7 @@
  * Validates: Requirements 1.1, 1.2, 1.3, 1.4, 1.6, 9.1, 9.2, 9.3, 9.4, 9.5
  */
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import { useKpiStore } from '@/stores/kpiStore';
 import { createOnboardingService } from '@/services/onboardingService';
+import { logEvent } from '@/services/analyticsEventLogger';
 import type { OnboardingStackParamList } from '@/navigation/OnboardingNavigator';
 
 type WelcomeNavProp = NativeStackNavigationProp<OnboardingStackParamList, 'Welcome'>;
@@ -31,9 +32,17 @@ export default function WelcomeScreen() {
   const completeOnboardingScreens = useOnboardingStore((s) => s.completeOnboardingScreens);
   const onboardingService = useMemo(() => createOnboardingService(), []);
 
+  useEffect(() => {
+    try {
+      void logEvent('onboarding_step_viewed', { step_name: 'welcome' });
+    } catch {
+      // Analytics must never disrupt onboarding
+    }
+  }, []);
+
   const handleContinue = async () => {
     await acknowledgeDisclaimer();
-    navigation.navigate('IntentSelection');
+    navigation.navigate('PrivacyNotice');
   };
 
   const handleSkip = async () => {

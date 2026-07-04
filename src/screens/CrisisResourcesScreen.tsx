@@ -20,6 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { getDatabase } from '../data/database';
+import { logEvent } from '@/services/analyticsEventLogger';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CrisisResources'>;
 
@@ -92,7 +93,11 @@ export default function CrisisResourcesScreen({ navigation }: Props) {
     Linking.openURL(`tel:${phone}`);
   }
 
-  function handleOpenUrl(url: string) {
+  function handleOpenUrl(url: string, resourceName: string) {
+    void logEvent('external_resource_opened', {
+      resource_url: url,
+      resource_name: resourceName,
+    });
     Linking.openURL(url);
   }
 
@@ -158,7 +163,7 @@ export default function CrisisResourcesScreen({ navigation }: Props) {
               {resource.url && (
                 <TouchableOpacity
                   style={styles.linkButton}
-                  onPress={() => handleOpenUrl(resource.url!)}
+                  onPress={() => handleOpenUrl(resource.url!, resource.name)}
                   accessibilityLabel={`Visit ${resource.name} website`}
                   accessibilityRole="link"
                 >
