@@ -15,6 +15,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import type { Card } from '@/types/index';
 import { isLightBackground } from '@/utils/cardColors';
+import { renderCardIcon } from '@/utils/renderCardIcon';
 
 export interface CollapsedStackProps {
   cards: Card[];
@@ -88,9 +89,12 @@ export default function CollapsedStack({
 
       {/* Top card — shows icon + title */}
       <View style={[styles.topCard, { backgroundColor: topBgColor }]}>
-        <Text style={styles.topCardIcon}>
-          {topCard.iconType === 'emoji' ? topCard.iconValue : '📋'}
-        </Text>
+        {renderCardIcon({
+          iconType: topCard.iconType,
+          iconValue: topCard.iconValue,
+          size: 20,
+          fallbackEmoji: topCard.iconValue || '📋',
+        })}
         <Text
           style={[styles.topCardTitle, { color: textColor }]}
           numberOfLines={1}
@@ -125,6 +129,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
+    gap: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.2,
@@ -133,7 +138,6 @@ const styles = StyleSheet.create({
   },
   topCardIcon: {
     fontSize: 20,
-    marginRight: 12,
   },
   topCardTitle: {
     flex: 1,

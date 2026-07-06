@@ -82,6 +82,16 @@ export default function KpiSelectionScreen() {
     setIsTransitioning(true);
 
     try {
+      // Log selection type — use predefined label or "custom" to avoid logging free text
+      const isCustom = !KPI_OPTIONS.slice(0, OTHER_INDEX).includes(label as any);
+      void logEvent('onboarding_kpi_selected', {
+        kpi_label: isCustom ? 'custom' : label,
+      });
+    } catch {
+      // Analytics must never disrupt onboarding
+    }
+
+    try {
       await setKpi(label);
       const onboardingService = createOnboardingService();
       await onboardingService.seedKpiCard(label);

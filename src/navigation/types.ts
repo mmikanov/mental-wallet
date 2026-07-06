@@ -14,7 +14,7 @@ export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
   ModeChoice: undefined;
   LibraryBrowser: undefined;
-  CardCreator: { cardId?: string } | undefined;
+  CardCreator: { cardId?: string; adminEditCardId?: string; adminEditSource?: 'admin' | 'static' } | undefined;
   Archive: undefined;
   Settings: undefined;
   CrisisResources: undefined;

@@ -21,9 +21,9 @@ export interface CuratedCardDefinition {
   id: string;
   title: string;
   description: string;
-  iconType: 'emoji';
+  iconType: 'emoji' | 'third_party';
   iconValue: string;
-  backgroundType: 'color';
+  backgroundType: 'color' | 'image';
   backgroundValue: string;
   categoryId: string;
   allowBackgroundCustomization: boolean;

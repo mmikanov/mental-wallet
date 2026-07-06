@@ -28,7 +28,7 @@ export const INTENT_OPTIONS: StarterCardMapping[] = [
     intentId: 'routine',
     label: 'I want to build a daily routine',
     description: 'Tools to check in with yourself each day',
-    cardIds: ['lib-daily-mood', 'lib-win-of-day', 'lib-evening-gratitude'],
+    cardIds: ['lib-gratitude-three', 'lib-win-of-day', 'lib-evening-gratitude'],
   },
   {
     intentId: 'organize',
@@ -46,6 +46,6 @@ export const INTENT_OPTIONS: StarterCardMapping[] = [
 
 export const DEFAULT_STARTER_CARD_IDS: string[] = [
   'lib-grounding-54321',
-  'lib-daily-mood',
+  'lib-box-breathing',
   'lib-self-compassion-pause',
 ];

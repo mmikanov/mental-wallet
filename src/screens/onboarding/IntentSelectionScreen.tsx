@@ -12,7 +12,7 @@
  * Validates: Requirements 2.1, 2.2, 2.3, 2.4, 2.5, 9.1, 9.3, 9.4, 9.5
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -21,7 +21,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import { createOnboardingService } from '@/services/onboardingService';
 import { INTENT_OPTIONS, type IntentId } from '@/data/onboardingConfig';
@@ -40,13 +40,16 @@ export default function IntentSelectionScreen() {
   const [selectedIntent, setSelectedIntent] = useState<IntentId | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  useEffect(() => {
-    try {
-      void logEvent('onboarding_step_viewed', { step_name: 'intent_selection' });
-    } catch {
-      // Analytics must never disrupt onboarding
-    }
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      setIsTransitioning(false);
+      try {
+        void logEvent('onboarding_step_viewed', { step_name: 'intent_selection' });
+      } catch {
+        // Analytics must never disrupt onboarding
+      }
+    }, [])
+  );
 
   const handleSelect = async (intentId: IntentId) => {
     if (isTransitioning) return;
@@ -54,10 +57,17 @@ export default function IntentSelectionScreen() {
     setSelectedIntent(intentId);
     setIsTransitioning(true);
 
+    try {
+      void logEvent('onboarding_intent_selected', { intent_id: intentId });
+    } catch {
+      // Analytics must never disrupt onboarding
+    }
+
     // Brief pause for micro-copy to be visible
     await new Promise((resolve) => setTimeout(resolve, 600));
 
     const onboardingService = createOnboardingService();
+    await onboardingService.clearStarterCards();
     await onboardingService.seedStarterCards(intentId);
     await completeOnboardingScreens(intentId);
 

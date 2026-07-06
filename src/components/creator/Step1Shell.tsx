@@ -56,6 +56,12 @@ export default function Step1Shell({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [customHex, setCustomHex] = useState('');
   const [showBackgroundSheet, setShowBackgroundSheet] = useState(false);
+  const [iconMode, setIconMode] = useState<'emoji' | 'url'>(
+    shell.iconType === 'third_party' ? 'url' : 'emoji'
+  );
+  const [iconUrl, setIconUrl] = useState(
+    shell.iconType === 'third_party' ? shell.iconValue : ''
+  );
 
   function getFieldError(field: string): string | undefined {
     return errors.find((e) => e.field === field)?.message;
@@ -84,6 +90,13 @@ export default function Step1Shell({
   function selectEmoji(emoji: string) {
     updateShell({ iconType: 'emoji', iconValue: emoji });
     setShowEmojiPicker(false);
+  }
+
+  function applyIconUrl(url: string) {
+    const trimmed = url.trim();
+    if (trimmed) {
+      updateShell({ iconType: 'third_party', iconValue: trimmed });
+    }
   }
 
   function selectColor(hex: string) {
@@ -143,16 +156,65 @@ export default function Step1Shell({
       {/* Icon Picker */}
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Icon *</Text>
-        <TouchableOpacity
-          style={[styles.pickerButton, getFieldError('iconValue') && styles.inputError]}
-          onPress={() => setShowEmojiPicker(true)}
-          accessibilityLabel="Select icon"
-          accessibilityRole="button"
-        >
-          <Text style={styles.pickerButtonText}>
-            {shell.iconValue ? `${shell.iconValue}  Selected` : 'Tap to choose an icon'}
-          </Text>
-        </TouchableOpacity>
+        {/* Mode toggle */}
+        <View style={styles.iconModeToggle}>
+          <TouchableOpacity
+            style={[styles.iconModeButton, iconMode === 'emoji' && styles.iconModeButtonActive]}
+            onPress={() => setIconMode('emoji')}
+            accessibilityLabel="Emoji icon mode"
+            accessibilityRole="button"
+            accessibilityState={{ selected: iconMode === 'emoji' }}
+          >
+            <Text style={[styles.iconModeText, iconMode === 'emoji' && styles.iconModeTextActive]}>
+              Emoji
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.iconModeButton, iconMode === 'url' && styles.iconModeButtonActive]}
+            onPress={() => setIconMode('url')}
+            accessibilityLabel="URL icon mode"
+            accessibilityRole="button"
+            accessibilityState={{ selected: iconMode === 'url' }}
+          >
+            <Text style={[styles.iconModeText, iconMode === 'url' && styles.iconModeTextActive]}>
+              URL
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {iconMode === 'emoji' ? (
+          <TouchableOpacity
+            style={[styles.pickerButton, getFieldError('iconValue') && styles.inputError]}
+            onPress={() => setShowEmojiPicker(true)}
+            accessibilityLabel="Select icon"
+            accessibilityRole="button"
+          >
+            <Text style={styles.pickerButtonText}>
+              {shell.iconType === 'emoji' && shell.iconValue
+                ? `${shell.iconValue}  Selected`
+                : 'Tap to choose an icon'}
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <View>
+            <TextInput
+              style={[styles.textInput, getFieldError('iconValue') && styles.inputError]}
+              value={iconUrl}
+              onChangeText={(text) => {
+                setIconUrl(text);
+                applyIconUrl(text);
+              }}
+              placeholder="https://example.com/logo.png"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              accessibilityLabel="Icon URL"
+            />
+            <Text style={styles.helperText}>
+              Enter an HTTPS URL or local path (./assets/...).{'\n'}Use a 128×128 or 256×256 PNG for best quality on all screens.
+            </Text>
+          </View>
+        )}
         {getFieldError('iconValue') && (
           <Text style={styles.errorText}>{getFieldError('iconValue')}</Text>
         )}
@@ -372,6 +434,33 @@ const styles = StyleSheet.create({
   pickerButtonText: {
     fontSize: 16,
     color: '#666666',
+  },
+  iconModeToggle: {
+    flexDirection: 'row',
+    marginBottom: 10,
+    gap: 8,
+  },
+  iconModeButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 8,
+    backgroundColor: '#F2F2F7',
+  },
+  iconModeButtonActive: {
+    backgroundColor: '#1C1C1E',
+  },
+  iconModeText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#636366',
+  },
+  iconModeTextActive: {
+    color: '#FFFFFF',
+  },
+  helperText: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginTop: 6,
   },
   colorGrid: {
     flexDirection: 'row',

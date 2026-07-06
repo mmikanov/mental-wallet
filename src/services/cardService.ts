@@ -2,6 +2,7 @@ import * as Crypto from 'expo-crypto';
 import { getDatabase } from '../data/database';
 import { AppError, ErrorCode } from '../types/errors';
 import { copyOverlayToCard } from './backgroundOverlayService';
+import { validateThirdPartyUri } from '../utils/validateThirdPartyUri';
 import type {
   Card,
   CardShell,
@@ -48,6 +49,14 @@ export function validateShell(shell: CardShell): ValidationResult {
 
   if (!isNonEmpty(shell.iconValue)) {
     errors.push({ field: 'iconValue', message: 'Icon selection is required' });
+  }
+
+  // Validate third-party icon URI uses HTTPS or local asset path
+  if (shell.iconType === 'third_party' && isNonEmpty(shell.iconValue)) {
+    const uriResult = validateThirdPartyUri(shell.iconValue);
+    if (!uriResult.valid) {
+      errors.push({ field: 'iconValue', message: uriResult.error || 'URI must use HTTPS or reference a local asset.' });
+    }
   }
 
   if (!isNonEmpty(shell.backgroundValue)) {
@@ -200,7 +209,7 @@ export function createCardService(): CardService {
         FROM cards c
         LEFT JOIN background_overlays bo ON bo.card_id = c.id
         LEFT JOIN controls ctrl ON ctrl.card_id = c.id
-        WHERE c.is_archived = 0
+        WHERE c.is_archived = 0 AND c.stack_position >= 0
         ORDER BY c.stack_position ASC, ctrl.position ASC`
       );
 
@@ -289,7 +298,7 @@ export function createCardService(): CardService {
       try {
         // Shift existing cards down
         await db.runAsync(
-          `UPDATE cards SET stack_position = stack_position + 1 WHERE is_archived = 0`
+          `UPDATE cards SET stack_position = stack_position + 1 WHERE is_archived = 0 AND stack_position >= 0`
         );
 
         // Insert the card
@@ -381,6 +390,19 @@ export function createCardService(): CardService {
       if (updates.iconValue !== undefined) {
         setClauses.push('icon_value = ?');
         params.push(updates.iconValue);
+      }
+
+      // Validate third-party icon URI on update
+      const effectiveIconType = updates.iconType ?? existing.iconType;
+      const effectiveIconValue = updates.iconValue ?? existing.iconValue;
+      if (effectiveIconType === 'third_party' && effectiveIconValue) {
+        const uriResult = validateThirdPartyUri(effectiveIconValue);
+        if (!uriResult.valid) {
+          throw AppError.validation(
+            ErrorCode.VALIDATION_EMPTY_FIELD,
+            uriResult.error || 'URI must use HTTPS or reference a local asset.'
+          );
+        }
       }
       if (updates.backgroundType !== undefined) {
         setClauses.push('background_type = ?');
@@ -492,12 +514,12 @@ export function createCardService(): CardService {
           [id]
         );
 
-        // Reindex remaining active cards
+        // Reindex remaining active cards (exclude library cards with stack_position = -1)
         await db.runAsync(
           `UPDATE cards SET stack_position = (
             SELECT COUNT(*) FROM cards c2 
-            WHERE c2.is_archived = 0 AND c2.stack_position < cards.stack_position
-          ) WHERE is_archived = 0`
+            WHERE c2.is_archived = 0 AND c2.stack_position >= 0 AND c2.stack_position < cards.stack_position
+          ) WHERE is_archived = 0 AND stack_position >= 0`
         );
 
         await db.execAsync('COMMIT');
@@ -595,7 +617,7 @@ export function createCardService(): CardService {
       try {
         // Shift existing cards down to make room at top
         await db.runAsync(
-          `UPDATE cards SET stack_position = stack_position + 1 WHERE is_archived = 0`
+          `UPDATE cards SET stack_position = stack_position + 1 WHERE is_archived = 0 AND stack_position >= 0`
         );
 
         // Insert duplicated card at top of stack

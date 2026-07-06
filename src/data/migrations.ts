@@ -1,4 +1,17 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
+import type { IconType } from '@/types/index';
+
+/** Valid icon_type values for application-layer validation (SQLite CHECK cannot be altered in-place). */
+const VALID_ICON_TYPES: IconType[] = ['library', 'emoji', 'custom_image', 'third_party'];
+
+/**
+ * Validates that an icon_type value is allowed.
+ * Since SQLite cannot alter CHECK constraints in-place, we enforce 'third_party'
+ * support at the application layer.
+ */
+export function validateIconType(iconType: string): iconType is IconType {
+  return VALID_ICON_TYPES.includes(iconType as IconType);
+}
 
 /**
  * Runs all database migrations. Creates tables and indexes
@@ -9,6 +22,8 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
   await runEmotionMigration(db);
   await runKpiMigration(db);
   await runAnalyticsMigration(db);
+  await runAdminMigration(db);
+  await runIconTypeCheckMigration(db);
 }
 
 /**
@@ -59,7 +74,7 @@ CREATE TABLE IF NOT EXISTS cards (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL CHECK(length(trim(title)) > 0),
   description TEXT NOT NULL CHECK(length(trim(description)) > 0),
-  icon_type TEXT NOT NULL CHECK(icon_type IN ('library', 'emoji', 'custom_image')),
+  icon_type TEXT NOT NULL CHECK(icon_type IN ('library', 'emoji', 'custom_image', 'third_party')),
   icon_value TEXT NOT NULL,
   background_type TEXT NOT NULL CHECK(background_type IN ('color', 'gradient', 'image')),
   background_value TEXT NOT NULL,
@@ -251,3 +266,112 @@ CREATE TABLE IF NOT EXISTS analytics_event_queue (
 CREATE INDEX IF NOT EXISTS idx_analytics_queue_status_created
   ON analytics_event_queue(status, created_at);
 `;
+
+
+/**
+ * Creates the suppressed_library_cards table for storing IDs of static library
+ * cards that the admin has chosen to hide. Uses CREATE TABLE IF NOT EXISTS
+ * for idempotency.
+ */
+export async function runAdminMigration(db: SQLiteDatabase): Promise<void> {
+  await db.execAsync(ADMIN_SCHEMA_SQL);
+}
+
+const ADMIN_SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS suppressed_library_cards (
+  id TEXT PRIMARY KEY,
+  suppressed_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+`;
+
+/**
+ * Migrates the cards table CHECK constraint to include 'third_party' in icon_type.
+ * SQLite cannot ALTER CHECK constraints, so we rebuild the table.
+ * Idempotent: checks current constraint via a test INSERT + ROLLBACK.
+ */
+async function runIconTypeCheckMigration(db: SQLiteDatabase): Promise<void> {
+  // Test if 'third_party' is already allowed by attempting an insert in a savepoint
+  try {
+    await db.execAsync('SAVEPOINT icon_check_test');
+    await db.runAsync(
+      `INSERT INTO cards (id, title, description, icon_type, icon_value, background_type, background_value, category_id, origin_badge, stack_position, allow_background_customization, created_at, updated_at)
+       VALUES ('__icon_type_test__', 'test', 'test', 'third_party', 'test', 'color', '#FFF', 'grounding-calming', 'my_tool', -999, 0, datetime('now'), datetime('now'))`,
+      []
+    );
+    // If we get here, the constraint already allows 'third_party'
+    await db.execAsync('ROLLBACK TO icon_check_test');
+    await db.execAsync('RELEASE icon_check_test');
+    return; // No migration needed
+  } catch {
+    // The INSERT failed — constraint doesn't include 'third_party', need to rebuild
+    try {
+      await db.execAsync('ROLLBACK TO icon_check_test');
+      await db.execAsync('RELEASE icon_check_test');
+    } catch {
+      // Savepoint may already be rolled back
+    }
+  }
+
+  // Rebuild the cards table with the updated CHECK constraint
+  // Disable foreign keys to prevent ON DELETE CASCADE from wiping controls/completions
+  await db.execAsync('PRAGMA foreign_keys = OFF');
+  await db.execAsync('BEGIN TRANSACTION');
+  try {
+    // 1. Create temp table with new constraint
+    await db.execAsync(`
+      CREATE TABLE cards_new (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL CHECK(length(trim(title)) > 0),
+        description TEXT NOT NULL CHECK(length(trim(description)) > 0),
+        icon_type TEXT NOT NULL CHECK(icon_type IN ('library', 'emoji', 'custom_image', 'third_party')),
+        icon_value TEXT NOT NULL,
+        background_type TEXT NOT NULL CHECK(background_type IN ('color', 'gradient', 'image')),
+        background_value TEXT NOT NULL,
+        category_id TEXT NOT NULL REFERENCES categories(id),
+        origin_badge TEXT NOT NULL CHECK(origin_badge IN ('library', 'community', 'my_tool')),
+        stack_position INTEGER NOT NULL DEFAULT 0,
+        total_uses INTEGER NOT NULL DEFAULT 0,
+        current_streak INTEGER NOT NULL DEFAULT 0,
+        last_used_at TEXT,
+        is_archived INTEGER NOT NULL DEFAULT 0,
+        archived_at TEXT,
+        previous_stack_position INTEGER,
+        allow_background_customization INTEGER NOT NULL DEFAULT 0,
+        source_library_id TEXT,
+        card_type TEXT NOT NULL DEFAULT 'standard' CHECK(card_type IN ('standard', 'session_launcher')),
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    `);
+
+    // 2. Copy all data from old table
+    await db.execAsync(`
+      INSERT INTO cards_new
+        SELECT id, title, description, icon_type, icon_value, background_type, background_value,
+               category_id, origin_badge, stack_position, total_uses, current_streak,
+               last_used_at, is_archived, archived_at, previous_stack_position,
+               allow_background_customization, source_library_id, card_type, created_at, updated_at
+        FROM cards
+    `);
+
+    // 3. Drop old table
+    await db.execAsync('DROP TABLE cards');
+
+    // 4. Rename new table
+    await db.execAsync('ALTER TABLE cards_new RENAME TO cards');
+
+    // 5. Recreate indexes
+    await db.execAsync(`
+      CREATE INDEX IF NOT EXISTS idx_cards_archived ON cards(is_archived);
+      CREATE INDEX IF NOT EXISTS idx_cards_stack_position ON cards(stack_position) WHERE is_archived = 0;
+      CREATE INDEX IF NOT EXISTS idx_cards_category ON cards(category_id);
+    `);
+
+    await db.execAsync('COMMIT');
+    await db.execAsync('PRAGMA foreign_keys = ON');
+  } catch (error) {
+    await db.execAsync('ROLLBACK');
+    await db.execAsync('PRAGMA foreign_keys = ON');
+    throw error;
+  }
+}

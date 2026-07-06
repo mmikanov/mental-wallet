@@ -42,8 +42,20 @@ export const CARD_BACKGROUND_COLORS = [
 export const COLORS_PER_ROW = 6;
 
 /**
+ * Converts a single sRGB channel value (0–255) to linear RGB.
+ */
+function sRGBToLinear(channel: number): number {
+  const s = channel / 255;
+  return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+}
+
+/**
  * Determines whether a background color is light (returns true) or dark (returns false).
- * Uses relative luminance based on the perceived brightness formula.
+ * Uses WCAG 2.1 relative luminance with sRGB linearization to ensure that the
+ * indicator color (dark on light, white on dark) always achieves ≥3:1 contrast.
+ *
+ * Threshold 0.179 guarantees ≥3.7:1 contrast for the dark indicator (#1C1C1E)
+ * on light backgrounds and ≥4.5:1 for white (#FFFFFF) on dark backgrounds.
  */
 export function isLightBackground(color: string): boolean {
   if (!color || color === '#FFFFFF' || color === '#ffffff') return true;
@@ -52,9 +64,9 @@ export function isLightBackground(color: string): boolean {
   const r = parseInt(hex.substring(0, 2), 16);
   const g = parseInt(hex.substring(2, 4), 16);
   const b = parseInt(hex.substring(4, 6), 16);
-  // Relative luminance formula
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.5;
+  // WCAG 2.1 relative luminance
+  const luminance = 0.2126 * sRGBToLinear(r) + 0.7152 * sRGBToLinear(g) + 0.0722 * sRGBToLinear(b);
+  return luminance > 0.179;
 }
 
 /**

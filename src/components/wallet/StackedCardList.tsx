@@ -31,6 +31,8 @@ export interface StackedCardListProps {
   categoryColors: Record<string, string>;
   onCardPress: (id: string) => void;
   onCardLongPress: (id: string) => void;
+  /** Map of card IDs with active reminders */
+  reminderStatusMap?: Map<string, boolean>;
 }
 
 export default function StackedCardList({
@@ -38,6 +40,7 @@ export default function StackedCardList({
   categoryColors,
   onCardPress,
   onCardLongPress,
+  reminderStatusMap,
 }: StackedCardListProps) {
   // Slide-up animation when the stacked list appears
   // Start from a moderate offset (not too far) since the collapsed stack
@@ -86,6 +89,7 @@ export default function StackedCardList({
               categoryColor={categoryColors[card.categoryId] || '#8E8E93'}
               onPress={onCardPress}
               onLongPress={onCardLongPress}
+              hasReminder={reminderStatusMap?.has(card.id) ?? false}
             />
           </View>
         );

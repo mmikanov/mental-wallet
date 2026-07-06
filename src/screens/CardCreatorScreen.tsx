@@ -20,6 +20,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   View,
   Text,
+  Pressable,
   TouchableOpacity,
   StyleSheet,
   Alert,
@@ -34,7 +35,10 @@ import { removeOverlay } from '@/services/backgroundOverlayService';
 import { getTagsForCard, setTagsForCard, clearTagsForCard } from '@/services/emotionTagService';
 import { logEvent } from '@/services/analyticsEventLogger';
 import { getDatabase } from '@/data/database';
+import { CURATED_LIBRARY } from '@/data/curatedLibrary';
 import { useWalletStore } from '@/stores/walletStore';
+import { useAdminStore } from '@/stores/adminStore';
+import { createLibraryCard, createStaticOverride, getCardById as getAdminCardById } from '@/services/adminCardService';
 import Step1Shell from '@/components/creator/Step1Shell';
 import Step2Controls from '@/components/creator/Step2Controls';
 import Step3Preview from '@/components/creator/Step3Preview';
@@ -52,21 +56,62 @@ const INITIAL_SHELL: CardShell = {
 
 export default function CardCreatorScreen({ navigation, route }: Props) {
   const cardId = route.params?.cardId;
+  const adminEditCardId = route.params?.adminEditCardId;
+  const adminEditSource = route.params?.adminEditSource;
   const isEditMode = !!cardId;
+  const isAdminEdit = !!adminEditCardId;
 
   const [currentStep, setCurrentStep] = useState(1);
   const [shell, setShell] = useState<CardShell>(INITIAL_SHELL);
   const [controls, setControls] = useState<Control[]>([]);
   const [categoryId, setCategoryId] = useState('grounding-calming');
   const [selectedEmotionTags, setSelectedEmotionTags] = useState<EmotionType[]>([]);
-  const [isLoading, setIsLoading] = useState(isEditMode);
+  const [isLoading, setIsLoading] = useState(isEditMode || isAdminEdit);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Tracks the effective card ID for admin edit mode (set after static override creation or admin card load)
+  const [adminEditEffectiveId, setAdminEditEffectiveId] = useState<string | null>(null);
 
   // Track initial state for unsaved changes detection
   const initialShellRef = useRef<CardShell>(INITIAL_SHELL);
   const initialControlsRef = useRef<Control[]>([]);
   const initialCategoryRef = useRef<string>('grounding-calming');
   const hasBeenSavedRef = useRef(false);
+
+  // Triple-tap gesture state for admin mode activation
+  const tapCountRef = useRef(0);
+  const firstTapTimeRef = useRef(0);
+  const toggleAdmin = useAdminStore((s) => s.toggleAdmin);
+  const resetAdmin = useAdminStore((s) => s.resetAdmin);
+  const isAdminMode = useAdminStore((s) => s.isAdminMode);
+
+  const TRIPLE_TAP_WINDOW_MS = 500;
+
+  const handleHeaderTitlePress = useCallback(() => {
+    const now = Date.now();
+
+    if (tapCountRef.current === 0 || now - firstTapTimeRef.current > TRIPLE_TAP_WINDOW_MS) {
+      // First tap or taps outside window — reset counter
+      tapCountRef.current = 1;
+      firstTapTimeRef.current = now;
+    } else {
+      // Within window — increment
+      tapCountRef.current += 1;
+      if (tapCountRef.current >= 3) {
+        toggleAdmin();
+        tapCountRef.current = 0;
+        firstTapTimeRef.current = 0;
+      }
+    }
+  }, [toggleAdmin]);
+
+  // Reset admin mode on screen blur (navigating away)
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('blur', () => {
+      resetAdmin();
+    });
+    return unsubscribe;
+  }, [navigation, resetAdmin]);
 
   const loadCards = useWalletStore((s) => s.loadCards);
 
@@ -76,6 +121,105 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
       loadExistingCard(cardId);
     }
   }, [cardId, isEditMode]);
+
+  // Admin edit mode initialization
+  useEffect(() => {
+    if (!adminEditCardId || !adminEditSource) return;
+
+    // Activate admin mode automatically when entering via admin edit params
+    useAdminStore.getState().activateAdmin();
+
+    loadAdminEditCard(adminEditCardId, adminEditSource);
+  }, [adminEditCardId, adminEditSource]);
+
+  async function loadAdminEditCard(editCardId: string, source: 'admin' | 'static') {
+    try {
+      if (source === 'static') {
+        // Look up the card from CURATED_LIBRARY by ID
+        const curatedCard = CURATED_LIBRARY.find((c) => c.id === editCardId);
+        if (!curatedCard) {
+          Alert.alert('Error', 'Card not found in library.');
+          setIsLoading(false);
+          return;
+        }
+
+        // Clone the static card to DB via createStaticOverride
+        // This may fail if the override already exists — in that case, just load the existing one
+        try {
+          await createStaticOverride(curatedCard);
+        } catch {
+          // Override may already exist (double-edit case) — continue to load it
+        }
+
+        // Now load the card from DB (it exists as a static override)
+        const card = await getAdminCardById(editCardId);
+        if (!card) {
+          Alert.alert('Error', 'Card not found. It may have been deleted.');
+          setIsLoading(false);
+          return;
+        }
+
+        populateFromCard(card);
+        setAdminEditEffectiveId(card.id);
+
+        // Load emotion tags: prefer DB tags, fall back to static definition
+        try {
+          const dbTags = await getTagsForCard(editCardId);
+          if (dbTags.length > 0) {
+            setSelectedEmotionTags(dbTags.map((t) => t.emotion));
+          } else if (curatedCard.emotionTags) {
+            setSelectedEmotionTags(curatedCard.emotionTags);
+          }
+        } catch {
+          // Fall back to static definition tags
+          if (curatedCard.emotionTags) {
+            setSelectedEmotionTags(curatedCard.emotionTags);
+          }
+        }
+      } else {
+        // source === 'admin': Load existing admin card from DB
+        const card = await getAdminCardById(editCardId);
+        if (!card) {
+          Alert.alert('Error', 'Card not found. It may have been deleted.');
+          setIsLoading(false);
+          return;
+        }
+
+        populateFromCard(card);
+        setAdminEditEffectiveId(card.id);
+
+        // Load emotion tags from DB
+        try {
+          const dbTags = await getTagsForCard(editCardId);
+          setSelectedEmotionTags(dbTags.map((t) => t.emotion));
+        } catch {
+          // Non-blocking: tags are optional
+        }
+      }
+    } catch {
+      Alert.alert('Error', 'Failed to load card data.');
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function populateFromCard(card: import('@/types/index').Card) {
+    const loadedShell: CardShell = {
+      title: card.title,
+      description: card.description,
+      iconType: card.iconType,
+      iconValue: card.iconValue,
+      backgroundType: card.backgroundType,
+      backgroundValue: card.backgroundValue,
+    };
+    setShell(loadedShell);
+    setControls(card.controls);
+    setCategoryId(card.categoryId);
+    // Store initial state for dirty checking
+    initialShellRef.current = loadedShell;
+    initialControlsRef.current = card.controls;
+    initialCategoryRef.current = card.categoryId;
+  }
 
   async function loadExistingCard(id: string) {
     try {
@@ -171,6 +315,25 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
     }
   }, [currentStep, navigation, shell, controls, categoryId]);
 
+  const handleCancel = useCallback(() => {
+    if (hasUnsavedChanges()) {
+      Alert.alert(
+        'Discard changes?',
+        'Your unsaved changes will be lost.',
+        [
+          { text: 'Keep Editing', style: 'cancel' },
+          {
+            text: 'Discard',
+            style: 'destructive',
+            onPress: () => navigation.goBack(),
+          },
+        ]
+      );
+    } else {
+      navigation.goBack();
+    }
+  }, [navigation, shell, controls, categoryId]);
+
   const handleNext = useCallback(() => {
     setCurrentStep((s) => s + 1);
   }, []);
@@ -178,18 +341,78 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
   /**
    * Save the card — create or update depending on mode.
    * In create mode: creates card with "my_tool" badge at top of stack.
+   * In admin mode: creates admin library card via adminCardService.
+   * In admin edit mode: updates existing admin/override card via standard update path.
    * In edit mode: updates card shell + replaces controls, preserves usage history.
    */
   const handleSave = useCallback(async () => {
+    if (isSaving) return;
+
+    // If editing a personal tool with admin mode active, ask if they want to promote it to library
+    if (isEditMode && cardId && isAdminMode && !isAdminEdit) {
+      // Check if this is a my_tool card (not already a library card)
+      const service = createCardService();
+      const existingCard = await service.getById(cardId);
+      if (existingCard && existingCard.originBadge === 'my_tool') {
+        Alert.alert(
+          'Promote to Library?',
+          'This is a personal tool. Would you like to save it as a library tool instead?',
+          [
+            {
+              text: 'Keep as Personal',
+              style: 'cancel',
+              onPress: () => performSave(false),
+            },
+            {
+              text: 'Save to Library',
+              onPress: () => performSave(true),
+            },
+          ]
+        );
+        return;
+      }
+    }
+
+    performSave(false);
+  }, [isSaving, isEditMode, isAdminEdit, isAdminMode, cardId, shell, controls, categoryId, selectedEmotionTags, loadCards, navigation, adminEditEffectiveId]);
+
+  const performSave = useCallback(async (promoteToLibrary: boolean) => {
     if (isSaving) return;
     setIsSaving(true);
 
     try {
       const service = createCardService();
 
-      if (isEditMode && cardId) {
-        // Edit mode: update shell fields + replace controls
-        await service.update(cardId, {
+      // Determine the effective ID for update — either from admin edit or normal edit
+      const effectiveEditId = adminEditEffectiveId || cardId;
+      const isEffectiveEdit = isAdminEdit ? !!adminEditEffectiveId : isEditMode;
+
+      if (promoteToLibrary && cardId) {
+        // Promote: create a new library card from the current state, then delete the personal card
+        const controlsData = controls.map((c, i) => ({
+          type: c.type,
+          position: i,
+          config: c.config,
+          isRequired: c.isRequired,
+        }));
+
+        await createLibraryCard(shell, controlsData, categoryId, selectedEmotionTags);
+
+        // Delete the original personal card from the wallet
+        await service.delete(cardId);
+
+        hasBeenSavedRef.current = true;
+        Alert.alert('Success', 'Tool promoted to library', [
+          { text: 'OK', onPress: () => navigation.goBack() },
+        ]);
+        setIsSaving(false);
+        await loadCards();
+        return;
+      }
+
+      if (isEffectiveEdit && effectiveEditId) {
+        // Edit mode (normal or admin edit): update shell fields + replace controls
+        await service.update(effectiveEditId, {
           title: shell.title,
           description: shell.description,
           iconType: shell.iconType,
@@ -200,7 +423,7 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
         });
 
         // Remove any stale background overlay so the direct value takes precedence
-        await removeOverlay(cardId);
+        await removeOverlay(effectiveEditId);
 
         // Replace controls: delete old, insert new
         const db = await getDatabase();
@@ -209,7 +432,7 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
         await db.execAsync('BEGIN TRANSACTION');
         try {
           // Delete existing controls for this card
-          await db.runAsync('DELETE FROM controls WHERE card_id = ?', [cardId]);
+          await db.runAsync('DELETE FROM controls WHERE card_id = ?', [effectiveEditId]);
 
           // Insert updated controls
           for (let i = 0; i < controls.length; i++) {
@@ -220,7 +443,7 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
                VALUES (?, ?, ?, ?, ?, ?, ?)`,
               [
                 controlId,
-                cardId,
+                effectiveEditId,
                 control.type,
                 i,
                 JSON.stringify(control.config),
@@ -237,10 +460,28 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
 
         // Persist emotion tags in background (Req 9.6)
         if (selectedEmotionTags.length > 0) {
-          setTagsForCard(cardId, selectedEmotionTags).catch(() => {});
+          setTagsForCard(effectiveEditId, selectedEmotionTags).catch(() => {});
         } else {
-          clearTagsForCard(cardId).catch(() => {});
+          clearTagsForCard(effectiveEditId).catch(() => {});
         }
+      } else if (isAdminMode) {
+        // Admin mode: create library card via adminCardService
+        const controlsData = controls.map((c, i) => ({
+          type: c.type,
+          position: i,
+          config: c.config,
+          isRequired: c.isRequired,
+        }));
+
+        await createLibraryCard(shell, controlsData, categoryId);
+
+        // Show confirmation and navigate back
+        hasBeenSavedRef.current = true;
+        Alert.alert('Success', 'Library tool created', [
+          { text: 'OK', onPress: () => navigation.goBack() },
+        ]);
+        setIsSaving(false);
+        return;
       } else {
         // Create mode: create new card with "my_tool" badge
         const controlsData = controls.map((c, i) => ({
@@ -276,12 +517,16 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
     } catch (error) {
       Alert.alert(
         'Error',
-        isEditMode ? 'Failed to update card.' : 'Failed to create card.'
+        isAdminMode || isAdminEdit
+          ? 'Failed to save library tool. Please try again.'
+          : isEditMode
+            ? 'Failed to update card.'
+            : 'Failed to create card.'
       );
     } finally {
       setIsSaving(false);
     }
-  }, [isSaving, isEditMode, cardId, shell, controls, categoryId, selectedEmotionTags, loadCards, navigation]);
+  }, [isSaving, isEditMode, isAdminEdit, isAdminMode, adminEditEffectiveId, cardId, shell, controls, categoryId, selectedEmotionTags, loadCards, navigation]);
 
   if (isLoading) {
     return (
@@ -295,15 +540,21 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.headerButton}>
-          <Text style={styles.headerButtonText}>
-            {currentStep === 1 ? 'Cancel' : '← Back'}
+        {currentStep > 1 ? (
+          <TouchableOpacity onPress={handleBack} style={styles.headerButton}>
+            <Text style={styles.headerButtonText}>← Back</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.headerButton} />
+        )}
+        <Pressable onPress={handleHeaderTitlePress}>
+          <Text style={styles.headerTitle}>
+            {isAdminEdit ? 'Edit Library Tool' : isEditMode ? 'Edit Tool' : 'Create Tool'} — Step {currentStep}/3
           </Text>
+        </Pressable>
+        <TouchableOpacity onPress={handleCancel} style={styles.headerButton}>
+          <Text style={[styles.headerButtonText, styles.cancelButtonText]}>Cancel</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {isEditMode ? 'Edit Tool' : 'Create Tool'} — Step {currentStep}/3
-        </Text>
-        <View style={styles.headerButton} />
       </View>
 
       {/* Step indicator */}
@@ -319,6 +570,13 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
           />
         ))}
       </View>
+
+      {/* Admin mode indicator banner */}
+      {isAdminMode && (
+        <View style={styles.adminBanner}>
+          <Text style={styles.adminBannerText}>Admin: Library Tool</Text>
+        </View>
+      )}
 
       {/* Step content */}
       {currentStep === 1 && (
@@ -374,6 +632,10 @@ const styles = StyleSheet.create({
     color: '#4A90D9',
     fontWeight: '500',
   },
+  cancelButtonText: {
+    color: '#FF3B30',
+    textAlign: 'right',
+  },
   headerTitle: {
     fontSize: 16,
     fontWeight: '600',
@@ -406,5 +668,18 @@ const styles = StyleSheet.create({
     marginTop: 100,
     fontSize: 16,
     color: '#666666',
+  },
+  adminBanner: {
+    backgroundColor: '#FFF3CD',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#FFE69C',
+    alignItems: 'center',
+  },
+  adminBannerText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#856404',
   },
 });

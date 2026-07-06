@@ -61,12 +61,15 @@ export default function SessionLauncherContent({
   // Ref for auto-scrolling to recommendations
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // Auto-scroll to recommendations when they appear (Bug 3)
+  // Ref to store measured Y offset of recommendations container
+  const recoContainerY = useRef<number>(0);
+
+  // Auto-scroll to recommendations container top when they appear
   useEffect(() => {
     if (recommendations) {
       // Small delay to let the layout render before scrolling
       const timer = setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
+        scrollViewRef.current?.scrollTo({ y: recoContainerY.current, animated: true });
       }, 100);
       return () => clearTimeout(timer);
     }
@@ -198,14 +201,11 @@ export default function SessionLauncherContent({
 
         // Reload wallet store so the new card appears in the wallet view
         await useWalletStore.getState().loadCards();
-
-        // Refresh recommendations so tool moves from "Suggested" to "From your wallet" (Req 10.5)
-        fetchRecommendations();
       } catch {
         // Abort on failure — keep tool in "Suggested" section (Req 10.5)
       }
     },
-    [addedToWalletIds, fetchRecommendations]
+    [addedToWalletIds]
   );
 
   const showMeToolsEnabled = selectedEmotion !== null;
@@ -264,7 +264,10 @@ export default function SessionLauncherContent({
 
         {/* Recommendations */}
         {recommendations && (
-          <View style={styles.recommendationsContainer}>
+          <View
+            style={styles.recommendationsContainer}
+            onLayout={(e) => { recoContainerY.current = e.nativeEvent.layout.y; }}
+          >
             {/* Wallet tools section */}
             {recommendations.walletTools.length > 0 && (
               <View style={styles.section}>

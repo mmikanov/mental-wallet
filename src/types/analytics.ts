@@ -9,6 +9,8 @@
 export type AnalyticsEventType =
   | 'app_opened'
   | 'onboarding_step_viewed'
+  | 'onboarding_intent_selected'
+  | 'onboarding_kpi_selected'
   | 'onboarding_completed'
   | 'start_mode_selected'
   | 'session_started'

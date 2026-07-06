@@ -11,7 +11,7 @@
  * Validates: Requirements 1.1, 1.2, 17.3
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -21,12 +21,16 @@ import {
 } from 'react-native';
 import type { Card } from '@/types/index';
 import { isLightBackground } from '@/utils/cardColors';
+import { renderCardIcon } from '@/utils/renderCardIcon';
+import ReminderIndicator from './ReminderIndicator';
 
 export interface CardEdgeProps {
   card: Card;
   categoryColor: string;
   onPress: (id: string) => void;
   onLongPress: (id: string) => void;
+  /** When true, displays a bell icon indicator for active reminders */
+  hasReminder?: boolean;
 }
 
 /** Full card height in the stacked view */
@@ -37,9 +41,12 @@ export default function CardEdge({
   categoryColor,
   onPress,
   onLongPress,
+  hasReminder = false,
 }: CardEdgeProps) {
+  const [bgImageFailed, setBgImageFailed] = useState(false);
+
   const hasBackgroundImage =
-    card.backgroundType === 'image' && card.backgroundValue;
+    card.backgroundType === 'image' && card.backgroundValue && !bgImageFailed;
 
   const bgColor =
     card.backgroundType === 'color'
@@ -55,11 +62,16 @@ export default function CardEdge({
 
   const content = (
     <View style={styles.contentContainer}>
-      {/* Top row: icon + title + category dot */}
+      {/* Top row: icon + title + reminder indicator + category dot */}
       <View style={styles.topRow}>
-        <Text style={styles.icon} accessibilityLabel="Card icon">
-          {card.iconType === 'emoji' ? card.iconValue : '📋'}
-        </Text>
+        <View>
+          {renderCardIcon({
+            iconType: card.iconType,
+            iconValue: card.iconValue,
+            size: 28,
+            fallbackEmoji: card.iconValue || '📋',
+          })}
+        </View>
         <Text
           style={[styles.title, { color: textColor }]}
           numberOfLines={1}
@@ -68,6 +80,11 @@ export default function CardEdge({
         >
           {card.title}
         </Text>
+        {hasReminder && (
+          <View style={styles.reminderIndicator}>
+            <ReminderIndicator isLight={isLight} />
+          </View>
+        )}
         <View
           style={[styles.categoryDot, { backgroundColor: categoryColor }]}
           accessibilityLabel="Category color indicator"
@@ -101,6 +118,7 @@ export default function CardEdge({
             source={{ uri: card.backgroundValue }}
             style={styles.imageBackground}
             imageStyle={styles.imageStyle}
+            onError={() => setBgImageFailed(true)}
           >
             <View style={styles.imageOverlay}>{content}</View>
           </ImageBackground>
@@ -138,10 +156,10 @@ const styles = StyleSheet.create({
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
   },
   icon: {
     fontSize: 28,
-    marginRight: 12,
   },
   title: {
     flex: 1,
@@ -153,6 +171,9 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
     marginLeft: 8,
+  },
+  reminderIndicator: {
+    marginLeft: 6,
   },
   description: {
     fontSize: 14,

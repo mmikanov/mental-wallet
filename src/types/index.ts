@@ -27,7 +27,7 @@ export type PlatformType = 'youtube' | 'vimeo' | 'soundcloud' | 'spotify' | 'unk
 
 export type ReminderFrequencyType = 'daily' | '3x_week' | 'custom';
 
-export type IconType = 'library' | 'emoji' | 'custom_image';
+export type IconType = 'library' | 'emoji' | 'custom_image' | 'third_party';
 
 export type BackgroundType = 'color' | 'gradient' | 'image';
 

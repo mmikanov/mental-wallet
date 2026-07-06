@@ -20,6 +20,7 @@ import {
 } from 'react-native';
 import type { CardShell, Control, EmotionType } from '@/types/index';
 import { isLightBackground } from '@/utils/cardColors';
+import { renderCardIcon } from '@/utils/renderCardIcon';
 import ControlRenderer from '@/components/controls/ControlRenderer';
 import OriginBadge from '@/components/wallet/OriginBadge';
 import PrimaryActionButton from '@/components/wallet/PrimaryActionButton';
@@ -113,7 +114,12 @@ export default function Step3Preview({
       {/* Icon + Title */}
       <View style={styles.titleRow}>
         {shell.iconValue ? (
-          <Text style={styles.icon}>{shell.iconValue}</Text>
+          renderCardIcon({
+            iconType: shell.iconType,
+            iconValue: shell.iconValue,
+            size: 28,
+            fallbackEmoji: '📋',
+          })
         ) : null}
         <Text style={[styles.title, { color: textColor }, isImageBackground && styles.titleOnImage]} numberOfLines={2}>
           {shell.title || 'Untitled'}

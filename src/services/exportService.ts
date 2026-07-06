@@ -1,13 +1,17 @@
 /**
- * ExportService — Handles data export (JSON/CSV) and full data deletion.
+ * ExportService — Handles data export (JSON/CSV), full data deletion,
+ * and admin card export to CuratedCardDefinition TypeScript format.
  *
- * Validates: Requirements 16.2, 16.3
+ * Validates: Requirements 16.2, 16.3, 6.1, 6.2, 6.3, 6.4, 6.5
  */
 
+import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { getDatabase } from '../data/database';
 import { seedData } from '../data/seeds';
+import { getTagsForCard, getContextTags, getTimeTags } from './emotionTagService';
+import type { Card, ControlConfig } from '../types/index';
 import type { ExportService } from '../types/services';
 
 interface ExportCard {
@@ -34,6 +38,105 @@ interface ExportControlValue {
   control_id: string;
   control_type: string;
   value: string | null;
+}
+
+/**
+ * Serialize a ControlConfig to a formatted TypeScript literal string.
+ */
+function serializeConfig(config: ControlConfig, indent: string): string {
+  const lines: string[] = ['{'];
+  const entries = Object.entries(config);
+  for (const [key, value] of entries) {
+    if (value === undefined || value === null) continue;
+    if (Array.isArray(value)) {
+      // Handle arrays (e.g., options in ChoiceButtonsConfig, acceptedTypes)
+      const arrayItems = value.map((item) => {
+        if (typeof item === 'object' && item !== null) {
+          const objEntries = Object.entries(item)
+            .filter(([, v]) => v !== undefined && v !== null)
+            .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
+            .join(', ');
+          return `${indent}      { ${objEntries} }`;
+        }
+        return `${indent}      ${JSON.stringify(item)}`;
+      });
+      lines.push(`${indent}    ${key}: [`);
+      lines.push(arrayItems.join(',\n'));
+      lines.push(`${indent}    ],`);
+    } else {
+      lines.push(`${indent}    ${key}: ${JSON.stringify(value)},`);
+    }
+  }
+  lines.push(`${indent}  }`);
+  return lines.join('\n');
+}
+
+/**
+ * Serialize a Card (from DB) to a CuratedCardDefinition TypeScript literal string.
+ * Includes all controls and tag arrays (emotionTags, contextTags, timeTags).
+ *
+ * Validates: Requirements 6.2, 6.5
+ */
+export async function serializeToCuratedDefinition(card: Card): Promise<string> {
+  // Fetch tags from the database
+  const emotionTagRows = await getTagsForCard(card.id);
+  const emotionTags = emotionTagRows.map((t) => t.emotion);
+  const contextTags = await getContextTags(card.id);
+  const timeTags = await getTimeTags(card.id);
+
+  const lines: string[] = [];
+  lines.push('{');
+  lines.push(`  id: ${JSON.stringify(card.id)},`);
+  lines.push(`  title: ${JSON.stringify(card.title)},`);
+  lines.push(`  description: ${JSON.stringify(card.description)},`);
+  lines.push(`  iconType: ${JSON.stringify(card.iconType)},`);
+  lines.push(`  iconValue: ${JSON.stringify(card.iconValue)},`);
+  lines.push(`  backgroundType: ${JSON.stringify(card.backgroundType)},`);
+  lines.push(`  backgroundValue: ${JSON.stringify(card.backgroundValue)},`);
+  lines.push(`  categoryId: ${JSON.stringify(card.categoryId)},`);
+  lines.push(`  allowBackgroundCustomization: ${card.allowBackgroundCustomization},`);
+
+  // Controls array
+  lines.push('  controls: [');
+  for (const control of card.controls) {
+    lines.push('    {');
+    lines.push(`      type: ${JSON.stringify(control.type)},`);
+    lines.push(`      position: ${control.position},`);
+    lines.push(`      config: ${serializeConfig(control.config, '    ')},`);
+    lines.push(`      isRequired: ${control.isRequired},`);
+    lines.push('    },');
+  }
+  lines.push('  ],');
+
+  // Optional tag arrays — only include if non-empty
+  if (emotionTags.length > 0) {
+    lines.push(`  emotionTags: [${emotionTags.map((t) => JSON.stringify(t)).join(', ')}],`);
+  }
+  if (contextTags.length > 0) {
+    lines.push(`  contextTags: [${contextTags.map((t) => JSON.stringify(t)).join(', ')}],`);
+  }
+  if (timeTags.length > 0) {
+    lines.push(`  timeTags: [${timeTags.map((t) => JSON.stringify(t)).join(', ')}],`);
+  }
+
+  lines.push('}');
+
+  return lines.join('\n');
+}
+
+/**
+ * Copy a serialized CuratedCardDefinition to the device clipboard.
+ * Throws an error with a user-friendly message on clipboard failure.
+ *
+ * Validates: Requirements 6.3, 6.4
+ */
+export async function exportToClipboard(card: Card): Promise<void> {
+  const serialized = await serializeToCuratedDefinition(card);
+  try {
+    await Clipboard.setStringAsync(serialized);
+  } catch {
+    throw new Error('Failed to copy to clipboard.');
+  }
 }
 
 /**

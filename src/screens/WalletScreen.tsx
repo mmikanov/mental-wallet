@@ -36,6 +36,7 @@ import OnboardingBanner from '@/components/onboarding/OnboardingBanner';
 import TooltipOverlay from '@/components/onboarding/TooltipOverlay';
 import FirstActionChecklist from '@/components/onboarding/FirstActionChecklist';
 import { useMicroTutorial } from '@/hooks/useMicroTutorial';
+import { useReminderStatusMap } from '@/hooks/useReminderStatusMap';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import { useWalletStore } from '@/stores/walletStore';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -143,6 +144,9 @@ export default function WalletScreen() {
   // --- Micro-tutorial hook ---
   const tutorial = useMicroTutorial();
 
+  // --- Reminder status map for stacked card indicators ---
+  const reminderStatusMap = useReminderStatusMap();
+
   // --- Checklist local dismiss state (keeps component mounted for celebration) ---
   // checklistSessionCount >= 3 means dismissChecklist() was called (celebration already shown)
   const checklistSessionCount = useOnboardingStore((s) => s.checklistSessionCount);
@@ -189,16 +193,14 @@ export default function WalletScreen() {
     }
   }, [personalKpi, loadCards]);
 
-  // Handle highlightSessionCard route param — scroll to and highlight the session launcher card
+  // Handle highlightSessionCard route param — highlight the session launcher card visually
   useEffect(() => {
     const shouldHighlight = route.params?.highlightSessionCard;
     if (shouldHighlight && cards.length > 0 && !highlightHandled.current && !tutorial.isActive && tutorialComplete) {
       const sessionCard = cards.find((c) => c.id === SESSION_LAUNCHER_CARD_ID);
       if (sessionCard) {
         highlightHandled.current = true;
-        // Focus the session launcher card (scrolls to it)
-        focusCard(SESSION_LAUNCHER_CARD_ID);
-        // Apply 1-second visual highlight
+        // Apply 1-second visual highlight (no focus/expand — card stays in stack)
         setIsHighlighting(true);
         const timer = setTimeout(() => {
           setIsHighlighting(false);
@@ -206,7 +208,7 @@ export default function WalletScreen() {
         return () => clearTimeout(timer);
       }
     }
-  }, [route.params?.highlightSessionCard, cards, focusCard, tutorial.isActive, tutorialComplete]);
+  }, [route.params?.highlightSessionCard, cards, tutorial.isActive, tutorialComplete]);
 
   // TODO: Defer Micro_Tutorial when "emotion" mode chosen during onboarding.
   // The Micro_Tutorial is not yet implemented (onboarding spec dependency).
@@ -769,6 +771,7 @@ export default function WalletScreen() {
               categoryColors={categoryColors}
               onCardPress={handleCardPress}
               onCardLongPress={handleCardLongPress}
+              reminderStatusMap={reminderStatusMap}
             />
           </View>
         ) : (

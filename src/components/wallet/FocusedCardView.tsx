@@ -11,7 +11,7 @@
  * Validates: Requirements 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 3.4, 13.4, 17.1
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -30,10 +30,13 @@ import Animated, {
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import type { Card } from '@/types/index';
 import { isLightBackground } from '@/utils/cardColors';
+import { renderCardIcon } from '@/utils/renderCardIcon';
 import OriginBadge from './OriginBadge';
 import StatsRow from './StatsRow';
+import ReminderDisplayRow from './ReminderDisplayRow';
 import PrimaryActionButton from './PrimaryActionButton';
 import ExpandedContent from './ExpandedContent';
+import { useCardReminder } from '@/hooks/useCardReminder';
 import { announceCardTransition } from '@/utils/accessibility';
 
 export interface FocusedCardViewProps {
@@ -81,6 +84,8 @@ export default function FocusedCardView({
   renderDescriptionSuffix,
   renderTooltip,
 }: FocusedCardViewProps) {
+  const reminder = useCardReminder(card.id);
+  const [bgImageFailed, setBgImageFailed] = useState(false);
   const translateY = useSharedValue(50);
   const opacity = useSharedValue(0.3);
   const prevExpanded = useRef(isExpanded);
@@ -133,7 +138,7 @@ export default function FocusedCardView({
         : '#FFFFFF';
 
   const backgroundStyle = { backgroundColor: bgColor };
-  const hasBackgroundImage = card.backgroundType === 'image' && card.backgroundValue;
+  const hasBackgroundImage = card.backgroundType === 'image' && card.backgroundValue && !bgImageFailed;
   const isLight = isLightBackground(bgColor);
   const textColor = isLight ? '#1C1C1E' : '#FFFFFF';
   const subtitleColor = isLight ? '#4B5563' : 'rgba(255,255,255,0.7)';
@@ -160,9 +165,12 @@ export default function FocusedCardView({
 
       {/* Icon */}
       <View style={styles.iconRow}>
-        <Text style={styles.icon}>
-          {card.iconType === 'emoji' ? card.iconValue : '📋'}
-        </Text>
+        {renderCardIcon({
+          iconType: card.iconType,
+          iconValue: card.iconValue,
+          size: 48,
+          fallbackEmoji: card.iconValue || '📋',
+        })}
       </View>
 
       {/* Title */}
@@ -208,9 +216,14 @@ export default function FocusedCardView({
               {/* Compact header: category pill + icon + title + kebab */}
               <View style={styles.compactHeader}>
                 <View style={styles.compactHeaderLeft}>
-                  <Text style={styles.compactIcon}>
-                    {card.iconType === 'emoji' ? card.iconValue : '📋'}
-                  </Text>
+                  <View style={styles.compactIconWrapper}>
+                    {renderCardIcon({
+                      iconType: card.iconType,
+                      iconValue: card.iconValue,
+                      size: 24,
+                      fallbackEmoji: card.iconValue || '📋',
+                    })}
+                  </View>
                   <Text
                     style={[styles.compactTitle, { color: textColor }]}
                     numberOfLines={1}
@@ -260,6 +273,7 @@ export default function FocusedCardView({
                 source={{ uri: card.backgroundValue }}
                 style={styles.imageBackground}
                 imageStyle={styles.imageStyle}
+                onError={() => setBgImageFailed(true)}
               >
                 <View style={styles.imageOverlay}>{headerContent}</View>
               </ImageBackground>
@@ -275,6 +289,9 @@ export default function FocusedCardView({
                 lastUsedAt={card.lastUsedAt}
               />
             </View>
+
+            {/* Reminder display between stats and expand arrow */}
+            <ReminderDisplayRow reminder={reminder} textColor={textColor} />
 
             {/* Actions inside the card */}
             {isExpanded ? (
@@ -366,6 +383,7 @@ const styles = StyleSheet.create({
   },
   iconRow: {
     marginBottom: 12,
+    alignItems: 'flex-start',
   },
   icon: {
     fontSize: 48,
@@ -424,8 +442,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
-  compactIcon: {
-    fontSize: 24,
+  compactIconWrapper: {
     marginRight: 10,
   },
   compactTitle: {

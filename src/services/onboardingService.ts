@@ -54,6 +54,9 @@ export interface OnboardingService {
   /** Seed the personal KPI card into the wallet at position 1 */
   seedKpiCard(kpiLabel: string): Promise<void>;
 
+  /** Remove all previously seeded starter cards from the wallet */
+  clearStarterCards(): Promise<void>;
+
   /** Persist onboarding state to settings table */
   saveState(state: Partial<OnboardingState>): Promise<void>;
 
@@ -155,6 +158,24 @@ export function createOnboardingService(): OnboardingService {
           error
         );
       }
+    },
+
+    /**
+     * Removes all previously seeded starter cards from the wallet.
+     * Collects all possible starter card IDs from all intent options and defaults,
+     * then deletes any cards with matching source_library_id values.
+     */
+    async clearStarterCards(): Promise<void> {
+      const db = await getDatabase();
+      const allStarterIds = new Set<string>([
+        ...DEFAULT_STARTER_CARD_IDS,
+        ...INTENT_OPTIONS.flatMap((opt) => opt.cardIds),
+      ]);
+      const placeholders = [...allStarterIds].map(() => '?').join(',');
+      await db.runAsync(
+        `DELETE FROM cards WHERE source_library_id IN (${placeholders})`,
+        [...allStarterIds]
+      );
     },
 
     /**

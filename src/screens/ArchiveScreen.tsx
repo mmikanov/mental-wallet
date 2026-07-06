@@ -20,6 +20,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { createCardService } from '../services/cardService';
 import { logEvent } from '@/services/analyticsEventLogger';
+import { renderCardIcon } from '@/utils/renderCardIcon';
 import { getDatabase } from '../data/database';
 import type { Card } from '../types/index';
 
@@ -180,9 +181,14 @@ export default function ArchiveScreen({ navigation }: Props) {
     ({ item }: { item: Card }) => (
       <View style={styles.cardItem}>
         <View style={styles.cardHeader}>
-          <Text style={styles.cardIcon}>
-            {item.iconType === 'emoji' ? item.iconValue : '📄'}
-          </Text>
+          <View style={styles.cardIconContainer}>
+            {renderCardIcon({
+              iconType: item.iconType,
+              iconValue: item.iconValue,
+              size: 32,
+              fallbackEmoji: item.iconValue || '📄',
+            })}
+          </View>
           <View style={styles.cardInfo}>
             <Text style={styles.cardTitle} numberOfLines={1}>
               {item.title}
@@ -335,6 +341,9 @@ const styles = StyleSheet.create({
   },
   cardIcon: {
     fontSize: 32,
+    marginRight: 12,
+  },
+  cardIconContainer: {
     marginRight: 12,
   },
   cardInfo: {

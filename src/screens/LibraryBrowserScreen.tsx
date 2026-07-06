@@ -13,27 +13,42 @@
  * Validates: Requirements 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 2.1, 2.2, 2.3
  */
 
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import {
   View,
   Text,
   TextInput,
+  Pressable,
   TouchableOpacity,
   ScrollView,
   Alert,
+  ActivityIndicator,
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { CURATED_LIBRARY } from '@/data/curatedLibrary';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '@/navigation/types';
 import { SEED_CATEGORIES } from '@/data/seeds';
 import { createCardService } from '@/services/cardService';
 import { getDatabase } from '@/data/database';
 import { useWalletStore } from '@/stores/walletStore';
+import { useAdminStore } from '@/stores/adminStore';
 import { logEvent } from '@/services/analyticsEventLogger';
+import {
+  getMergedLibrary,
+  getCardById,
+  getStaticOverrides,
+  deleteAdminCard,
+  deleteStaticOverride,
+  suppressStaticCard,
+} from '@/services/adminCardService';
+import { exportToClipboard } from '@/services/exportService';
+import { renderCardIcon } from '@/utils/renderCardIcon';
 import { getLibraryCardButtonState, sortNewestFirst } from './libraryBrowserHelpers';
-import type { SortMode } from './libraryBrowserHelpers';
-import type { CuratedCardDefinition } from '@/data/curatedLibrary';
+import CardPreviewSheet from '@/components/wallet/CardPreviewSheet';
+import type { SortMode, ButtonState } from './libraryBrowserHelpers';
+import { CURATED_LIBRARY, type CuratedCardDefinition } from '@/data/curatedLibrary';
 
 const ALL_FILTER = 'all';
 
@@ -43,15 +58,56 @@ interface CategorySection {
   data: CuratedCardDefinition[];
 }
 
+type LibraryNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
 export default function LibraryBrowserScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<LibraryNavigationProp>();
   const { cards, loadCards } = useWalletStore();
+  const isAdminMode = useAdminStore((s) => s.isAdminMode);
+  const toggleAdmin = useAdminStore((s) => s.toggleAdmin);
+  const resetAdmin = useAdminStore((s) => s.resetAdmin);
+
+  // Triple-tap gesture state for admin mode activation on Library Browser
+  const tapCountRef = useRef(0);
+  const firstTapTimeRef = useRef(0);
+  const TRIPLE_TAP_WINDOW_MS = 500;
+
+  const handleHeaderTitlePress = useCallback(() => {
+    const now = Date.now();
+
+    if (tapCountRef.current === 0 || now - firstTapTimeRef.current > TRIPLE_TAP_WINDOW_MS) {
+      tapCountRef.current = 1;
+      firstTapTimeRef.current = now;
+    } else {
+      tapCountRef.current += 1;
+      if (tapCountRef.current >= 3) {
+        toggleAdmin();
+        tapCountRef.current = 0;
+        firstTapTimeRef.current = 0;
+      }
+    }
+  }, [toggleAdmin]);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>(ALL_FILTER);
   const [sortMode, setSortMode] = useState<SortMode>('category');
   const [addingCardId, setAddingCardId] = useState<string | null>(null);
   const [restoringCardId, setRestoringCardId] = useState<string | null>(null);
   const [archivedLibraryCards, setArchivedLibraryCards] = useState<Map<string, string>>(new Map());
+
+  // Merged library data source (static + admin + override cards)
+  const [libraryCards, setLibraryCards] = useState<CuratedCardDefinition[]>([]);
+  const [isLoadingLibrary, setIsLoadingLibrary] = useState(true);
+
+  // Preview sheet state
+  const [previewCard, setPreviewCard] = useState<CuratedCardDefinition | null>(null);
+  const [previewVisible, setPreviewVisible] = useState(false);
+
+  // Set of static card IDs that have DB overrides (used for delete source detection)
+  const [overrideIds, setOverrideIds] = useState<Set<string>>(new Set());
+
+  // Set of override IDs that actually differ from their static original (true drafts)
+  const [dirtyOverrideIds, setDirtyOverrideIds] = useState<Set<string>>(new Set());
 
   // Load archived library cards from database
   const loadArchivedCards = useCallback(async () => {
@@ -81,10 +137,76 @@ export default function LibraryBrowserScreen() {
     }
   }, []);
 
-  // Load archived cards on mount
-  useEffect(() => {
-    loadArchivedCards();
-  }, [loadArchivedCards]);
+  // Load merged library on screen focus (covers mount + returning from other screens)
+  const loadMergedLibrary = useCallback(async () => {
+    try {
+      setIsLoadingLibrary(true);
+      const merged = await getMergedLibrary();
+      setLibraryCards(merged);
+
+      // Load override IDs for source-aware deletion
+      const overrides = await getStaticOverrides();
+      setOverrideIds(new Set(overrides.map((o) => o.id)));
+
+      // Compute dirty overrides: overrides whose content differs from the static original
+      const dirty = new Set<string>();
+      for (const override of overrides) {
+        const staticOriginal = CURATED_LIBRARY.find((c) => c.id === override.id);
+        if (!staticOriginal) {
+          // No static original found — treat as dirty (shouldn't happen normally)
+          dirty.add(override.id);
+          continue;
+        }
+        // Compare shell fields
+        const shellDiffers =
+          override.title !== staticOriginal.title ||
+          override.description !== staticOriginal.description ||
+          override.iconValue !== staticOriginal.iconValue ||
+          override.backgroundValue !== staticOriginal.backgroundValue ||
+          override.categoryId !== staticOriginal.categoryId;
+
+        if (shellDiffers) {
+          dirty.add(override.id);
+          continue;
+        }
+
+        // Compare controls (isRequired, config, type, count)
+        if (override.controls.length !== staticOriginal.controls.length) {
+          dirty.add(override.id);
+          continue;
+        }
+        let controlsDiffer = false;
+        for (let i = 0; i < override.controls.length; i++) {
+          const dbCtrl = override.controls[i];
+          const staticCtrl = staticOriginal.controls[i];
+          if (
+            dbCtrl.type !== staticCtrl.type ||
+            dbCtrl.position !== staticCtrl.position ||
+            dbCtrl.isRequired !== staticCtrl.isRequired ||
+            JSON.stringify(dbCtrl.config) !== JSON.stringify(staticCtrl.config)
+          ) {
+            controlsDiffer = true;
+            break;
+          }
+        }
+        if (controlsDiffer) {
+          dirty.add(override.id);
+        }
+      }
+      setDirtyOverrideIds(dirty);
+    } catch {
+      // On failure, leave existing cards in place (or empty on first load)
+    } finally {
+      setIsLoadingLibrary(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadMergedLibrary();
+      loadArchivedCards();
+    }, [loadMergedLibrary, loadArchivedCards])
+  );
 
   // Build category lookup
   const categoryMap = useMemo(() => {
@@ -100,8 +222,8 @@ export default function LibraryBrowserScreen() {
     // Apply category filter
     const categoryFiltered =
       selectedCategory === ALL_FILTER
-        ? CURATED_LIBRARY
-        : CURATED_LIBRARY.filter((c) => c.categoryId === selectedCategory);
+        ? libraryCards
+        : libraryCards.filter((c) => c.categoryId === selectedCategory);
 
     // Apply search filter (triggers after 1 character)
     if (searchQuery.length >= 1) {
@@ -117,7 +239,7 @@ export default function LibraryBrowserScreen() {
     }
 
     return categoryFiltered;
-  }, [selectedCategory, searchQuery, categoryMap]);
+  }, [selectedCategory, searchQuery, categoryMap, libraryCards]);
 
   // Build sections grouped by category (in category display order)
   const sections: CategorySection[] = useMemo(() => {
@@ -150,6 +272,17 @@ export default function LibraryBrowserScreen() {
   const handleClose = useCallback(() => {
     navigation.goBack();
   }, [navigation]);
+
+  // Preview sheet handlers
+  const handleOpenPreview = useCallback((card: CuratedCardDefinition) => {
+    setPreviewCard(card);
+    setPreviewVisible(true);
+  }, []);
+
+  const handleDismissPreview = useCallback(() => {
+    setPreviewVisible(false);
+    setPreviewCard(null);
+  }, []);
 
   const handleAddToWallet = useCallback(
     async (card: CuratedCardDefinition) => {
@@ -193,6 +326,8 @@ export default function LibraryBrowserScreen() {
         await loadCards();
         // Refresh archived cards map
         await loadArchivedCards();
+        // Refresh merged library in case of changes
+        await loadMergedLibrary();
 
         void logEvent('tool_added', {
           card_id: card.id,
@@ -207,7 +342,7 @@ export default function LibraryBrowserScreen() {
         setAddingCardId(null);
       }
     },
-    [cards, loadCards, loadArchivedCards]
+    [cards, loadCards, loadArchivedCards, loadMergedLibrary]
   );
 
   const handleRestoreFromArchive = useCallback(
@@ -230,6 +365,8 @@ export default function LibraryBrowserScreen() {
         await loadCards();
         // Refresh archived cards map (remove restored entry)
         await loadArchivedCards();
+        // Refresh merged library
+        await loadMergedLibrary();
 
         void logEvent('tool_unarchived', {
           card_id: card.id,
@@ -244,8 +381,231 @@ export default function LibraryBrowserScreen() {
         setRestoringCardId(null);
       }
     },
-    [archivedLibraryCards, loadCards, loadArchivedCards]
+    [archivedLibraryCards, loadCards, loadArchivedCards, loadMergedLibrary]
   );
+
+  // Preview sheet action handlers — wrap existing logic for use from the sheet.
+  // These avoid showing Alerts (the sheet has its own inline error/success UI).
+  const handlePreviewAddToWallet = useCallback(
+    async (card: CuratedCardDefinition) => {
+      // Check for duplicate by title
+      const existingCard = cards.find(
+        (c) => c.title === card.title && c.originBadge === 'library'
+      );
+      if (existingCard) {
+        throw new Error('This card is already in your wallet.');
+      }
+
+      const cardService = createCardService();
+      await cardService.create(
+        {
+          title: card.title,
+          description: card.description,
+          iconType: card.iconType,
+          iconValue: card.iconValue,
+          backgroundType: card.backgroundType,
+          backgroundValue: card.backgroundValue,
+        },
+        card.controls.map((ctrl) => ({
+          type: ctrl.type,
+          position: ctrl.position,
+          config: ctrl.config,
+          isRequired: ctrl.isRequired,
+        })),
+        'library',
+        card.categoryId,
+        card.id
+      );
+
+      // Reload wallet and archived cards map
+      await loadCards();
+      await loadArchivedCards();
+      await loadMergedLibrary();
+
+      void logEvent('tool_added', {
+        card_id: card.id,
+        card_category: card.categoryId,
+        origin_badge: 'library',
+      });
+    },
+    [cards, loadCards, loadArchivedCards, loadMergedLibrary]
+  );
+
+  const handlePreviewRestore = useCallback(
+    async (card: CuratedCardDefinition) => {
+      const archivedCardId = archivedLibraryCards.get(card.id) || archivedLibraryCards.get(card.title);
+
+      if (!archivedCardId) {
+        throw new Error('Failed to restore card. Please try again.');
+      }
+
+      const cardService = createCardService();
+      await cardService.restore(archivedCardId);
+
+      // Reload wallet and archived cards map
+      await loadCards();
+      await loadArchivedCards();
+      await loadMergedLibrary();
+
+      void logEvent('tool_unarchived', {
+        card_id: card.id,
+        card_category: card.categoryId,
+        origin_badge: 'library',
+      });
+    },
+    [archivedLibraryCards, loadCards, loadArchivedCards, loadMergedLibrary]
+  );
+
+  // ─── Admin action handlers ─────────────────────────────────────────────────
+
+  /**
+   * Determine the deletion source type for a card:
+   * - 'admin' if id starts with 'admin-lib-'
+   * - 'static-override' if the card's ID is in the overrideIds set
+   * - 'static' if it's a plain static card with no override
+   */
+  const determineCardSource = useCallback(
+    (card: CuratedCardDefinition): 'admin' | 'static-override' | 'static' => {
+      if (card.id.startsWith('admin-lib-')) return 'admin';
+      if (overrideIds.has(card.id)) return 'static-override';
+      return 'static';
+    },
+    [overrideIds]
+  );
+
+  /**
+   * Determine the source type for a card: 'admin' if id starts with 'admin-lib-', otherwise 'static'.
+   * Used for edit navigation (which only distinguishes admin vs static).
+   */
+  const determineSource = useCallback(
+    (card: CuratedCardDefinition): 'admin' | 'static' => {
+      return card.id.startsWith('admin-lib-') ? 'admin' : 'static';
+    },
+    []
+  );
+
+  const handleAdminEdit = useCallback(
+    (card: CuratedCardDefinition) => {
+      navigation.navigate('CardCreator', {
+        adminEditCardId: card.id,
+        adminEditSource: determineSource(card),
+      });
+    },
+    [navigation, determineSource]
+  );
+
+  const handleAdminExport = useCallback(
+    async (card: CuratedCardDefinition) => {
+      try {
+        // Load the full Card object from DB for export
+        const fullCard = await getCardById(card.id);
+        if (!fullCard) {
+          // Card has no DB representation (pure static) — build a minimal Card object
+          const syntheticCard = {
+            id: card.id,
+            title: card.title,
+            description: card.description,
+            iconType: card.iconType,
+            iconValue: card.iconValue,
+            backgroundType: card.backgroundType,
+            backgroundValue: card.backgroundValue,
+            categoryId: card.categoryId,
+            originBadge: 'library' as const,
+            stackPosition: -1,
+            totalUses: 0,
+            currentStreak: 0,
+            lastUsedAt: null,
+            isArchived: false,
+            archivedAt: null,
+            previousStackPosition: null,
+            allowBackgroundCustomization: card.allowBackgroundCustomization,
+            sourceLibraryId: null,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            controls: card.controls.map((ctrl, idx) => ({
+              id: `synth-${idx}`,
+              cardId: card.id,
+              type: ctrl.type,
+              position: ctrl.position,
+              config: ctrl.config,
+              isRequired: ctrl.isRequired,
+            })),
+          };
+          await exportToClipboard(syntheticCard as any);
+        } else {
+          await exportToClipboard(fullCard);
+        }
+        Alert.alert('Exported', 'Card definition copied to clipboard');
+      } catch {
+        Alert.alert('Error', 'Failed to copy to clipboard.');
+      }
+    },
+    []
+  );
+
+  const handleAdminDelete = useCallback(
+    (card: CuratedCardDefinition) => {
+      const source = determineCardSource(card);
+
+      // Source-aware confirmation messaging
+      let title: string;
+      let message: string;
+
+      switch (source) {
+        case 'admin':
+          title = 'Delete Library Tool';
+          message = 'Delete this library tool? This cannot be undone.';
+          break;
+        case 'static-override':
+          title = 'Revert to Original';
+          message = 'Revert this library card to its original version?';
+          break;
+        case 'static':
+          title = 'Hide Library Card';
+          message = 'Hide this card from the library? It can be restored later.';
+          break;
+      }
+
+      Alert.alert(title, message, [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: source === 'static-override' ? 'Revert' : 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              switch (source) {
+                case 'admin':
+                  await deleteAdminCard(card.id);
+                  break;
+                case 'static-override':
+                  await deleteStaticOverride(card.id);
+                  break;
+                case 'static':
+                  await suppressStaticCard(card.id);
+                  break;
+              }
+              // Refresh library list after deletion
+              await loadMergedLibrary();
+            } catch {
+              Alert.alert('Error', 'Failed to delete card. Please try again.');
+            }
+          },
+        },
+      ]);
+    },
+    [determineCardSource, loadMergedLibrary]
+  );
+
+  // Compute the button state for the currently previewed card
+  const previewButtonState: ButtonState | null = useMemo(() => {
+    if (!previewCard) return null;
+    return getLibraryCardButtonState(
+      previewCard.id,
+      previewCard.title,
+      cards,
+      archivedLibraryCards
+    );
+  }, [previewCard, cards, archivedLibraryCards]);
 
   const renderSectionHeader = useCallback(
     ({ section }: { section: CategorySection }) => (
@@ -308,9 +668,21 @@ export default function LibraryBrowserScreen() {
       };
 
       return (
-        <View style={styles.cardRow}>
+        <TouchableOpacity
+          style={styles.cardRow}
+          onPress={() => handleOpenPreview(item)}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={`Preview ${item.title}`}
+          accessibilityHint="Opens a full card preview"
+        >
           <View style={styles.cardIcon}>
-            <Text style={styles.cardIconText}>{item.iconValue}</Text>
+            {renderCardIcon({
+              iconType: item.iconType,
+              iconValue: item.iconValue,
+              size: 24,
+              fallbackEmoji: item.iconValue || '📋',
+            })}
           </View>
           <View style={styles.cardContent}>
             <View style={styles.cardHeader}>
@@ -336,9 +708,14 @@ export default function LibraryBrowserScreen() {
                 <View style={styles.libraryBadge}>
                   <Text style={styles.libraryBadgeText}>Library</Text>
                 </View>
+                {isAdminMode && (item.id.startsWith('admin-lib-') || dirtyOverrideIds.has(item.id)) && (
+                  <View style={styles.draftBadge}>
+                    <Text style={styles.draftBadgeText}>Draft</Text>
+                  </View>
+                )}
               </View>
             </View>
-            <Text style={styles.cardDescription} numberOfLines={1}>
+            <Text style={styles.cardDescription}>
               {item.description}
             </Text>
             <TouchableOpacity
@@ -352,11 +729,44 @@ export default function LibraryBrowserScreen() {
                 {getButtonLabel()}
               </Text>
             </TouchableOpacity>
+            {/* Admin mode action buttons */}
+            {isAdminMode && (
+              <View style={styles.adminActions}>
+                <TouchableOpacity
+                  style={styles.adminActionButton}
+                  onPress={() => handleAdminEdit(item)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Edit ${item.title}`}
+                >
+                  <Text style={styles.adminActionButtonText}>Edit</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.adminActionButton}
+                  onPress={() => handleAdminExport(item)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Export ${item.title}`}
+                >
+                  <Text style={styles.adminActionButtonText}>Export</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.adminActionButton, styles.adminDeleteButton]}
+                  onPress={() => handleAdminDelete(item)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Delete ${item.title}`}
+                >
+                  <Text style={[styles.adminActionButtonText, styles.adminDeleteButtonText]}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
-        </View>
+          {/* Preview hint */}
+          <View style={styles.previewHint}>
+            <Text style={styles.previewHintIcon}>Preview</Text>
+          </View>
+        </TouchableOpacity>
       );
     },
-    [categoryMap, addingCardId, restoringCardId, cards, archivedLibraryCards, handleAddToWallet, handleRestoreFromArchive]
+    [categoryMap, addingCardId, restoringCardId, cards, archivedLibraryCards, handleAddToWallet, handleRestoreFromArchive, handleOpenPreview, isAdminMode, handleAdminEdit, handleAdminExport, handleAdminDelete]
   );
 
   const keyExtractor = useCallback(
@@ -368,7 +778,9 @@ export default function LibraryBrowserScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Library</Text>
+        <Pressable onPress={handleHeaderTitlePress}>
+          <Text style={styles.headerTitle}>Library</Text>
+        </Pressable>
         <TouchableOpacity
           style={styles.closeButton}
           onPress={handleClose}
@@ -494,7 +906,11 @@ export default function LibraryBrowserScreen() {
       </View>
 
       {/* Card list */}
-      {filteredCards.length === 0 ? (
+      {isLoadingLibrary ? (
+        <View style={styles.loadingState} accessibilityLabel="Loading library">
+          <ActivityIndicator size="large" color="#4A90D9" />
+        </View>
+      ) : filteredCards.length === 0 ? (
         <View style={styles.emptyState} accessibilityLabel="No matching cards found">
           <Text style={styles.emptyStateIcon}>🔍</Text>
           <Text style={styles.emptyStateTitle}>No matching cards found</Text>
@@ -525,6 +941,18 @@ export default function LibraryBrowserScreen() {
                 </View>
               ))}
         </ScrollView>
+      )}
+
+      {/* Card Preview Sheet */}
+      {previewCard && previewButtonState && (
+        <CardPreviewSheet
+          card={previewCard}
+          visible={previewVisible}
+          onDismiss={handleDismissPreview}
+          buttonState={previewButtonState}
+          onAddToWallet={handlePreviewAddToWallet}
+          onRestore={handlePreviewRestore}
+        />
       )}
     </SafeAreaView>
   );
@@ -664,6 +1092,18 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#F2F2F7',
+    alignItems: 'flex-start',
+  },
+  previewHint: {
+    marginLeft: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewHintIcon: {
+    fontSize: 11,
+    color: '#AEAEB2',
+    fontWeight: '500',
+    letterSpacing: 0.2,
   },
   cardIcon: {
     width: 48,
@@ -718,6 +1158,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#636366',
   },
+  draftBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    backgroundColor: '#FFF3CD',
+    borderWidth: 1,
+    borderColor: '#FFE69C',
+  },
+  draftBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#856404',
+  },
   cardDescription: {
     fontSize: 13,
     color: '#8E8E93',
@@ -753,6 +1206,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     paddingTop: 60,
   },
+  loadingState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   emptyStateIcon: {
     fontSize: 48,
     marginBottom: 16,
@@ -769,5 +1227,29 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  adminActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+  },
+  adminActionButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#F2F2F7',
+    minHeight: 32,
+    justifyContent: 'center',
+  },
+  adminActionButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#4A90D9',
+  },
+  adminDeleteButton: {
+    backgroundColor: '#FFF0F0',
+  },
+  adminDeleteButtonText: {
+    color: '#FF3B30',
   },
 });

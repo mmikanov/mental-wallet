@@ -47,7 +47,7 @@ graph TD
 ### Integration Points
 
 - **App.tsx**: Initialize identity + session on mount; register AppState listener
-- **Onboarding screens**: Log `onboarding_step_viewed`, `onboarding_completed`
+- **Onboarding screens**: Log `onboarding_step_viewed`, `onboarding_intent_selected`, `onboarding_kpi_selected`, `onboarding_completed`
 - **Wallet/Session screens**: Log `start_mode_selected`, `session_started`, `session_ended` (with optional emotion, contexts, and time)
 - **Card interactions**: Log `tool_added`, `tool_archived`, `tool_unarchived`, `tool_copied`, `tool_opened`, `tool_completed`, `tool_created`, `tool_history_viewed`
 - **Reminders**: Log `reminder_set`, `reminder_deleted`
@@ -120,6 +120,8 @@ Implementation notes:
 export type AnalyticsEventType =
   | 'app_opened'
   | 'onboarding_step_viewed'
+  | 'onboarding_intent_selected'
+  | 'onboarding_kpi_selected'
   | 'onboarding_completed'
   | 'start_mode_selected'
   | 'session_started'
@@ -282,6 +284,8 @@ CREATE INDEX IF NOT EXISTS idx_analytics_queue_status_created
 export type AnalyticsEventType =
   | 'app_opened'
   | 'onboarding_step_viewed'
+  | 'onboarding_intent_selected'
+  | 'onboarding_kpi_selected'
   | 'onboarding_completed'
   | 'start_mode_selected'
   | 'session_started'
@@ -314,6 +318,16 @@ export type AppOpenedEvent = AnalyticsEventBase & {
 export type OnboardingStepViewedEvent = AnalyticsEventBase & {
   event_type: 'onboarding_step_viewed';
   properties: { step_name: string };
+};
+
+export type OnboardingIntentSelectedEvent = AnalyticsEventBase & {
+  event_type: 'onboarding_intent_selected';
+  properties: { intent_id: 'overwhelm' | 'routine' | 'organize' | 'explore' };
+};
+
+export type OnboardingKpiSelectedEvent = AnalyticsEventBase & {
+  event_type: 'onboarding_kpi_selected';
+  properties: { kpi_label: string }; // predefined label or 'custom' (never free-text)
 };
 
 export type OnboardingCompletedEvent = AnalyticsEventBase & {
