@@ -11,7 +11,7 @@
  * Validates: Requirements 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 3.4, 13.4, 17.1
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -28,9 +28,15 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { Card } from '@/types/index';
+import type { RootStackParamList } from '@/navigation/types';
 import { isLightBackground } from '@/utils/cardColors';
 import { renderCardIcon } from '@/utils/renderCardIcon';
+import { CURATED_LIBRARY } from '@/data/curatedLibrary';
+import { RationaleEntryPoint } from '@/components/rationale/RationaleEntryPoint';
+import { RationaleSheet } from '@/components/rationale/RationaleSheet';
 import OriginBadge from './OriginBadge';
 import StatsRow from './StatsRow';
 import ReminderDisplayRow from './ReminderDisplayRow';
@@ -69,6 +75,9 @@ const DISMISS_THRESHOLD = 100;
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const FOCUSED_CARD_HEIGHT = SCREEN_HEIGHT * 0.65;
 
+/** Emotion tags that indicate a distress-related card */
+const DISTRESS_EMOTIONS = ['anxious', 'angry', 'stressed'] as const;
+
 export default function FocusedCardView({
   card,
   categoryColor,
@@ -84,11 +93,40 @@ export default function FocusedCardView({
   renderDescriptionSuffix,
   renderTooltip,
 }: FocusedCardViewProps) {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const reminder = useCardReminder(card.id);
   const [bgImageFailed, setBgImageFailed] = useState(false);
+  const [rationaleSheetVisible, setRationaleSheetVisible] = useState(false);
   const translateY = useSharedValue(50);
   const opacity = useSharedValue(0.3);
   const prevExpanded = useRef(isExpanded);
+
+  // Look up curated card definition for rationale and emotion tags
+  const curatedCard = useMemo(() => {
+    if (!card.sourceLibraryId) return null;
+    return CURATED_LIBRARY.find((c) => c.id === card.sourceLibraryId) ?? null;
+  }, [card.sourceLibraryId]);
+
+  const rationale = curatedCard?.rationale ?? null;
+  const isDistressRelated = useMemo(() => {
+    if (!curatedCard?.emotionTags) return false;
+    return curatedCard.emotionTags.some((tag) =>
+      DISTRESS_EMOTIONS.includes(tag as typeof DISTRESS_EMOTIONS[number])
+    );
+  }, [curatedCard]);
+
+  const handleRationalePress = useCallback(() => {
+    setRationaleSheetVisible(true);
+  }, []);
+
+  const handleRationaleDismiss = useCallback(() => {
+    setRationaleSheetVisible(false);
+  }, []);
+
+  const handleCrisisResourcesPress = useCallback(() => {
+    setRationaleSheetVisible(false);
+    navigation.navigate('CrisisResources');
+  }, [navigation]);
 
   useEffect(() => {
     translateY.value = withSpring(0, SPRING_CONFIG);
@@ -182,10 +220,14 @@ export default function FocusedCardView({
         {card.title}
       </Text>
 
-      {/* Description */}
+      {/* Description with inline "Learn more" link */}
       <Text style={[styles.description, { color: subtitleColor }]} numberOfLines={4}>
         {card.description}
         {renderDescriptionSuffix?.(subtitleColor)}
+        <RationaleEntryPoint
+          inANutshell={rationale?.inANutshell}
+          onPress={handleRationalePress}
+        />
       </Text>
 
       {/* Optional tooltip rendered below description */}
@@ -203,119 +245,143 @@ export default function FocusedCardView({
   // normal card layout which wastes too much vertical space.
   if (isExpanded && renderExpandedContent) {
     return (
-      <GestureDetector gesture={panGesture}>
-        <Animated.View style={[styles.container, animatedStyle]}>
-          <View style={styles.cardOuter}>
-            <View
-              style={[
-                styles.cardShell,
-                { minHeight: FOCUSED_CARD_HEIGHT },
-                backgroundStyle,
-              ]}
-            >
-              {/* Compact header: category pill + icon + title + kebab */}
-              <View style={styles.compactHeader}>
-                <View style={styles.compactHeaderLeft}>
-                  <View style={styles.compactIconWrapper}>
-                    {renderCardIcon({
-                      iconType: card.iconType,
-                      iconValue: card.iconValue,
-                      size: 24,
-                      fallbackEmoji: card.iconValue || '📋',
-                    })}
+      <>
+        <GestureDetector gesture={panGesture}>
+          <Animated.View style={[styles.container, animatedStyle]}>
+            <View style={styles.cardOuter}>
+              <View
+                style={[
+                  styles.cardShell,
+                  { minHeight: FOCUSED_CARD_HEIGHT },
+                  backgroundStyle,
+                ]}
+              >
+                {/* Compact header: category pill + icon + title + kebab */}
+                <View style={styles.compactHeader}>
+                  <View style={styles.compactHeaderLeft}>
+                    <View style={styles.compactIconWrapper}>
+                      {renderCardIcon({
+                        iconType: card.iconType,
+                        iconValue: card.iconValue,
+                        size: 24,
+                        fallbackEmoji: card.iconValue || '📋',
+                      })}
+                    </View>
+                    <Text
+                      style={[styles.compactTitle, { color: textColor }]}
+                      numberOfLines={1}
+                    >
+                      {card.title}
+                    </Text>
                   </View>
-                  <Text
-                    style={[styles.compactTitle, { color: textColor }]}
-                    numberOfLines={1}
+                  <TouchableOpacity
+                    style={styles.kebabButton}
+                    onPress={onMenuPress}
+                    accessibilityRole="button"
+                    accessibilityLabel="Card menu"
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                   >
-                    {card.title}
-                  </Text>
+                    <Text style={[styles.kebabIcon, { color: textColor }]}>⋮</Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity
-                  style={styles.kebabButton}
-                  onPress={onMenuPress}
-                  accessibilityRole="button"
-                  accessibilityLabel="Card menu"
-                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                >
-                  <Text style={[styles.kebabIcon, { color: textColor }]}>⋮</Text>
-                </TouchableOpacity>
-              </View>
-              {/* Full-height custom expanded content */}
-              <View style={styles.customExpandedContent}>
-                {renderExpandedContent()}
+                {/* Full-height custom expanded content */}
+                <View style={styles.customExpandedContent}>
+                  {renderExpandedContent()}
+                </View>
               </View>
             </View>
-          </View>
-        </Animated.View>
-      </GestureDetector>
+          </Animated.View>
+        </GestureDetector>
+        {rationale && (
+          <RationaleSheet
+            visible={rationaleSheetVisible}
+            rationale={rationale}
+            cardTitle={card.title}
+            isDistressRelated={isDistressRelated}
+            onDismiss={handleRationaleDismiss}
+            onCrisisResourcesPress={handleCrisisResourcesPress}
+          />
+        )}
+      </>
     );
   }
 
   return (
-    <GestureDetector gesture={panGesture}>
-      <Animated.View style={[styles.container, animatedStyle]}>
-        <View style={styles.cardOuter}>
-          {/* Card Shell */}
-          <View
-            style={[
-              styles.cardShell,
-              { minHeight: FOCUSED_CARD_HEIGHT },
-            ]}
-          >
-            <ScrollView
-              style={styles.cardShellInner}
-              contentContainerStyle={[styles.cardShellInnerContent, backgroundStyle]}
-              showsVerticalScrollIndicator={false}
+    <>
+      <GestureDetector gesture={panGesture}>
+        <Animated.View style={[styles.container, animatedStyle]}>
+          <View style={styles.cardOuter}>
+            {/* Card Shell */}
+            <View
+              style={[
+                styles.cardShell,
+                { minHeight: FOCUSED_CARD_HEIGHT },
+              ]}
             >
-            {hasBackgroundImage ? (
-              <ImageBackground
-                source={{ uri: card.backgroundValue }}
-                style={styles.imageBackground}
-                imageStyle={styles.imageStyle}
-                onError={() => setBgImageFailed(true)}
+              <ScrollView
+                style={styles.cardShellInner}
+                contentContainerStyle={[styles.cardShellInnerContent, backgroundStyle]}
+                showsVerticalScrollIndicator={false}
               >
-                <View style={styles.imageOverlay}>{headerContent}</View>
-              </ImageBackground>
-            ) : (
-              headerContent
-            )}
-
-            {/* Stats Row inside the card */}
-            <View style={styles.statsContainer}>
-              <StatsRow
-                totalUses={card.totalUses}
-                currentStreak={card.currentStreak}
-                lastUsedAt={card.lastUsedAt}
-              />
-            </View>
-
-            {/* Reminder display between stats and expand arrow */}
-            <ReminderDisplayRow reminder={reminder} textColor={textColor} />
-
-            {/* Actions inside the card */}
-            {isExpanded ? (
-              <View style={styles.expandedContainer}>
-                <ExpandedContent card={card} />
-                {renderFooter?.()}
-              </View>
-            ) : (
-              <View style={styles.actionsContainer}>
-                <TouchableOpacity
-                  style={styles.expandArrow}
-                  onPress={onExpand}
-                  accessibilityRole="button"
-                  accessibilityLabel="Expand card to see full content"
+              {hasBackgroundImage ? (
+                <ImageBackground
+                  source={{ uri: card.backgroundValue }}
+                  style={styles.imageBackground}
+                  imageStyle={styles.imageStyle}
+                  onError={() => setBgImageFailed(true)}
                 >
-                  <Text style={[styles.expandArrowText, { color: textColor }]}>▼</Text>
-                </TouchableOpacity>
+                  <View style={styles.imageOverlay}>{headerContent}</View>
+                </ImageBackground>
+              ) : (
+                headerContent
+              )}
+
+              {/* Stats Row inside the card */}
+              <View style={styles.statsContainer}>
+                <StatsRow
+                  totalUses={card.totalUses}
+                  currentStreak={card.currentStreak}
+                  lastUsedAt={card.lastUsedAt}
+                />
               </View>
-            )}
-            </ScrollView>
+
+              {/* Reminder display between stats and expand arrow */}
+              <ReminderDisplayRow reminder={reminder} textColor={textColor} />
+
+              {/* Actions inside the card */}
+              {isExpanded ? (
+                <View style={styles.expandedContainer}>
+                  <ExpandedContent card={card} />
+                  {renderFooter?.()}
+                </View>
+              ) : (
+                <View style={styles.actionsContainer}>
+                  <TouchableOpacity
+                    style={styles.expandArrow}
+                    onPress={onExpand}
+                    accessibilityRole="button"
+                    accessibilityLabel="Expand card to see full content"
+                  >
+                    <Text style={[styles.expandArrowText, { color: textColor }]}>▼</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              </ScrollView>
+            </View>
           </View>
-        </View>
-      </Animated.View>
-    </GestureDetector>
+        </Animated.View>
+      </GestureDetector>
+      {rationale && (
+        <RationaleSheet
+          visible={rationaleSheetVisible}
+          rationale={rationale}
+          cardTitle={card.title}
+          isDistressRelated={isDistressRelated}
+          onDismiss={handleRationaleDismiss}
+          onCrisisResourcesPress={handleCrisisResourcesPress}
+        />
+      )}
+    </>
   );
 }
 

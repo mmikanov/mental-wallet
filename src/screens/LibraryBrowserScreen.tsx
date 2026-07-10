@@ -109,6 +109,9 @@ export default function LibraryBrowserScreen() {
   // Set of override IDs that actually differ from their static original (true drafts)
   const [dirtyOverrideIds, setDirtyOverrideIds] = useState<Set<string>>(new Set());
 
+  // Set of override IDs where the static source has been updated since the override was saved
+  const [staleOverrideIds, setStaleOverrideIds] = useState<Set<string>>(new Set());
+
   // Load archived library cards from database
   const loadArchivedCards = useCallback(async () => {
     try {
@@ -142,21 +145,60 @@ export default function LibraryBrowserScreen() {
     try {
       setIsLoadingLibrary(true);
       const merged = await getMergedLibrary();
-      setLibraryCards(merged);
 
       // Load override IDs for source-aware deletion
       const overrides = await getStaticOverrides();
-      setOverrideIds(new Set(overrides.map((o) => o.id)));
 
       // Compute dirty overrides: overrides whose content differs from the static original
+      // OR have rationale data in DB that differs from the static definition
       const dirty = new Set<string>();
+      
+      // Query all rationale data from DB for override cards
+      const db = await getDatabase();
+      const rationaleRows = await db.getAllAsync<{
+        id: string;
+        rationale_approach: string | null;
+        rationale_in_a_nutshell: string | null;
+        rationale_how_it_works: string | null;
+        rationale_evidence_level: string | null;
+        rationale_research_summary: string | null;
+      }>(
+        `SELECT id, rationale_approach, rationale_in_a_nutshell, rationale_how_it_works, rationale_evidence_level, rationale_research_summary
+         FROM cards WHERE rationale_approach IS NOT NULL AND origin_badge = 'library' AND stack_position = -1 AND id NOT LIKE 'admin-lib-%'`
+      );
+
+      // Check each DB rationale against its static original — only mark dirty if different
+      for (const row of rationaleRows) {
+        const staticOriginal = CURATED_LIBRARY.find((c) => c.id === row.id);
+        if (!staticOriginal || !staticOriginal.rationale) {
+          // No static original or no static rationale — any DB rationale is a change
+          dirty.add(row.id);
+          continue;
+        }
+        const staticR = staticOriginal.rationale;
+        const rationaleDiffers =
+          row.rationale_approach !== staticR.approach ||
+          row.rationale_in_a_nutshell !== staticR.inANutshell ||
+          row.rationale_how_it_works !== staticR.howItWorks ||
+          row.rationale_evidence_level !== staticR.evidenceLevel ||
+          row.rationale_research_summary !== JSON.stringify(staticR.researchSummary);
+        if (rationaleDiffers) {
+          dirty.add(row.id);
+        }
+      }
+
       for (const override of overrides) {
         const staticOriginal = CURATED_LIBRARY.find((c) => c.id === override.id);
         if (!staticOriginal) {
-          // No static original found — treat as dirty (shouldn't happen normally)
           dirty.add(override.id);
           continue;
         }
+
+        // Already marked dirty by rationale check above — skip shell/controls comparison
+        if (dirty.has(override.id)) {
+          continue;
+        }
+
         // Compare shell fields
         const shellDiffers =
           override.title !== staticOriginal.title ||
@@ -193,7 +235,50 @@ export default function LibraryBrowserScreen() {
           dirty.add(override.id);
         }
       }
+
+      // Detect stale overrides: DB has rationale data that is OLDER than the static source.
+      // An override is stale when the static source has rationale that differs from the DB,
+      // AND the override's shell/controls match the static (i.e., the admin hasn't made
+      // intentional edits — the DB is just out of date from a code update).
+      const stale = new Set<string>();
+      
+      // Query learnMoreLinks too for full comparison
+      const rationaleLinksRows = await db.getAllAsync<{
+        id: string;
+        rationale_learn_more_links: string | null;
+      }>(
+        `SELECT id, rationale_learn_more_links FROM cards WHERE rationale_approach IS NOT NULL AND origin_badge = 'library' AND stack_position = -1 AND id NOT LIKE 'admin-lib-%'`
+      );
+      const linksMap = new Map(rationaleLinksRows.map((r) => [r.id, r.rationale_learn_more_links]));
+
+      for (const row of rationaleRows) {
+        const staticOriginal = CURATED_LIBRARY.find((c) => c.id === row.id);
+        if (!staticOriginal?.rationale) continue;
+        const staticR = staticOriginal.rationale;
+        
+        // Compare all rationale fields including learnMoreLinks
+        const dbLinks = linksMap.get(row.id) ?? null;
+        const staticLinks = staticR.learnMoreLinks ? JSON.stringify(staticR.learnMoreLinks) : null;
+        
+        const dbMatchesStatic =
+          row.rationale_approach === staticR.approach &&
+          row.rationale_in_a_nutshell === staticR.inANutshell &&
+          row.rationale_how_it_works === staticR.howItWorks &&
+          row.rationale_evidence_level === staticR.evidenceLevel &&
+          row.rationale_research_summary === JSON.stringify(staticR.researchSummary) &&
+          dbLinks === staticLinks;
+
+        if (!dbMatchesStatic) {
+          // DB rationale differs from current static source — mark as stale
+          stale.add(row.id);
+        }
+      }
+
+      // Batch all state updates together to avoid intermediate renders
+      setLibraryCards(merged);
+      setOverrideIds(new Set(overrides.map((o) => o.id)));
       setDirtyOverrideIds(dirty);
+      setStaleOverrideIds(stale);
     } catch {
       // On failure, leave existing cards in place (or empty on first load)
     } finally {
@@ -713,6 +798,11 @@ export default function LibraryBrowserScreen() {
                     <Text style={styles.draftBadgeText}>Draft</Text>
                   </View>
                 )}
+                {isAdminMode && staleOverrideIds.has(item.id) && (
+                  <View style={styles.staleBadge}>
+                    <Text style={styles.staleBadgeText}>Stale</Text>
+                  </View>
+                )}
               </View>
             </View>
             <Text style={styles.cardDescription}>
@@ -952,6 +1042,10 @@ export default function LibraryBrowserScreen() {
           buttonState={previewButtonState}
           onAddToWallet={handlePreviewAddToWallet}
           onRestore={handlePreviewRestore}
+          onCrisisResourcesPress={() => {
+            handleDismissPreview();
+            navigation.navigate('CrisisResources');
+          }}
         />
       )}
     </SafeAreaView>
@@ -1170,6 +1264,19 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     color: '#856404',
+  },
+  staleBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    backgroundColor: '#F8D7DA',
+    borderWidth: 1,
+    borderColor: '#F5C6CB',
+  },
+  staleBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#721C24',
   },
   cardDescription: {
     fontSize: 13,

@@ -1,7 +1,8 @@
 /**
- * Unit tests for ExportService — data export (JSON/CSV) and deletion logic.
+ * Unit tests for ExportService — data export (JSON/CSV), deletion logic,
+ * and rationale validation/serialization.
  *
- * Validates: Requirements 16.2, 16.3
+ * Validates: Requirements 16.2, 16.3, 8.2, 8.3
  */
 
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
@@ -40,6 +41,7 @@ jest.mock('../../data/seeds', () => ({
 }));
 
 import { createExportService } from '../exportService';
+import { validateExportReadiness } from '../exportService';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 
@@ -161,5 +163,92 @@ describe('ExportService', () => {
       await expect(service.deleteAllData()).rejects.toThrow('DB error');
       expect(mockExecAsync).toHaveBeenCalledWith('ROLLBACK');
     });
+  });
+});
+
+describe('validateExportReadiness', () => {
+  it('should return valid when all required rationale fields are populated', () => {
+    const result = validateExportReadiness({
+      id: 'card-1',
+      title: 'Test Card',
+      rationale_approach: 'grounding',
+      rationale_in_a_nutshell: 'Helps redirect attention to the present moment.',
+      rationale_how_it_works: 'Engages the prefrontal cortex through sensory focus.',
+      rationale_evidence_level: 'moderate',
+      rationale_research_summary: JSON.stringify(['Research point 1', 'Research point 2']),
+    });
+
+    expect(result.isValid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it('should return errors for all missing fields when card has no rationale', () => {
+    const result = validateExportReadiness({
+      id: 'card-2',
+      title: 'Empty Card',
+      rationale_approach: null,
+      rationale_in_a_nutshell: null,
+      rationale_how_it_works: null,
+      rationale_evidence_level: null,
+      rationale_research_summary: null,
+    });
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors).toHaveLength(5);
+    expect(result.errors.map((e) => e.field)).toEqual([
+      'rationale_approach',
+      'rationale_in_a_nutshell',
+      'rationale_how_it_works',
+      'rationale_evidence_level',
+      'rationale_research_summary',
+    ]);
+  });
+
+  it('should return an error for a single missing field', () => {
+    const result = validateExportReadiness({
+      id: 'card-3',
+      title: 'Partial Card',
+      rationale_approach: 'CBT',
+      rationale_in_a_nutshell: 'A useful technique.',
+      rationale_how_it_works: '',
+      rationale_evidence_level: 'strong',
+      rationale_research_summary: JSON.stringify(['Point 1', 'Point 2']),
+    });
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].field).toBe('rationale_how_it_works');
+  });
+
+  it('should treat whitespace-only fields as missing', () => {
+    const result = validateExportReadiness({
+      id: 'card-4',
+      title: 'Whitespace Card',
+      rationale_approach: '   ',
+      rationale_in_a_nutshell: 'Valid text',
+      rationale_how_it_works: '\t\n',
+      rationale_evidence_level: 'moderate',
+      rationale_research_summary: JSON.stringify(['Point']),
+    });
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors).toHaveLength(2);
+    expect(result.errors.map((e) => e.field)).toContain('rationale_approach');
+    expect(result.errors.map((e) => e.field)).toContain('rationale_how_it_works');
+  });
+
+  it('should include the card title in error messages', () => {
+    const result = validateExportReadiness({
+      id: 'card-5',
+      title: 'Box Breathing',
+      rationale_approach: null,
+      rationale_in_a_nutshell: 'Good',
+      rationale_how_it_works: 'Works well',
+      rationale_evidence_level: 'moderate',
+      rationale_research_summary: JSON.stringify(['Research']),
+    });
+
+    expect(result.isValid).toBe(false);
+    expect(result.errors[0].message).toContain('Box Breathing');
   });
 });

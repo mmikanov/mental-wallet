@@ -31,6 +31,8 @@ interface Step3PreviewProps {
   categoryId: string;
   onSave: () => void;
   isSaving?: boolean;
+  /** Custom label for the save/next button */
+  saveLabel?: string;
   selectedEmotionTags: EmotionType[];
   onEmotionTagsChange: (tags: EmotionType[]) => void;
 }
@@ -68,6 +70,7 @@ export default function Step3Preview({
   categoryId,
   onSave,
   isSaving = false,
+  saveLabel,
   selectedEmotionTags,
   onEmotionTagsChange,
 }: Step3PreviewProps) {
@@ -179,54 +182,56 @@ export default function Step3Preview({
             {cardContent}
           </View>
         )}
+
+        {/* Emotion Tagging Section (Req 9.1) */}
+        <View style={styles.emotionSection}>
+          <Text style={styles.emotionHeading}>When does this tool help?</Text>
+          <Text style={styles.emotionSubtext}>
+            Optional — tag with emotions so this tool appears in your sessions
+          </Text>
+          <View style={styles.emotionChipsRow}>
+            {EMOTION_CHIPS.map((chip) => {
+              const isSelected = selectedEmotionTags.includes(chip.value);
+              return (
+                <TouchableOpacity
+                  key={chip.value}
+                  style={[
+                    styles.emotionChip,
+                    isSelected && styles.emotionChipSelected,
+                  ]}
+                  onPress={() => handleEmotionToggle(chip.value)}
+                  accessibilityRole="button"
+                  accessibilityLabel={chip.label}
+                  accessibilityState={{ selected: isSelected }}
+                >
+                  <Text
+                    style={[
+                      styles.emotionChipText,
+                      isSelected && styles.emotionChipTextSelected,
+                    ]}
+                  >
+                    {chip.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Rationale form moved to Step 4 for admin */}
       </ScrollView>
 
-      {/* Emotion Tagging Section (Req 9.1) */}
-      <View style={styles.emotionSection}>
-        <Text style={styles.emotionHeading}>When does this tool help?</Text>
-        <Text style={styles.emotionSubtext}>
-          Optional — tag with emotions so this tool appears in your sessions
-        </Text>
-        <View style={styles.emotionChipsRow}>
-          {EMOTION_CHIPS.map((chip) => {
-            const isSelected = selectedEmotionTags.includes(chip.value);
-            return (
-              <TouchableOpacity
-                key={chip.value}
-                style={[
-                  styles.emotionChip,
-                  isSelected && styles.emotionChipSelected,
-                ]}
-                onPress={() => handleEmotionToggle(chip.value)}
-                accessibilityRole="button"
-                accessibilityLabel={chip.label}
-                accessibilityState={{ selected: isSelected }}
-              >
-                <Text
-                  style={[
-                    styles.emotionChipText,
-                    isSelected && styles.emotionChipTextSelected,
-                  ]}
-                >
-                  {chip.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </View>
-
-      {/* Save Button (outside the card preview) */}
+      {/* Save/Next Button */}
       <View style={styles.footer}>
         <TouchableOpacity
           style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
           onPress={onSave}
           disabled={isSaving}
           accessibilityRole="button"
-          accessibilityLabel="Save card"
+          accessibilityLabel={saveLabel || 'Save card'}
         >
           <Text style={styles.saveButtonText}>
-            {isSaving ? 'Saving...' : 'Save'}
+            {isSaving ? 'Saving...' : (saveLabel || 'Save')}
           </Text>
         </TouchableOpacity>
       </View>

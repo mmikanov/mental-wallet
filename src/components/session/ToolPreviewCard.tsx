@@ -5,11 +5,14 @@
  * For library-sourced tools, shows an "Add to wallet" option after the user
  * returns from viewing the tool.
  *
- * Validates: Requirements 7.1, 10.1, 10.4, 10.5
+ * Validates: Requirements 2.6, 7.1, 10.1, 10.4, 10.5
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { RationaleEntryPoint } from '@/components/rationale/RationaleEntryPoint';
+import { RationaleSheet } from '@/components/rationale/RationaleSheet';
+import type { RationaleMetadata } from '@/types/rationale';
 
 export interface ToolPreviewCardProps {
   cardId: string;
@@ -21,6 +24,14 @@ export interface ToolPreviewCardProps {
   showAddToWallet?: boolean;
   onAddToWallet?: (cardId: string) => void;
   isAddedToWallet?: boolean;
+  /** The in-a-nutshell text for the rationale entry point */
+  rationaleInANutshell?: string;
+  /** Full rationale metadata for the rationale sheet */
+  rationale?: RationaleMetadata;
+  /** Whether the card's emotion tags include distress emotions */
+  isDistressRelated?: boolean;
+  /** Navigation handler for crisis resources */
+  onCrisisResourcesPress?: () => void;
 }
 
 /**
@@ -42,7 +53,12 @@ export default function ToolPreviewCard({
   showAddToWallet = false,
   onAddToWallet,
   isAddedToWallet = false,
+  rationaleInANutshell,
+  rationale,
+  isDistressRelated = false,
+  onCrisisResourcesPress,
 }: ToolPreviewCardProps) {
+  const [rationaleSheetVisible, setRationaleSheetVisible] = useState(false);
   const sourceLabel = source === 'wallet' ? 'from your wallet' : 'from library';
 
   return (
@@ -61,6 +77,12 @@ export default function ToolPreviewCard({
           </Text>
           <Text style={styles.description} numberOfLines={2}>
             {truncateDescription(description)}
+            {rationale && (
+              <RationaleEntryPoint
+                inANutshell={rationaleInANutshell}
+                onPress={() => setRationaleSheetVisible(true)}
+              />
+            )}
           </Text>
         </View>
       </TouchableOpacity>
@@ -80,6 +102,17 @@ export default function ToolPreviewCard({
             </TouchableOpacity>
           )}
         </View>
+      )}
+
+      {rationale && (
+        <RationaleSheet
+          visible={rationaleSheetVisible}
+          rationale={rationale}
+          cardTitle={title}
+          isDistressRelated={isDistressRelated}
+          onDismiss={() => setRationaleSheetVisible(false)}
+          onCrisisResourcesPress={onCrisisResourcesPress ?? (() => {})}
+        />
       )}
     </View>
   );

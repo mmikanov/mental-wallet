@@ -26,6 +26,8 @@ import ControlRenderer from '@/components/controls/ControlRenderer';
 import { isLightBackground } from '@/utils/cardColors';
 import { renderCardIcon } from '@/utils/renderCardIcon';
 import { SEED_CATEGORIES } from '@/data/seeds';
+import { RationaleEntryPoint } from '@/components/rationale/RationaleEntryPoint';
+import { RationaleSheet } from '@/components/rationale/RationaleSheet';
 
 export type LibraryCardButtonState = ButtonState;
 
@@ -36,6 +38,8 @@ export interface CardPreviewSheetProps {
   buttonState: LibraryCardButtonState;
   onAddToWallet: (card: CuratedCardDefinition) => Promise<void>;
   onRestore: (card: CuratedCardDefinition) => Promise<void>;
+  /** Optional callback to navigate to Crisis Resources screen */
+  onCrisisResourcesPress?: () => void;
 }
 
 export default function CardPreviewSheet({
@@ -45,9 +49,16 @@ export default function CardPreviewSheet({
   buttonState,
   onAddToWallet,
   onRestore,
+  onCrisisResourcesPress,
 }: CardPreviewSheetProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rationaleVisible, setRationaleVisible] = useState(false);
+
+  const isDistressRelated =
+    card.emotionTags?.some((tag) =>
+      ['anxious', 'angry', 'stressed'].includes(tag)
+    ) ?? false;
 
   const bgColor =
     card.backgroundType === 'color'
@@ -136,9 +147,13 @@ export default function CardPreviewSheet({
         </View>
       )}
 
-      {/* Description */}
+      {/* Description with inline "Learn more" link */}
       <Text style={[styles.description, { color: subtitleColor }]} numberOfLines={4}>
         {card.description}
+        <RationaleEntryPoint
+          inANutshell={card.rationale?.inANutshell}
+          onPress={() => setRationaleVisible(true)}
+        />
       </Text>
     </View>
   );
@@ -233,6 +248,21 @@ export default function CardPreviewSheet({
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Rationale Sheet */}
+      {card.rationale && (
+        <RationaleSheet
+          visible={rationaleVisible}
+          rationale={card.rationale}
+          cardTitle={card.title}
+          isDistressRelated={isDistressRelated}
+          onDismiss={() => setRationaleVisible(false)}
+          onCrisisResourcesPress={() => {
+            setRationaleVisible(false);
+            onCrisisResourcesPress?.();
+          }}
+        />
+      )}
     </Modal>
   );
 }

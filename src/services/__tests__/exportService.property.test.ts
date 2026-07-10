@@ -1,6 +1,6 @@
 // Feature: curator-admin-panel, Property 10: Export serialization includes all required CuratedCardDefinition fields
 import * as fc from 'fast-check';
-import { serializeToCuratedDefinition } from '@/services/exportService';
+import { serializeToCuratedDefinition, validateExportReadiness } from '@/services/exportService';
 import type { Card, Control, ControlType, ControlConfig } from '@/types/index';
 
 // Mock expo-clipboard (not used directly in serialize, but imported by the module)
@@ -21,9 +21,12 @@ jest.mock('expo-sharing', () => ({
   shareAsync: jest.fn(),
 }));
 
-// Mock the database module (used by emotionTagService)
+// Mock the database module (used by emotionTagService and rationale query)
+const mockGetFirstAsync = jest.fn();
 jest.mock('@/data/database', () => ({
-  getDatabase: jest.fn(),
+  getDatabase: jest.fn().mockResolvedValue({
+    getFirstAsync: (...args: unknown[]) => mockGetFirstAsync(...args),
+  }),
 }));
 
 // Mock emotionTagService tag queries since serializeToCuratedDefinition fetches tags
@@ -177,7 +180,7 @@ const cardArb: fc.Arbitrary<Card> = fc.record({
   updatedAt: fc.constant('2024-01-01T00:00:00Z'),
 });
 
-// --- Property Test ---
+// --- Property Tests ---
 
 describe('exportService - Property Tests', () => {
   beforeEach(() => {
@@ -186,6 +189,15 @@ describe('exportService - Property Tests', () => {
     mockGetTagsForCard.mockResolvedValue([]);
     mockGetContextTags.mockResolvedValue([]);
     mockGetTimeTags.mockResolvedValue([]);
+    // Default: return complete rationale data from DB
+    mockGetFirstAsync.mockResolvedValue({
+      rationale_approach: 'grounding',
+      rationale_in_a_nutshell: 'Redirects attention to present-moment sensory input.',
+      rationale_how_it_works: 'Engages the prefrontal cortex by categorizing sensory data.',
+      rationale_evidence_level: 'moderate',
+      rationale_research_summary: JSON.stringify(['Research point 1.', 'Research point 2.']),
+      rationale_learn_more_links: null,
+    });
   });
 
   describe('Feature: curator-admin-panel, Property 10: Export serialization includes all required CuratedCardDefinition fields', () => {
@@ -231,6 +243,125 @@ describe('exportService - Property Tests', () => {
             expect(ctrl).toHaveProperty('config');
             expect(typeof ctrl.config).toBe('object');
             expect(ctrl).toHaveProperty('isRequired', card.controls[i].isRequired);
+          }
+        }),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  // Feature: tool-rationale-evidence, Property 10: Export serialization includes all rationale fields
+  describe('Feature: tool-rationale-evidence, Property 10: Export serialization includes all rationale fields', () => {
+    /**
+     * **Validates: Requirements 8.2**
+     *
+     * For any card with complete rationale metadata (all required fields populated),
+     * serializeToCuratedDefinition() SHALL produce output containing the `rationale`
+     * key with all sub-fields: approach, inANutshell, howItWorks, evidenceLevel,
+     * researchSummary (array with 2+ items).
+     */
+    it('serialized output contains rationale key with all sub-fields for any card', async () => {
+      await fc.assert(
+        fc.asyncProperty(cardArb, async (card) => {
+          const result = await serializeToCuratedDefinition(card);
+
+          // Parse the serialized string using Function constructor
+          const parsed = new Function(`return (${result})`)();
+
+          // Verify the rationale key exists
+          expect(parsed).toHaveProperty('rationale');
+          expect(typeof parsed.rationale).toBe('object');
+          expect(parsed.rationale).not.toBeNull();
+
+          // Verify all required rationale sub-fields are present
+          expect(parsed.rationale).toHaveProperty('approach');
+          expect(typeof parsed.rationale.approach).toBe('string');
+          expect(parsed.rationale.approach.length).toBeGreaterThan(0);
+
+          expect(parsed.rationale).toHaveProperty('inANutshell');
+          expect(typeof parsed.rationale.inANutshell).toBe('string');
+          expect(parsed.rationale.inANutshell.length).toBeGreaterThan(0);
+
+          expect(parsed.rationale).toHaveProperty('howItWorks');
+          expect(typeof parsed.rationale.howItWorks).toBe('string');
+          expect(parsed.rationale.howItWorks.length).toBeGreaterThan(0);
+
+          expect(parsed.rationale).toHaveProperty('evidenceLevel');
+          expect(typeof parsed.rationale.evidenceLevel).toBe('string');
+          expect(parsed.rationale.evidenceLevel.length).toBeGreaterThan(0);
+
+          expect(parsed.rationale).toHaveProperty('researchSummary');
+          expect(Array.isArray(parsed.rationale.researchSummary)).toBe(true);
+          expect(parsed.rationale.researchSummary.length).toBeGreaterThanOrEqual(2);
+        }),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  // Feature: tool-rationale-evidence, Property 11: Export blocks on missing rationale fields
+  describe('Feature: tool-rationale-evidence, Property 11: Export blocks on missing rationale fields', () => {
+    /**
+     * **Validates: Requirements 8.3**
+     *
+     * For any admin card where at least one required rationale field (approach,
+     * in_a_nutshell, how_it_works, evidence_level, or research_summary) is missing
+     * or empty, the export validation SHALL return an invalid result and SHALL
+     * identify which fields are incomplete.
+     */
+
+    const requiredFields = [
+      'rationale_approach',
+      'rationale_in_a_nutshell',
+      'rationale_how_it_works',
+      'rationale_evidence_level',
+      'rationale_research_summary',
+    ] as const;
+
+    // Generator for a card-like object with at least one rationale field nullified
+    const cardWithMissingRationaleArb = fc
+      .record({
+        id: fc.stringMatching(/^admin-lib-[0-9a-f]{8}$/),
+        title: fc.string({ minLength: 1, maxLength: 80 }),
+        rationale_approach: fc.string({ minLength: 1, maxLength: 50 }),
+        rationale_in_a_nutshell: fc.string({ minLength: 1, maxLength: 200 }),
+        rationale_how_it_works: fc.string({ minLength: 1, maxLength: 400 }),
+        rationale_evidence_level: fc.constantFrom('strong', 'moderate', 'emerging', 'not_specifically_studied'),
+        rationale_research_summary: fc.constant(JSON.stringify(['Point 1.', 'Point 2.'])),
+      })
+      .chain((card) =>
+        // Pick at least one field to nullify (use set of indices)
+        fc.subarray(
+          [...requiredFields],
+          { minLength: 1 }
+        ).map((fieldsToRemove) => {
+          const modified = { ...card };
+          for (const field of fieldsToRemove) {
+            // Randomly choose between null, undefined, empty string, or whitespace
+            (modified as Record<string, unknown>)[field] = fc.sample(
+              fc.constantFrom(null, '', '   '),
+              1
+            )[0];
+          }
+          return { card: modified, removedFields: fieldsToRemove };
+        })
+      );
+
+    it('validateExportReadiness returns isValid: false when at least one required rationale field is missing', () => {
+      fc.assert(
+        fc.property(cardWithMissingRationaleArb, ({ card, removedFields }) => {
+          const result = validateExportReadiness(card as Parameters<typeof validateExportReadiness>[0]);
+
+          // Must be invalid
+          expect(result.isValid).toBe(false);
+
+          // Must have at least one error
+          expect(result.errors.length).toBeGreaterThan(0);
+
+          // Each removed field should appear in errors
+          for (const field of removedFields) {
+            const hasError = result.errors.some((e) => e.field === field);
+            expect(hasError).toBe(true);
           }
         }),
         { numRuns: 100 }

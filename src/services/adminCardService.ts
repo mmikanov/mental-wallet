@@ -24,6 +24,8 @@ import type {
   ContextType,
   TimeType,
 } from '@/types/index';
+import type { RationaleMetadata } from '@/types/rationale';
+import { isValidApproach, isValidEvidenceLevel } from '@/utils/rationaleValidation';
 import { CURATED_LIBRARY, type CuratedCardDefinition } from '@/data/curatedLibrary';
 
 // ─── Helper: Map DB row to Card (without controls) ───────────────────────────
@@ -98,8 +100,9 @@ function assembleCardsFromRows(rows: Record<string, unknown>[]): Card[] {
  * Create a new admin library card with the `admin-lib-{uuid}` ID convention.
  * Persists the card and its controls in a single transaction.
  * Optionally saves emotion, context, and time tags.
+ * Optionally persists rationale metadata to the rationale DB columns.
  *
- * Validates: Requirements 2.1, 2.2, 2.3, 2.4, 7.1, 7.2, 7.3
+ * Validates: Requirements 2.1, 2.2, 2.3, 2.4, 7.1, 7.2, 7.3, 8.1, 8.4
  */
 export async function createLibraryCard(
   shell: CardShell,
@@ -107,7 +110,8 @@ export async function createLibraryCard(
   categoryId: string,
   emotionTags?: EmotionType[],
   contextTags?: ContextType[],
-  timeTags?: TimeType[]
+  timeTags?: TimeType[],
+  rationale?: RationaleMetadata
 ): Promise<Card> {
   // Validate icon type at application layer
   if (!validateIconType(shell.iconType)) {
@@ -115,6 +119,24 @@ export async function createLibraryCard(
       ErrorCode.VALIDATION_EMPTY_FIELD,
       `Invalid icon type: ${shell.iconType}`
     );
+  }
+
+  // Validate rationale fields if provided
+  if (rationale) {
+    if (!isValidApproach(rationale.approach)) {
+      throw AppError.validation(
+        ErrorCode.VALIDATION_EMPTY_FIELD,
+        `Invalid rationale approach: ${rationale.approach}`,
+        'approach'
+      );
+    }
+    if (!isValidEvidenceLevel(rationale.evidenceLevel)) {
+      throw AppError.validation(
+        ErrorCode.VALIDATION_EMPTY_FIELD,
+        `Invalid rationale evidence level: ${rationale.evidenceLevel}`,
+        'evidenceLevel'
+      );
+    }
   }
 
   const db = await getDatabase();
@@ -199,6 +221,29 @@ export async function createLibraryCard(
           [cardId, time]
         );
       }
+    }
+
+    // Persist rationale metadata if provided
+    if (rationale) {
+      await db.runAsync(
+        `UPDATE cards SET
+          rationale_approach = ?,
+          rationale_in_a_nutshell = ?,
+          rationale_how_it_works = ?,
+          rationale_evidence_level = ?,
+          rationale_research_summary = ?,
+          rationale_learn_more_links = ?
+        WHERE id = ?`,
+        [
+          rationale.approach,
+          rationale.inANutshell,
+          rationale.howItWorks,
+          rationale.evidenceLevel,
+          JSON.stringify(rationale.researchSummary),
+          rationale.learnMoreLinks ? JSON.stringify(rationale.learnMoreLinks) : null,
+          cardId,
+        ]
+      );
     }
 
     await db.execAsync('COMMIT');
@@ -549,6 +594,9 @@ export async function unsuppressStaticCard(id: string): Promise<void> {
  * Validates: Requirements 3.1, 3.2
  */
 export function cardToCuratedDefinition(card: Card): CuratedCardDefinition {
+  // Look up the static original's rationale and tags (override rows don't store these)
+  const staticOriginal = CURATED_LIBRARY.find((c) => c.id === card.id);
+
   return {
     id: card.id,
     title: card.title,
@@ -565,7 +613,10 @@ export function cardToCuratedDefinition(card: Card): CuratedCardDefinition {
       config: ctrl.config,
       isRequired: ctrl.isRequired,
     })),
-    // Tags loaded separately if needed
+    emotionTags: staticOriginal?.emotionTags,
+    contextTags: staticOriginal?.contextTags,
+    timeTags: staticOriginal?.timeTags,
+    rationale: staticOriginal?.rationale,
   };
 }
 
@@ -610,6 +661,19 @@ function isOverrideMatchingStatic(override: Card, staticCard: CuratedCardDefinit
 }
 
 /**
+ * Check if a card row has non-null rationale data persisted in DB.
+ * Used by auto-cleanup to avoid deleting overrides that only differ in rationale.
+ */
+async function checkOverrideHasRationale(cardId: string): Promise<boolean> {
+  const db = await getDatabase();
+  const row = await db.getFirstAsync<{ rationale_approach: string | null }>(
+    `SELECT rationale_approach FROM cards WHERE id = ?`,
+    [cardId]
+  );
+  return !!row?.rationale_approach;
+}
+
+/**
  * Get the merged library combining all card sources:
  * 1. Query admin-lib-* cards from DB
  * 2. Query suppressed IDs
@@ -637,18 +701,10 @@ export async function getMergedLibrary(): Promise<CuratedCardDefinition[]> {
     overrideMap.set(override.id, override);
   }
 
-  // 3.5 Auto-cleanup: if an override matches the current static definition exactly,
-  // delete it silently. This handles the workflow where the admin exports a card,
-  // pastes it into curatedLibrary.ts, and reloads — the stale override is removed
-  // automatically so the updated static version takes effect.
-  for (const override of staticOverrides) {
-    const staticOriginal = CURATED_LIBRARY.find((c) => c.id === override.id);
-    if (staticOriginal && isOverrideMatchingStatic(override, staticOriginal)) {
-      overrideMap.delete(override.id);
-      // Fire-and-forget cleanup — don't block the merge
-      deleteStaticOverride(override.id).catch(() => {});
-    }
-  }
+  // 3.5 Auto-cleanup disabled for overrides with rationale data.
+  // Previously this would delete overrides matching their static originals,
+  // but rationale-only edits are invisible to isOverrideMatchingStatic.
+  // Overrides are now preserved until explicitly deleted by the admin.
 
   // 4. Read CURATED_LIBRARY static array
   // 5. Filter out suppressed static cards

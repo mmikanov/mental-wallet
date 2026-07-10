@@ -42,6 +42,9 @@ import { createLibraryCard, createStaticOverride, getCardById as getAdminCardByI
 import Step1Shell from '@/components/creator/Step1Shell';
 import Step2Controls from '@/components/creator/Step2Controls';
 import Step3Preview from '@/components/creator/Step3Preview';
+import Step4Rationale from '@/components/creator/Step4Rationale';
+import type { RationaleFormData } from '@/components/creator/RationaleFormSection';
+import type { RationaleMetadata } from '@/types/rationale';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CardCreator'>;
 
@@ -68,6 +71,18 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
   const [selectedEmotionTags, setSelectedEmotionTags] = useState<EmotionType[]>([]);
   const [isLoading, setIsLoading] = useState(isEditMode || isAdminEdit);
   const [isSaving, setIsSaving] = useState(false);
+  const [rationaleData, setRationaleData] = useState<RationaleFormData>({
+    approach: '',
+    inANutshell: '',
+    howItWorks: '',
+    evidenceLevel: '',
+    researchSummary: ['', ''],
+    learnMoreLinks: [],
+  });
+
+  // Ref to always have the latest rationale data in callbacks (avoids stale closure)
+  const rationaleDataRef = useRef(rationaleData);
+  rationaleDataRef.current = rationaleData;
 
   // Tracks the effective card ID for admin edit mode (set after static override creation or admin card load)
   const [adminEditEffectiveId, setAdminEditEffectiveId] = useState<string | null>(null);
@@ -162,6 +177,9 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
         populateFromCard(card);
         setAdminEditEffectiveId(card.id);
 
+        // Load rationale data from DB
+        await loadRationaleForCard(editCardId, curatedCard);
+
         // Load emotion tags: prefer DB tags, fall back to static definition
         try {
           const dbTags = await getTagsForCard(editCardId);
@@ -187,6 +205,9 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
 
         populateFromCard(card);
         setAdminEditEffectiveId(card.id);
+
+        // Load rationale data from DB
+        await loadRationaleForCard(editCardId);
 
         // Load emotion tags from DB
         try {
@@ -219,6 +240,54 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
     initialShellRef.current = loadedShell;
     initialControlsRef.current = card.controls;
     initialCategoryRef.current = card.categoryId;
+  }
+
+  async function loadRationaleForCard(cardId: string, curatedCard?: import('@/data/curatedLibrary').CuratedCardDefinition) {
+    try {
+      const db = await getDatabase();
+      const row = await db.getFirstAsync<{
+        rationale_approach: string | null;
+        rationale_in_a_nutshell: string | null;
+        rationale_how_it_works: string | null;
+        rationale_evidence_level: string | null;
+        rationale_research_summary: string | null;
+        rationale_learn_more_links: string | null;
+      }>(
+        `SELECT rationale_approach, rationale_in_a_nutshell, rationale_how_it_works,
+                rationale_evidence_level, rationale_research_summary, rationale_learn_more_links
+         FROM cards WHERE id = ?`,
+        [cardId]
+      );
+
+      if (row && row.rationale_approach) {
+        setRationaleData({
+          approach: (row.rationale_approach || '') as RationaleFormData['approach'],
+          inANutshell: row.rationale_in_a_nutshell || '',
+          howItWorks: row.rationale_how_it_works || '',
+          evidenceLevel: (row.rationale_evidence_level || '') as RationaleFormData['evidenceLevel'],
+          researchSummary: row.rationale_research_summary
+            ? JSON.parse(row.rationale_research_summary)
+            : ['', ''],
+          learnMoreLinks: row.rationale_learn_more_links
+            ? JSON.parse(row.rationale_learn_more_links)
+            : [],
+        });
+      } else if (curatedCard?.rationale) {
+        // Fall back to static curated card rationale
+        setRationaleData({
+          approach: curatedCard.rationale.approach,
+          inANutshell: curatedCard.rationale.inANutshell,
+          howItWorks: curatedCard.rationale.howItWorks,
+          evidenceLevel: curatedCard.rationale.evidenceLevel,
+          researchSummary: [...curatedCard.rationale.researchSummary],
+          learnMoreLinks: curatedCard.rationale.learnMoreLinks
+            ? [...curatedCard.rationale.learnMoreLinks]
+            : [],
+        });
+      }
+    } catch {
+      // Non-blocking: rationale is optional for editing
+    }
   }
 
   async function loadExistingCard(id: string) {
@@ -338,6 +407,9 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
     setCurrentStep((s) => s + 1);
   }, []);
 
+  // Ref to always call the latest performSave (avoids stale closure in handleSave)
+  const performSaveRef = useRef<(promoteToLibrary: boolean) => Promise<void>>(async () => {});
+
   /**
    * Save the card — create or update depending on mode.
    * In create mode: creates card with "my_tool" badge at top of stack.
@@ -361,11 +433,11 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
             {
               text: 'Keep as Personal',
               style: 'cancel',
-              onPress: () => performSave(false),
+              onPress: () => performSaveRef.current(false),
             },
             {
               text: 'Save to Library',
-              onPress: () => performSave(true),
+              onPress: () => performSaveRef.current(true),
             },
           ]
         );
@@ -373,8 +445,8 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
       }
     }
 
-    performSave(false);
-  }, [isSaving, isEditMode, isAdminEdit, isAdminMode, cardId, shell, controls, categoryId, selectedEmotionTags, loadCards, navigation, adminEditEffectiveId]);
+    performSaveRef.current(false);
+  }, [isSaving, isEditMode, isAdminEdit, isAdminMode, cardId]);
 
   const performSave = useCallback(async (promoteToLibrary: boolean) => {
     if (isSaving) return;
@@ -458,6 +530,32 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
           throw error;
         }
 
+        // Persist rationale fields if admin editing and rationale data is filled
+        if ((isAdminMode || isAdminEdit) && rationaleDataRef.current.approach && rationaleDataRef.current.evidenceLevel) {
+          const rationaleDb = await getDatabase();
+          await rationaleDb.runAsync(
+            `UPDATE cards SET
+              rationale_approach = ?,
+              rationale_in_a_nutshell = ?,
+              rationale_how_it_works = ?,
+              rationale_evidence_level = ?,
+              rationale_research_summary = ?,
+              rationale_learn_more_links = ?
+            WHERE id = ?`,
+            [
+              rationaleDataRef.current.approach,
+              rationaleDataRef.current.inANutshell || null,
+              rationaleDataRef.current.howItWorks || null,
+              rationaleDataRef.current.evidenceLevel,
+              JSON.stringify(rationaleDataRef.current.researchSummary.filter((s) => s.trim().length > 0)),
+              rationaleDataRef.current.learnMoreLinks.filter((l) => l.title.trim() && l.url.trim()).length > 0
+                ? JSON.stringify(rationaleDataRef.current.learnMoreLinks.filter((l) => l.title.trim() && l.url.trim()))
+                : null,
+              effectiveEditId,
+            ]
+          );
+        }
+
         // Persist emotion tags in background (Req 9.6)
         if (selectedEmotionTags.length > 0) {
           setTagsForCard(effectiveEditId, selectedEmotionTags).catch(() => {});
@@ -473,7 +571,22 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
           isRequired: c.isRequired,
         }));
 
-        await createLibraryCard(shell, controlsData, categoryId);
+        // Build rationale if all required fields are filled
+        const rationale: RationaleMetadata | undefined =
+          rationaleDataRef.current.approach && rationaleDataRef.current.inANutshell && rationaleDataRef.current.howItWorks && rationaleDataRef.current.evidenceLevel
+            ? {
+                approach: rationaleDataRef.current.approach as RationaleMetadata['approach'],
+                inANutshell: rationaleDataRef.current.inANutshell,
+                howItWorks: rationaleDataRef.current.howItWorks,
+                evidenceLevel: rationaleDataRef.current.evidenceLevel as RationaleMetadata['evidenceLevel'],
+                researchSummary: rationaleDataRef.current.researchSummary.filter((s) => s.trim().length > 0) as RationaleMetadata['researchSummary'],
+                learnMoreLinks: rationaleDataRef.current.learnMoreLinks.filter((l) => l.title.trim() && l.url.trim()).length > 0
+                  ? rationaleDataRef.current.learnMoreLinks.filter((l) => l.title.trim() && l.url.trim())
+                  : undefined,
+              }
+            : undefined;
+
+        await createLibraryCard(shell, controlsData, categoryId, selectedEmotionTags, undefined, undefined, rationale);
 
         // Show confirmation and navigate back
         hasBeenSavedRef.current = true;
@@ -528,6 +641,18 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
     }
   }, [isSaving, isEditMode, isAdminEdit, isAdminMode, adminEditEffectiveId, cardId, shell, controls, categoryId, selectedEmotionTags, loadCards, navigation]);
 
+  // Keep ref in sync with latest performSave
+  performSaveRef.current = performSave;
+
+  const totalSteps = isAdminMode ? 4 : 3;
+
+  // Clamp step when admin mode is toggled off while on step 4
+  useEffect(() => {
+    if (currentStep > totalSteps) {
+      setCurrentStep(totalSteps);
+    }
+  }, [isAdminMode, totalSteps, currentStep]);
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -549,7 +674,7 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
         )}
         <Pressable onPress={handleHeaderTitlePress}>
           <Text style={styles.headerTitle}>
-            {isAdminEdit ? 'Edit Library Tool' : isEditMode ? 'Edit Tool' : 'Create Tool'} — Step {currentStep}/3
+            {isAdminEdit ? 'Edit Library Tool' : isEditMode ? 'Edit Tool' : 'Create Tool'} — Step {currentStep}/{totalSteps}
           </Text>
         </Pressable>
         <TouchableOpacity onPress={handleCancel} style={styles.headerButton}>
@@ -559,7 +684,7 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
 
       {/* Step indicator */}
       <View style={styles.stepIndicator}>
-        {[1, 2, 3].map((step) => (
+        {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => (
           <View
             key={step}
             style={[
@@ -600,10 +725,19 @@ export default function CardCreatorScreen({ navigation, route }: Props) {
           shell={shell}
           controls={controls}
           categoryId={categoryId}
-          onSave={handleSave}
+          onSave={isAdminMode ? handleNext : handleSave}
           isSaving={isSaving}
+          saveLabel={isAdminMode ? 'Next: Rationale' : undefined}
           selectedEmotionTags={selectedEmotionTags}
           onEmotionTagsChange={setSelectedEmotionTags}
+        />
+      )}
+      {currentStep === 4 && isAdminMode && (
+        <Step4Rationale
+          data={rationaleData}
+          onChange={setRationaleData}
+          onSave={handleSave}
+          isSaving={isSaving}
         />
       )}
     </SafeAreaView>

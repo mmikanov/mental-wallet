@@ -24,6 +24,7 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
   await runAnalyticsMigration(db);
   await runAdminMigration(db);
   await runIconTypeCheckMigration(db);
+  await runRationaleMigration(db);
 }
 
 /**
@@ -373,5 +374,45 @@ async function runIconTypeCheckMigration(db: SQLiteDatabase): Promise<void> {
     await db.execAsync('ROLLBACK');
     await db.execAsync('PRAGMA foreign_keys = ON');
     throw error;
+  }
+}
+
+
+/**
+ * Adds rationale metadata columns to the cards table for admin-created library cards.
+ * All columns are nullable since user cards don't have rationale and admin cards
+ * may be in-progress.
+ * Uses PRAGMA table_info check for idempotency.
+ */
+export async function runRationaleMigration(db: SQLiteDatabase): Promise<void> {
+  const columns = await db.getAllAsync<{ name: string }>(
+    `PRAGMA table_info(cards)`
+  );
+  const hasRationaleApproach = columns.some(
+    (col) => col.name === 'rationale_approach'
+  );
+
+  if (!hasRationaleApproach) {
+    await db.execAsync(
+      `ALTER TABLE cards ADD COLUMN rationale_approach TEXT`
+    );
+    await db.execAsync(
+      `ALTER TABLE cards ADD COLUMN rationale_in_a_nutshell TEXT`
+    );
+    await db.execAsync(
+      `ALTER TABLE cards ADD COLUMN rationale_how_it_works TEXT`
+    );
+    await db.execAsync(
+      `ALTER TABLE cards ADD COLUMN rationale_evidence_level TEXT
+         CHECK(rationale_evidence_level IS NULL OR rationale_evidence_level IN (
+           'strong', 'moderate', 'emerging', 'not_specifically_studied'
+         ))`
+    );
+    await db.execAsync(
+      `ALTER TABLE cards ADD COLUMN rationale_research_summary TEXT`
+    );
+    await db.execAsync(
+      `ALTER TABLE cards ADD COLUMN rationale_learn_more_links TEXT`
+    );
   }
 }

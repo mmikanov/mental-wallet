@@ -7,6 +7,8 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-nati
 import type { CuratedCardDefinition } from '@/data/curatedLibrary';
 import type { Control } from '@/types/index';
 import ControlRenderer from '@/components/controls/ControlRenderer';
+import { RationaleEntryPoint } from '@/components/rationale/RationaleEntryPoint';
+import { RationaleSheet } from '@/components/rationale/RationaleSheet';
 
 interface LibraryToolPreviewProps {
   card: CuratedCardDefinition;
@@ -22,6 +24,12 @@ export default function LibraryToolPreview({
   isAddedToWallet,
 }: LibraryToolPreviewProps) {
   const [values, setValues] = useState<Record<string, string>>({});
+  const [rationaleVisible, setRationaleVisible] = useState(false);
+
+  const isDistressRelated =
+    card.emotionTags?.some((tag) =>
+      ['anxious', 'angry', 'stressed'].includes(tag)
+    ) ?? false;
 
   const handleControlChange = (controlId: string, value: string) => {
     setValues((prev) => ({ ...prev, [controlId]: value }));
@@ -57,7 +65,13 @@ export default function LibraryToolPreview({
         <View style={[styles.cardShell, { backgroundColor: card.backgroundValue || '#F5F5F5' }]}>
           <Text style={styles.icon}>{card.iconValue}</Text>
           <Text style={styles.title}>{card.title}</Text>
-          <Text style={styles.description}>{card.description}</Text>
+          <Text style={styles.description}>
+            {card.description}
+            <RationaleEntryPoint
+              inANutshell={card.rationale?.inANutshell}
+              onPress={() => setRationaleVisible(true)}
+            />
+          </Text>
         </View>
 
         {/* Controls */}
@@ -85,6 +99,18 @@ export default function LibraryToolPreview({
           </TouchableOpacity>
         )}
       </View>
+
+      {/* Rationale Sheet */}
+      {card.rationale && (
+        <RationaleSheet
+          visible={rationaleVisible}
+          rationale={card.rationale}
+          cardTitle={card.title}
+          isDistressRelated={isDistressRelated}
+          onDismiss={() => setRationaleVisible(false)}
+          onCrisisResourcesPress={() => setRationaleVisible(false)}
+        />
+      )}
     </View>
   );
 }
