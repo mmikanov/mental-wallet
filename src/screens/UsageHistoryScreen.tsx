@@ -5,7 +5,7 @@
  * Validates: Requirements 11.1, 11.2, 11.3
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -20,6 +20,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { createCompletionService } from '../services/completionService';
 import { createCardService } from '../services/cardService';
+import { createKpiService } from '../services/kpiService';
 import type { Completion, Card, Control, ControlValue } from '../types/index';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'UsageHistory'>;
@@ -34,9 +35,13 @@ export default function UsageHistoryScreen({ route, navigation }: Props) {
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  // Map completionTimestamp → kpiLabel for KPI card history
+  const [kpiLabelsByTime, setKpiLabelsByTime] = useState<Map<string, string>>(new Map());
+  const isKpiCard = useRef(false);
 
   const completionService = createCompletionService();
   const cardService = createCardService();
+  const kpiService = createKpiService();
 
   useEffect(() => {
     loadInitialData();
@@ -52,6 +57,45 @@ export default function UsageHistoryScreen({ route, navigation }: Props) {
       setCard(cardData);
       setCompletions(completionData);
       setHasMore(completionData.length === PAGE_SIZE);
+
+      // For the KPI card, load KPI change history to determine which label was active at each completion time
+      if (cardData?.sourceLibraryId === 'lib-personal-kpi') {
+        isKpiCard.current = true;
+        const changeHistory = await kpiService.getChangeHistory();
+        const currentLabel = await kpiService.getPersonalKpi();
+        
+        // Build a timeline: [{label, from}] sorted by time
+        // The first label was set at onboarding (before any change)
+        const timeline: { label: string; from: Date }[] = [];
+        
+        if (changeHistory.length > 0) {
+          // First segment: the previousValue of the first change, active from the beginning of time
+          timeline.push({ label: changeHistory[0].previousValue, from: new Date(0) });
+          // Each change creates a new segment
+          for (const change of changeHistory) {
+            timeline.push({ label: change.newValue, from: new Date(change.changedAt) });
+          }
+        } else if (currentLabel) {
+          // No changes ever — single label for all time
+          timeline.push({ label: currentLabel, from: new Date(0) });
+        }
+        
+        // For each completion, find which label was active at that time
+        const labelMap = new Map<string, string>();
+        for (const completion of completionData) {
+          const completionTime = new Date(completion.completedAt);
+          let activeLabel = currentLabel ?? '';
+          // Walk the timeline in reverse to find the most recent segment <= completionTime
+          for (let i = timeline.length - 1; i >= 0; i--) {
+            if (timeline[i].from <= completionTime) {
+              activeLabel = timeline[i].label;
+              break;
+            }
+          }
+          labelMap.set(completion.completedAt, activeLabel);
+        }
+        setKpiLabelsByTime(labelMap);
+      }
     } catch {
       // Graceful fallback
     } finally {
@@ -107,8 +151,18 @@ export default function UsageHistoryScreen({ route, navigation }: Props) {
     });
   }
 
-  function getControlLabel(controlId: string): string {
+  function getControlLabel(controlId: string, completedAt?: string): string {
     if (!card) return '';
+
+    // For the KPI card's mood_slider, use the historical label from kpi_records
+    if (isKpiCard.current && completedAt) {
+      const control = card.controls.find((c) => c.id === controlId);
+      if (control?.type === 'mood_slider') {
+        const historicalLabel = kpiLabelsByTime.get(completedAt);
+        if (historicalLabel) return historicalLabel;
+      }
+    }
+
     const control = card.controls.find((c) => c.id === controlId);
     if (!control) return '';
     const config = control.config as unknown as Record<string, unknown>;
@@ -146,7 +200,7 @@ export default function UsageHistoryScreen({ route, navigation }: Props) {
           <View style={styles.valuesContainer}>
             {item.values.map((val) => (
               <View key={val.id} style={styles.valueRow}>
-                <Text style={styles.valueLabel}>{getControlLabel(val.controlId)}</Text>
+                <Text style={styles.valueLabel}>{getControlLabel(val.controlId, item.completedAt)}</Text>
                 <Text style={styles.valueText}>{formatControlValue(val)}</Text>
               </View>
             ))}
@@ -154,7 +208,7 @@ export default function UsageHistoryScreen({ route, navigation }: Props) {
         )}
       </View>
     ),
-    [card]
+    [card, kpiLabelsByTime]
   );
 
   if (isLoading) {

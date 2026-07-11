@@ -42,7 +42,10 @@ import StatsRow from './StatsRow';
 import ReminderDisplayRow from './ReminderDisplayRow';
 import PrimaryActionButton from './PrimaryActionButton';
 import ExpandedContent from './ExpandedContent';
+import { BadgeExplanationBanner } from './BadgeExplanationBanner';
 import { useCardReminder } from '@/hooks/useCardReminder';
+import { useKpiStore } from '@/stores/kpiStore';
+import { computeDaysElapsed } from '@/utils/kpiBadgeUtils';
 import { announceCardTransition } from '@/utils/accessibility';
 
 export interface FocusedCardViewProps {
@@ -64,6 +67,8 @@ export interface FocusedCardViewProps {
   /** Optional tooltip content rendered below the description (inside the card layout) */
   renderTooltip?: () => React.ReactNode;
 }
+
+const KPI_CARD_SOURCE_ID = 'lib-personal-kpi';
 
 const SPRING_CONFIG = {
   damping: 18,
@@ -100,6 +105,34 @@ export default function FocusedCardView({
   const translateY = useSharedValue(50);
   const opacity = useSharedValue(0.3);
   const prevExpanded = useRef(isExpanded);
+
+  // KPI badge explanation banner state
+  const isKpiCard = card.sourceLibraryId === KPI_CARD_SOURCE_ID;
+  const lastCheckInDate = useKpiStore((s) => s.lastCheckInDate);
+
+  // Snapshot: capture daysElapsed on mount/card change, don't update while card is open
+  const daysElapsedSnapshot = useRef<number | null>(null);
+  useEffect(() => {
+    if (isKpiCard) {
+      daysElapsedSnapshot.current = computeDaysElapsed(lastCheckInDate, new Date());
+    }
+  }, [card.id]); // Only recalculate when the focused card changes
+
+  // Track check-in completion: if lastCheckInDate becomes "today" while the card is open
+  const [checkInCompleted, setCheckInCompleted] = useState(false);
+  useEffect(() => {
+    if (isKpiCard && lastCheckInDate) {
+      const elapsed = computeDaysElapsed(lastCheckInDate, new Date());
+      if (elapsed === 0) {
+        setCheckInCompleted(true);
+      }
+    }
+  }, [lastCheckInDate, isKpiCard]);
+
+  // Reset when card changes
+  useEffect(() => {
+    setCheckInCompleted(false);
+  }, [card.id]);
 
   // Look up curated card definition for rationale and emotion tags
   const curatedCard = useMemo(() => {
@@ -323,6 +356,12 @@ export default function FocusedCardView({
                 contentContainerStyle={[styles.cardShellInnerContent, backgroundStyle]}
                 showsVerticalScrollIndicator={false}
               >
+              {isKpiCard && (
+                <BadgeExplanationBanner
+                  daysElapsedSnapshot={daysElapsedSnapshot.current}
+                  checkInCompleted={checkInCompleted}
+                />
+              )}
               {hasBackgroundImage ? (
                 <ImageBackground
                   source={{ uri: card.backgroundValue }}

@@ -26,6 +26,7 @@ import { getDatabase, closeDatabase } from '@/data/database';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import { useKpiStore } from '@/stores/kpiStore';
 import { useAnalyticsStore } from '@/stores/analyticsStore';
+import { AdminKpiBadgeTools } from '@/components/settings/AdminKpiBadgeTools';
 import { getFlushIntervalMs, setFlushIntervalMs } from '@/config/analytics';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
@@ -503,6 +504,8 @@ export default function SettingsScreen({ navigation }: Props) {
                 Reset Entire App
               </Text>
             </TouchableOpacity>
+
+            <AdminKpiBadgeTools />
           </View>
         )}
       </ScrollView>

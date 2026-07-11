@@ -19,6 +19,7 @@ import PrimaryActionButton from './PrimaryActionButton';
 import OutcomePrompt from './OutcomePrompt';
 import { useCompletionStore } from '@/stores/completionStore';
 import { useWalletStore } from '@/stores/walletStore';
+import { useKpiStore } from '@/stores/kpiStore';
 import { logEvent } from '@/services/analyticsEventLogger';
 import type { Card, Control } from '@/types/index';
 
@@ -153,7 +154,18 @@ export default function ExpandedContent({ card }: ExpandedContentProps) {
     setErrors({});
 
     try {
-      await submitCompletion(card.id, card.controls);
+      // For the KPI card, use the dedicated recordKpi flow (writes to kpi_records + completions)
+      if (card.sourceLibraryId === 'lib-personal-kpi') {
+        const moodControl = card.controls.find((c) => c.type === 'mood_slider');
+        const moodValue = moodControl ? Number(cardValues[moodControl.id] ?? '5') : 5;
+        const noteControl = card.controls.find((c) => c.type === 'text_input');
+        const noteValue = noteControl ? (cardValues[noteControl.id]?.trim() || null) : null;
+        await useKpiStore.getState().recordKpi(moodValue, noteValue);
+        // Clear inputs for the card on success
+        useCompletionStore.getState().clearInputs(card.id);
+      } else {
+        await submitCompletion(card.id, card.controls);
+      }
       // Log tool_completed analytics event
       const analyticsCardId = card.sourceLibraryId || card.id;
       void logEvent('tool_completed', {

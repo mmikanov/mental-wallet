@@ -81,6 +81,7 @@ Personal KPI replaces the generic mood-logging system with a user-defined person
 6. WHEN the Personal_KPI is changed, THE App SHALL NOT delete or modify existing KPI_Records — all historical data is preserved regardless of label changes.
 7. WHEN the Personal_KPI is changed to a different value, THE App SHALL append a record to the change history containing the previous value, the new value, and the timestamp (UTC ISO 8601) to support future insights that may need to distinguish between KPI periods.
 8. IF the user dismisses or navigates back from the KPI_Option list without selecting a new option, THEN THE App SHALL retain the current Personal_KPI unchanged and return to the Settings screen.
+9. WHEN the Usage History screen displays completions for the KPI_Card, THE mood_slider label for each entry SHALL reflect the Personal_KPI that was active at the time that entry was recorded (determined by cross-referencing the completion timestamp against the KPI change history timeline). Entries recorded before a KPI change SHALL show the previous label; entries recorded after SHALL show the new label.
 
 ### Requirement 5: Data Schema and Storage
 

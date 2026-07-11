@@ -16,7 +16,7 @@
  */
 
 import React, { useEffect, useMemo, useCallback, useState, useRef } from 'react';
-import { View, StyleSheet, Alert, LayoutAnimation, Platform, UIManager, Dimensions, TouchableOpacity, Text } from 'react-native';
+import { View, StyleSheet, Alert, LayoutAnimation, Platform, UIManager, Dimensions, TouchableOpacity, Text, AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
@@ -41,6 +41,8 @@ import { useOnboardingStore } from '@/stores/onboardingStore';
 import { useWalletStore } from '@/stores/walletStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useKpiStore } from '@/stores/kpiStore';
+import { DaysSinceBadge } from '@/components/wallet/DaysSinceBadge';
+import { computeDaysElapsed, getAccessibilityLabel } from '@/utils/kpiBadgeUtils';
 import { createCardService } from '@/services/cardService';
 import { upsertOverlay, removeOverlay } from '@/services/backgroundOverlayService';
 import type { BackgroundType } from '@/types/index';
@@ -75,8 +77,49 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 /** Info tooltip for the KPI card — shows ⓘ inline, opens popover with explanation + settings link */
 // Component removed — tooltip logic handled inline in WalletScreen
 
+/** Custom hook — schedules a callback at the next local midnight, cleaning up on unmount */
+function useMidnightRefresh(onMidnight: () => void) {
+  useEffect(() => {
+    const getMsUntilMidnight = () => {
+      const now = new Date();
+      const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+      return midnight.getTime() - now.getTime();
+    };
+
+    const timer = setTimeout(() => {
+      onMidnight();
+    }, getMsUntilMidnight());
+
+    return () => clearTimeout(timer);
+  }, [onMidnight]);
+}
+
 /** Animated FAB for KPI check-in — scales/fades in and out with spring physics */
 function KpiFab({ visible, onPress }: { visible: boolean; onPress: () => void }) {
+  const lastCheckInDate = useKpiStore((s) => s.lastCheckInDate);
+  const loadLastCheckIn = useKpiStore((s) => s.loadLastCheckIn);
+  const refreshDaysElapsed = useKpiStore((s) => s.refreshDaysElapsed);
+
+  // Load on mount
+  useEffect(() => {
+    loadLastCheckIn();
+  }, []);
+
+  // Midnight refresh
+  useMidnightRefresh(refreshDaysElapsed);
+
+  // Foreground refresh
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        refreshDaysElapsed();
+      }
+    });
+    return () => subscription.remove();
+  }, [refreshDaysElapsed]);
+
+  const daysElapsed = computeDaysElapsed(lastCheckInDate, new Date());
+
   const scale = useSharedValue(visible ? 1 : 0);
   const opacity = useSharedValue(visible ? 1 : 0);
 
@@ -95,12 +138,13 @@ function KpiFab({ visible, onPress }: { visible: boolean; onPress: () => void })
       <TouchableOpacity
         onPress={onPress}
         style={styles.kpiFabTouchable}
-        accessibilityLabel="Check in on how you're doing"
+        accessibilityLabel={getAccessibilityLabel(daysElapsed)}
         accessibilityRole="button"
         activeOpacity={0.8}
       >
         <Text style={styles.kpiFabIcon}>🌱</Text>
       </TouchableOpacity>
+      <DaysSinceBadge daysElapsed={daysElapsed} />
     </Animated.View>
   );
 }
