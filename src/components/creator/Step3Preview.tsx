@@ -24,6 +24,7 @@ import { renderCardIcon } from '@/utils/renderCardIcon';
 import ControlRenderer from '@/components/controls/ControlRenderer';
 import OriginBadge from '@/components/wallet/OriginBadge';
 import PrimaryActionButton from '@/components/wallet/PrimaryActionButton';
+import { EMOTION_OPTIONS } from '@/data/emotionConfig';
 
 interface Step3PreviewProps {
   shell: CardShell;
@@ -55,14 +56,10 @@ const CATEGORY_LABELS: Record<string, string> = {
   'lightweight-connection': 'Connection',
 };
 
-const EMOTION_CHIPS: { value: EmotionType; label: string }[] = [
-  { value: 'stressed', label: 'Stressed' },
-  { value: 'overwhelmed', label: 'Overwhelmed' },
-  { value: 'anxious', label: 'Anxious' },
-  { value: 'sad', label: 'Sad' },
-  { value: 'angry', label: 'Angry' },
-  { value: 'numb', label: 'Numb' },
-];
+const EMOTION_CHIPS: { value: EmotionType; label: string }[] = EMOTION_OPTIONS.map((opt) => ({
+  value: opt.type,
+  label: opt.label,
+}));
 
 export default function Step3Preview({
   shell,

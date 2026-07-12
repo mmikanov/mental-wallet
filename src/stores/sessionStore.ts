@@ -29,7 +29,7 @@ export interface SessionStore {
   toolsAddedToWallet: string[];
 
   // Actions
-  selectEmotion: (emotion: EmotionType) => Promise<void>;
+  selectEmotion: (emotion: EmotionType, checkinId?: string) => Promise<void>;
   deselectEmotion: () => void;
   toggleContext: (context: ContextType) => void;
   selectTime: (time: TimeType | null) => void;
@@ -55,7 +55,7 @@ const INITIAL_STATE = {
 export const useSessionStore = create<SessionStore>((set, get) => ({
   ...INITIAL_STATE,
 
-  async selectEmotion(emotion: EmotionType) {
+  async selectEmotion(emotion: EmotionType, checkinId?: string) {
     const { isSessionActive } = get();
 
     // Optimistically set state (Req 11.6 — don't block UI on persistence failure)
@@ -72,7 +72,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     }
 
     try {
-      const session = await emotionSessionService.create(emotion);
+      const session = await emotionSessionService.create(emotion, checkinId);
       set({ currentSessionId: session.id });
     } catch {
       // Allow UI to continue per Req 11.6; session will be retried on end

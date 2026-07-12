@@ -21,7 +21,6 @@ const CONTEXT_OPTIONS: { type: ContextType; label: string }[] = [
   { type: 'with_family', label: 'With family' },
   { type: 'with_friends', label: 'With friends/social' },
   { type: 'alone_at_home', label: 'Alone at home' },
-  { type: 'not_sure', label: "I'm not sure" },
 ];
 
 export default function ContextChips({

@@ -15,6 +15,7 @@ function mapRowToSession(row: Record<string, unknown>): EmotionSessionRecord {
     toolCardIds: JSON.parse((row.tool_card_ids as string) || '[]') as string[],
     startedAt: row.started_at as string,
     endedAt: (row.ended_at as string | null) ?? null,
+    checkinId: (row.checkin_id as string | null) ?? null,
   };
 }
 
@@ -24,7 +25,7 @@ function mapRowToSession(row: Record<string, unknown>): EmotionSessionRecord {
  *
  * Validates: Requirements 11.1, 11.7
  */
-export async function create(emotion: EmotionType): Promise<EmotionSessionRecord> {
+export async function create(emotion: EmotionType, checkinId?: string): Promise<EmotionSessionRecord> {
   const db = await getDatabase();
   const id = Crypto.randomUUID();
   const now = new Date().toISOString();
@@ -36,11 +37,11 @@ export async function create(emotion: EmotionType): Promise<EmotionSessionRecord
       [now]
     );
 
-    // Insert new session
+    // Insert new session with optional checkin_id (Req 9.6)
     await db.runAsync(
-      `INSERT INTO emotion_sessions (id, selected_emotion, selected_contexts, selected_time, tool_card_ids, started_at, ended_at)
-       VALUES (?, ?, '[]', NULL, '[]', ?, NULL)`,
-      [id, emotion, now]
+      `INSERT INTO emotion_sessions (id, selected_emotion, selected_contexts, selected_time, tool_card_ids, started_at, ended_at, checkin_id)
+       VALUES (?, ?, '[]', NULL, '[]', ?, NULL, ?)`,
+      [id, emotion, now, checkinId ?? null]
     );
   });
 
@@ -52,6 +53,7 @@ export async function create(emotion: EmotionType): Promise<EmotionSessionRecord
     toolCardIds: [],
     startedAt: now,
     endedAt: null,
+    checkinId: checkinId ?? null,
   };
 }
 

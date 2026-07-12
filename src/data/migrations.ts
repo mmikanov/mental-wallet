@@ -25,6 +25,9 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
   await runAdminMigration(db);
   await runIconTypeCheckMigration(db);
   await runRationaleMigration(db);
+  await runGuidedCheckinMigration(db);
+  await runEmotionTagsExpansionMigration(db);
+  await runEmotionSessionsExpansionMigration(db);
 }
 
 /**
@@ -414,5 +417,193 @@ export async function runRationaleMigration(db: SQLiteDatabase): Promise<void> {
     await db.execAsync(
       `ALTER TABLE cards ADD COLUMN rationale_learn_more_links TEXT`
     );
+  }
+}
+
+
+/**
+ * Creates the guided_checkin_records table and adds the checkin_id column
+ * to emotion_sessions. Uses CREATE TABLE IF NOT EXISTS and PRAGMA table_info
+ * checks for idempotency.
+ */
+export async function runGuidedCheckinMigration(db: SQLiteDatabase): Promise<void> {
+  // Task 4.1: Create guided_checkin_records table
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS guided_checkin_records (
+      id TEXT PRIMARY KEY,
+      body_energy TEXT NOT NULL,
+      pleasantness TEXT NOT NULL,
+      thought_pattern TEXT NOT NULL,
+      context TEXT NOT NULL,
+      derived_feeling TEXT NOT NULL,
+      was_changed INTEGER NOT NULL DEFAULT 0,
+      final_emotion TEXT NOT NULL,
+      recorded_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_guided_checkin_recorded_at
+      ON guided_checkin_records(recorded_at);
+  `);
+
+  // Task 4.2: Add checkin_id column to emotion_sessions
+  const columns = await db.getAllAsync<{ name: string }>(
+    `PRAGMA table_info(emotion_sessions)`
+  );
+  const hasCheckinId = columns.some((col) => col.name === 'checkin_id');
+
+  if (!hasCheckinId) {
+    await db.execAsync(
+      `ALTER TABLE emotion_sessions ADD COLUMN checkin_id TEXT`
+    );
+  }
+}
+
+/**
+ * Rebuilds the emotion_tags table with an expanded CHECK constraint
+ * to include all 12 emotion values.
+ * Uses savepoint test INSERT pattern for idempotency.
+ */
+async function runEmotionTagsExpansionMigration(db: SQLiteDatabase): Promise<void> {
+  // Test if the new emotions are already allowed by attempting an insert in a savepoint
+  try {
+    await db.execAsync('SAVEPOINT emotion_tags_check_test');
+    await db.runAsync(
+      `INSERT INTO emotion_tags (id, card_id, emotion)
+       VALUES ('__emotion_tags_test__', 'session-launcher', 'lonely')`,
+      []
+    );
+    // If we get here, the constraint already allows the new emotions
+    await db.execAsync('ROLLBACK TO emotion_tags_check_test');
+    await db.execAsync('RELEASE emotion_tags_check_test');
+    return; // No migration needed
+  } catch {
+    // The INSERT failed — constraint doesn't include new emotions, need to rebuild
+    try {
+      await db.execAsync('ROLLBACK TO emotion_tags_check_test');
+      await db.execAsync('RELEASE emotion_tags_check_test');
+    } catch {
+      // Savepoint may already be rolled back
+    }
+  }
+
+  // Rebuild the emotion_tags table with the expanded CHECK constraint
+  await db.execAsync('PRAGMA foreign_keys = OFF');
+  await db.execAsync('BEGIN TRANSACTION');
+  try {
+    // 1. Create new table with expanded CHECK
+    await db.execAsync(`
+      CREATE TABLE emotion_tags_new (
+        id TEXT PRIMARY KEY,
+        card_id TEXT NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+        emotion TEXT NOT NULL CHECK(emotion IN (
+          'stressed', 'overwhelmed', 'anxious', 'sad', 'angry', 'numb',
+          'lonely', 'ashamed', 'guilty', 'hopeless', 'calm', 'curious'
+        )),
+        UNIQUE(card_id, emotion)
+      )
+    `);
+
+    // 2. Copy all data from old table
+    await db.execAsync(
+      `INSERT INTO emotion_tags_new SELECT * FROM emotion_tags`
+    );
+
+    // 3. Drop old table
+    await db.execAsync('DROP TABLE emotion_tags');
+
+    // 4. Rename new table
+    await db.execAsync('ALTER TABLE emotion_tags_new RENAME TO emotion_tags');
+
+    // 5. Recreate indexes
+    await db.execAsync(`
+      CREATE INDEX IF NOT EXISTS idx_emotion_tags_card ON emotion_tags(card_id);
+      CREATE INDEX IF NOT EXISTS idx_emotion_tags_emotion ON emotion_tags(emotion);
+    `);
+
+    await db.execAsync('COMMIT');
+    await db.execAsync('PRAGMA foreign_keys = ON');
+  } catch (error) {
+    await db.execAsync('ROLLBACK');
+    await db.execAsync('PRAGMA foreign_keys = ON');
+    throw error;
+  }
+}
+
+/**
+ * Rebuilds the emotion_sessions table with an expanded CHECK constraint
+ * on selected_emotion to include all 12 emotion values.
+ * Uses savepoint test INSERT pattern for idempotency.
+ * Must run AFTER runGuidedCheckinMigration so checkin_id column exists.
+ */
+async function runEmotionSessionsExpansionMigration(db: SQLiteDatabase): Promise<void> {
+  // Test if the new emotions are already allowed by attempting an insert in a savepoint
+  try {
+    await db.execAsync('SAVEPOINT emotion_sessions_check_test');
+    await db.runAsync(
+      `INSERT INTO emotion_sessions (id, selected_emotion, selected_contexts, selected_time, tool_card_ids, started_at)
+       VALUES ('__emotion_sessions_test__', 'lonely', '[]', NULL, '[]', datetime('now'))`,
+      []
+    );
+    // If we get here, the constraint already allows the new emotions
+    await db.execAsync('ROLLBACK TO emotion_sessions_check_test');
+    await db.execAsync('RELEASE emotion_sessions_check_test');
+    return; // No migration needed
+  } catch {
+    // The INSERT failed — constraint doesn't include new emotions, need to rebuild
+    try {
+      await db.execAsync('ROLLBACK TO emotion_sessions_check_test');
+      await db.execAsync('RELEASE emotion_sessions_check_test');
+    } catch {
+      // Savepoint may already be rolled back
+    }
+  }
+
+  // Rebuild the emotion_sessions table with the expanded CHECK constraint
+  await db.execAsync('PRAGMA foreign_keys = OFF');
+  await db.execAsync('BEGIN TRANSACTION');
+  try {
+    // 1. Create new table with expanded CHECK and checkin_id column
+    await db.execAsync(`
+      CREATE TABLE emotion_sessions_new (
+        id TEXT PRIMARY KEY,
+        selected_emotion TEXT NOT NULL CHECK(selected_emotion IN (
+          'stressed', 'overwhelmed', 'anxious', 'sad', 'angry', 'numb',
+          'lonely', 'ashamed', 'guilty', 'hopeless', 'calm', 'curious'
+        )),
+        selected_contexts TEXT NOT NULL DEFAULT '[]',
+        selected_time TEXT,
+        tool_card_ids TEXT NOT NULL DEFAULT '[]',
+        started_at TEXT NOT NULL DEFAULT (datetime('now')),
+        ended_at TEXT,
+        checkin_id TEXT
+      )
+    `);
+
+    // 2. Copy all data from old table (including checkin_id added by prior migration)
+    await db.execAsync(
+      `INSERT INTO emotion_sessions_new
+        SELECT id, selected_emotion, selected_contexts, selected_time,
+               tool_card_ids, started_at, ended_at, checkin_id
+        FROM emotion_sessions`
+    );
+
+    // 3. Drop old table
+    await db.execAsync('DROP TABLE emotion_sessions');
+
+    // 4. Rename new table
+    await db.execAsync('ALTER TABLE emotion_sessions_new RENAME TO emotion_sessions');
+
+    // 5. Recreate indexes
+    await db.execAsync(`
+      CREATE INDEX IF NOT EXISTS idx_emotion_sessions_active ON emotion_sessions(ended_at)
+        WHERE ended_at IS NULL;
+    `);
+
+    await db.execAsync('COMMIT');
+    await db.execAsync('PRAGMA foreign_keys = ON');
+  } catch (error) {
+    await db.execAsync('ROLLBACK');
+    await db.execAsync('PRAGMA foreign_keys = ON');
+    throw error;
   }
 }

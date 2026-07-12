@@ -6,23 +6,34 @@
  * ("Not right now") and manages transitions between picker state and
  * recommendations state.
  *
- * Validates: Requirements 4.7, 4.8, 4.9, 6.1, 12.2, 12.3
+ * State machine: EMOTION_PICKER → CHECKIN_FLOW → EMOTION_PICKER (with selection)
+ *
+ * Validates: Requirements 1.6, 2.10, 2.12, 4.1, 4.4, 4.5, 4.7, 4.8, 4.9, 6.1, 12.2, 12.3
  */
 
 import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import * as Crypto from 'expo-crypto';
 import { useSessionStore } from '@/stores/sessionStore';
 import { createCardService } from '@/services/cardService';
 import { setTagsForCard, setContextTags, setTimeTags } from '@/services/emotionTagService';
+import { saveCheckinRecord } from '@/services/checkinRecordService';
+import { logEvent } from '@/services/analyticsEventLogger';
 import { useWalletStore } from '@/stores/walletStore';
+import { useCheckinStore } from '@/stores/checkinStore';
 import { CURATED_LIBRARY } from '@/data/curatedLibrary';
 import type { CuratedCardDefinition } from '@/data/curatedLibrary';
+import type { CheckinRecord } from '@/types/checkin';
 import EmotionPicker from '@/components/session/EmotionPicker';
+import GuidedCheckinFlow from '@/components/session/GuidedCheckinFlow';
 import ContextChips from '@/components/session/ContextChips';
 import TimeChips from '@/components/session/TimeChips';
 import ToolPreviewCard from '@/components/session/ToolPreviewCard';
 import LibraryToolPreview from '@/components/session/LibraryToolPreview';
 import type { EmotionType, ContextType, TimeType } from '@/types/index';
+
+/** State machine states for the session launcher flow */
+type LauncherState = 'EMOTION_PICKER' | 'CHECKIN_FLOW' | 'CONTEXT_SELECTION';
 
 export interface SessionLauncherContentProps {
   onDismiss: () => void;
@@ -49,6 +60,9 @@ export default function SessionLauncherContent({
     dismissWithoutSession,
   } = useSessionStore();
 
+  // State machine for the session launcher flow
+  const [launcherState, setLauncherState] = useState<LauncherState>('EMOTION_PICKER');
+
   // Track which library tools have been added to wallet during this session
   const [addedToWalletIds, setAddedToWalletIds] = useState<Set<string>>(new Set());
 
@@ -63,6 +77,16 @@ export default function SessionLauncherContent({
 
   // Ref to store measured Y offset of recommendations container
   const recoContainerY = useRef<number>(0);
+
+  // Ref to store the checkin record ID for passing to session creation (Req 9.6)
+  const checkinIdRef = useRef<string | null>(null);
+
+  // Reset checkinStore on unmount to prevent stale state (Req 4.5)
+  useEffect(() => {
+    return () => {
+      useCheckinStore.getState().reset();
+    };
+  }, []);
 
   // Auto-scroll to recommendations container top when they appear
   useEffect(() => {
@@ -79,6 +103,79 @@ export default function SessionLauncherContent({
     dismissWithoutSession();
     onDismiss();
   }, [dismissWithoutSession, onDismiss]);
+
+  // Start the guided check-in flow (Req 1.6, 6.5)
+  const handleStartCheckin = useCallback(() => {
+    // Fire analytics event BEFORE transitioning state (Req 6.5)
+    logEvent('guided_checkin_started');
+    useCheckinStore.getState().startCheckin();
+    setLauncherState('CHECKIN_FLOW');
+  }, []);
+
+  // Dismiss the guided check-in flow — reset store and return to picker (Req 2.10, 4.5)
+  const handleCheckinDismiss = useCallback(() => {
+    useCheckinStore.getState().reset();
+    setLauncherState('EMOTION_PICKER');
+  }, []);
+
+  // Called when user accepts the derived feeling from the guided check-in
+  const handleCheckinAccept = useCallback(
+    (emotion: EmotionType) => {
+      const { answers, topFeelings } = useCheckinStore.getState();
+      const primaryFeeling = topFeelings[0] ?? emotion;
+      const wasChanged = emotion !== primaryFeeling;
+
+      // Fire guided_checkin_completed event (Req 6.6)
+      logEvent('guided_checkin_completed', {
+        derived_feeling: primaryFeeling,
+        was_changed: wasChanged ? 1 : 0,
+        final_emotion_used: emotion,
+      });
+
+      // Generate checkin record ID and save record (Req 6.1, 9.5, 9.7)
+      const checkinId = Crypto.randomUUID();
+      checkinIdRef.current = checkinId;
+
+      // Capture the social context answer before resetting — we'll pre-fill
+      // the context step since the user already answered "Where are you right now?"
+      const checkinContext = answers.context;
+
+      if (answers.bodyEnergy && answers.pleasantness && answers.thoughtPattern && answers.context) {
+        const record: CheckinRecord = {
+          id: checkinId,
+          bodyEnergy: answers.bodyEnergy,
+          pleasantness: answers.pleasantness,
+          thoughtPattern: answers.thoughtPattern,
+          context: answers.context,
+          derivedFeeling: primaryFeeling,
+          wasChanged,
+          finalEmotion: emotion,
+          recordedAt: new Date().toISOString(),
+        };
+
+        // Save record silently — errors are caught inside the service (Req 9.5)
+        saveCheckinRecord(record).catch(() => {});
+      }
+
+      // Reset the checkin store and select the emotion
+      useCheckinStore.getState().reset();
+      selectEmotion(emotion, checkinId);
+
+      // Pre-fill the context chip from the check-in's Q4 answer so the user
+      // doesn't have to answer "Where are you right now?" again.
+      // Clear any previously selected contexts first to avoid stacking answers
+      // from multiple check-in attempts.
+      if (checkinContext) {
+        useSessionStore.setState({
+          selectedContexts: [checkinContext as ContextType],
+          recommendations: null,
+        });
+      }
+
+      setLauncherState('EMOTION_PICKER');
+    },
+    [selectEmotion]
+  );
 
   const handleSelectEmotion = useCallback(
     (emotion: EmotionType) => {
@@ -224,6 +321,18 @@ export default function SessionLauncherContent({
     );
   }
 
+  // Render the guided check-in flow (Req 2.10, 2.12)
+  if (launcherState === 'CHECKIN_FLOW') {
+    return (
+      <View style={styles.container}>
+        <GuidedCheckinFlow
+          onDismiss={handleCheckinDismiss}
+          onAccept={handleCheckinAccept}
+        />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       {/* Dismiss affordance — neutral language, no guilt (Req 12.2) */}
@@ -248,6 +357,7 @@ export default function SessionLauncherContent({
           selectedEmotion={selectedEmotion}
           onSelectEmotion={handleSelectEmotion}
           onDeselectEmotion={handleDeselectEmotion}
+          onStartCheckin={handleStartCheckin}
         />
 
         {/* Context Chips */}

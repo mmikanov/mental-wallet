@@ -296,7 +296,7 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: true,
       },
     ],
-    emotionTags: ['anxious', 'sad', 'angry'],
+    emotionTags: ['anxious', 'sad', 'angry', 'curious'],
     contextTags: ['alone_at_home'],
     timeTags: ['5_10_min'],
     rationale: {
@@ -455,7 +455,7 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: false,
       },
     ],
-    emotionTags: ['sad', 'numb'],
+    emotionTags: ['sad', 'numb', 'calm', 'curious'],
     contextTags: ['alone_at_home'],
     timeTags: ['1_2_min'],
     rationale: {
@@ -496,7 +496,7 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: true,
       },
     ],
-    emotionTags: ['sad', 'numb'],
+    emotionTags: ['sad', 'numb', 'guilty', 'calm'],
     contextTags: ['alone_at_home'],
     timeTags: ['1_2_min'],
     rationale: {
@@ -559,7 +559,7 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: false,
       },
     ],
-    emotionTags: ['stressed', 'sad', 'overwhelmed'],
+    emotionTags: ['stressed', 'sad', 'overwhelmed', 'hopeless', 'calm'],
     contextTags: ['alone_at_home'],
     timeTags: ['1_2_min'],
     rationale: {
@@ -604,7 +604,7 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: false,
       },
     ],
-    emotionTags: ['sad', 'overwhelmed', 'angry'],
+    emotionTags: ['sad', 'overwhelmed', 'angry', 'ashamed'],
     contextTags: ['at_work', 'with_family'],
     timeTags: ['1_2_min'],
     rationale: {
@@ -646,7 +646,7 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: false,
       },
     ],
-    emotionTags: ['sad', 'numb', 'overwhelmed'],
+    emotionTags: ['sad', 'numb', 'overwhelmed', 'lonely', 'ashamed'],
     contextTags: ['with_family', 'with_friends'],
     timeTags: ['1_2_min'],
     rationale: {
@@ -701,7 +701,7 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: false,
       },
     ],
-    emotionTags: ['sad', 'numb'],
+    emotionTags: ['sad', 'numb', 'lonely', 'hopeless'],
     contextTags: ['with_family', 'with_friends'],
     timeTags: ['5_10_min'],
     rationale: {
@@ -989,7 +989,7 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: true,
       },
     ],
-    emotionTags: ['sad', 'numb'],
+    emotionTags: ['sad', 'numb', 'hopeless', 'curious'],
     contextTags: ['alone_at_home'],
     timeTags: ['5_10_min'],
     rationale: {
@@ -1041,7 +1041,7 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: true,
       },
     ],
-    emotionTags: ['sad', 'overwhelmed', 'angry'],
+    emotionTags: ['sad', 'overwhelmed', 'angry', 'ashamed', 'guilty'],
     contextTags: ['alone_at_home'],
     timeTags: ['5_10_min'],
     rationale: {
@@ -1102,7 +1102,7 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: false,
       },
     ],
-    emotionTags: ['stressed', 'overwhelmed'],
+    emotionTags: ['stressed', 'overwhelmed', 'guilty'],
     contextTags: ['at_work', 'alone_at_home'],
     timeTags: ['1_2_min'],
     rationale: {
@@ -1164,7 +1164,7 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: false,
       },
     ],
-    emotionTags: ['sad', 'numb'],
+    emotionTags: ['sad', 'numb', 'lonely'],
     contextTags: ['alone_at_home', 'with_friends'],
     timeTags: ['5_10_min'],
     rationale: {
@@ -1245,3 +1245,23 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
     },
   },
 ];
+
+/**
+ * Declarative mapping of the 6 new emotions to recommended tool card IDs.
+ * Each emotion maps to up to 3 card IDs in priority order.
+ *
+ * Used by the recommendation engine to surface relevant tools for new emotions.
+ *
+ * Validates: Requirements 4 (Tool Recommendation Table), 5.2, 5.6
+ */
+export const NEW_EMOTION_TOOL_RECOMMENDATIONS: Record<
+  'lonely' | 'ashamed' | 'guilty' | 'hopeless' | 'calm' | 'curious',
+  string[] // card IDs in priority order
+> = {
+  lonely: ['lib-reach-out', 'lib-gratitude-message', 'lib-not-alone'],
+  ashamed: ['lib-self-compassion-pause', 'lib-kind-inner-voice', 'lib-not-alone'],
+  guilty: ['lib-permission-slip', 'lib-kind-inner-voice', 'lib-win-of-day'],
+  hopeless: ['lib-three-good-things', 'lib-evening-gratitude', 'lib-reach-out'],
+  calm: ['lib-daily-mood', 'lib-win-of-day', 'lib-evening-gratitude'],
+  curious: ['lib-thought-feeling-action', 'lib-daily-mood', 'lib-three-good-things'],
+};

@@ -1,7 +1,7 @@
 /**
  * EmotionPicker unit tests.
  *
- * Validates: Requirements 5.1, 5.2, 5.3, 5.4, 5.5, 5.7, 12.1
+ * Validates: Requirements 1.1, 1.2, 1.3, 1.4, 1.5, 1.7, 1.8, 5.5, 8.9
  */
 
 import React from 'react';
@@ -34,17 +34,18 @@ describe('EmotionPicker', () => {
     expect(promptText).toBeDefined();
   });
 
-  it('renders all 6 emotion chips', () => {
+  it('renders all 12 emotion chips', () => {
     let tree: ReactTestRenderer;
     act(() => {
       tree = create(<EmotionPicker {...defaultProps} />);
     });
     const root = tree!.root;
     const buttons = root.findAllByType(TouchableOpacity);
-    expect(buttons).toHaveLength(6);
+    // No onStartCheckin provided, so no "not sure" button — just 12 chips
+    expect(buttons).toHaveLength(12);
   });
 
-  it('renders expected emotion labels', () => {
+  it('renders expected emotion labels for all 12 emotions', () => {
     let tree: ReactTestRenderer;
     act(() => {
       tree = create(<EmotionPicker {...defaultProps} />);
@@ -56,9 +57,15 @@ describe('EmotionPicker', () => {
       'Stressed',
       'Overwhelmed',
       'Anxious',
-      'Sad/low',
+      'Sad',
       'Angry',
       'Numb',
+      'Lonely',
+      'Ashamed',
+      'Guilty',
+      'Hopeless',
+      'Calm',
+      'Curious',
     ]);
   });
 
@@ -143,7 +150,7 @@ describe('EmotionPicker', () => {
     });
     const root = tree!.root;
     const sadChip = root.findAll(
-      (node) => node.props.accessibilityLabel === 'Sad/low'
+      (node) => node.props.accessibilityLabel === 'Sad'
     )[0];
     const stressedChip = root.findAll(
       (node) => node.props.accessibilityLabel === 'Stressed'
@@ -151,6 +158,109 @@ describe('EmotionPicker', () => {
 
     expect(sadChip.props.accessibilityState).toEqual({ selected: true });
     expect(stressedChip.props.accessibilityState).toEqual({ selected: false });
+  });
+
+  it('renders "I\'m not sure how I feel" button when onStartCheckin is provided', () => {
+    const onStartCheckin = jest.fn();
+    let tree: ReactTestRenderer;
+    act(() => {
+      tree = create(
+        <EmotionPicker {...defaultProps} onStartCheckin={onStartCheckin} />
+      );
+    });
+    const root = tree!.root;
+    const buttons = root.findAllByType(TouchableOpacity);
+    // 12 chips + 1 "not sure" button
+    expect(buttons).toHaveLength(13);
+
+    const notSureButton = root.findAll(
+      (node) =>
+        node.props.accessibilityLabel ===
+        "I'm not sure how I feel. Start guided check-in."
+    )[0];
+    expect(notSureButton).toBeDefined();
+  });
+
+  it('calls onStartCheckin when "I\'m not sure how I feel" button is tapped', () => {
+    const onStartCheckin = jest.fn();
+    let tree: ReactTestRenderer;
+    act(() => {
+      tree = create(
+        <EmotionPicker {...defaultProps} onStartCheckin={onStartCheckin} />
+      );
+    });
+    const root = tree!.root;
+    const notSureButton = root.findAll(
+      (node) =>
+        node.props.accessibilityLabel ===
+        "I'm not sure how I feel. Start guided check-in."
+    )[0];
+
+    act(() => {
+      notSureButton.props.onPress();
+    });
+
+    expect(onStartCheckin).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not render "I\'m not sure how I feel" button when onStartCheckin is not provided', () => {
+    let tree: ReactTestRenderer;
+    act(() => {
+      tree = create(<EmotionPicker {...defaultProps} />);
+    });
+    const root = tree!.root;
+    const notSureButton = root.findAll(
+      (node) =>
+        node.props.accessibilityLabel ===
+        "I'm not sure how I feel. Start guided check-in."
+    );
+    expect(notSureButton).toHaveLength(0);
+  });
+
+  it('highlights preSelectedEmotion when no selectedEmotion is set', () => {
+    let tree: ReactTestRenderer;
+    act(() => {
+      tree = create(
+        <EmotionPicker {...defaultProps} preSelectedEmotion="lonely" />
+      );
+    });
+    const root = tree!.root;
+    const lonelyChip = root.findAll(
+      (node) => node.props.accessibilityLabel === 'Lonely'
+    )[0];
+    expect(lonelyChip.props.accessibilityState).toEqual({ selected: true });
+  });
+
+  it('displays softLabel text when provided', () => {
+    let tree: ReactTestRenderer;
+    act(() => {
+      tree = create(
+        <EmotionPicker
+          {...defaultProps}
+          softLabel="It sounds like you might be feeling lonely right now"
+        />
+      );
+    });
+    const root = tree!.root;
+    const texts = root.findAllByType('Text' as any);
+    const softLabelText = texts.find((t) =>
+      t.children.includes(
+        'It sounds like you might be feeling lonely right now'
+      )
+    );
+    expect(softLabelText).toBeDefined();
+  });
+
+  it('all chips have accessibilityRole="button"', () => {
+    let tree: ReactTestRenderer;
+    act(() => {
+      tree = create(<EmotionPicker {...defaultProps} />);
+    });
+    const root = tree!.root;
+    const buttons = root.findAllByType(TouchableOpacity);
+    for (const button of buttons) {
+      expect(button.props.accessibilityRole).toBe('button');
+    }
   });
 
   it('does not contain clinical language (mood, affect, diagnose, disorder)', () => {

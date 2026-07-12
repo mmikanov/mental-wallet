@@ -26,7 +26,9 @@ export type AnalyticsEventType =
   | 'reminder_deleted'
   | 'outcome_response'
   | 'external_resource_opened'
-  | 'session_ended';
+  | 'session_ended'
+  | 'guided_checkin_started'
+  | 'guided_checkin_completed';
 
 // --- Base Event Interface ---
 
@@ -139,6 +141,19 @@ export type SessionEndedEvent = AnalyticsEventBase & {
   };
 };
 
+export type GuidedCheckinStartedEvent = AnalyticsEventBase & {
+  event_type: 'guided_checkin_started';
+};
+
+export type GuidedCheckinCompletedEvent = AnalyticsEventBase & {
+  event_type: 'guided_checkin_completed';
+  properties: {
+    derived_feeling: string;
+    was_changed: boolean;
+    final_emotion_used: string;
+  };
+};
+
 // --- Discriminated Union of All Analytics Events ---
 
 export type AnalyticsEvent =
@@ -159,7 +174,9 @@ export type AnalyticsEvent =
   | ReminderDeletedEvent
   | OutcomeResponseEvent
   | ExternalResourceOpenedEvent
-  | SessionEndedEvent;
+  | SessionEndedEvent
+  | GuidedCheckinStartedEvent
+  | GuidedCheckinCompletedEvent;
 
 // --- Event Queue ---
 

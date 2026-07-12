@@ -264,7 +264,13 @@ export type EmotionType =
   | 'anxious'
   | 'sad'
   | 'angry'
-  | 'numb';
+  | 'numb'
+  | 'lonely'
+  | 'ashamed'
+  | 'guilty'
+  | 'hopeless'
+  | 'calm'
+  | 'curious';
 
 export type ContextType =
   | 'at_work'
@@ -303,4 +309,5 @@ export interface EmotionSessionRecord {
   toolCardIds: string[];
   startedAt: string;
   endedAt: string | null;
+  checkinId?: string | null;
 }
