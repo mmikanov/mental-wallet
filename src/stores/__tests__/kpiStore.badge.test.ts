@@ -132,7 +132,7 @@ describe('KpiStore — Badge Extension', () => {
       // Verify the INSERT was called with correct params
       expect(mockDb.runAsync).toHaveBeenCalledWith(
         'INSERT INTO kpi_records (id, value, note, kpi_label, recorded_at) VALUES (?, ?, ?, ?, ?)',
-        expect.arrayContaining(['mock-uuid-123', 0, 'Fake admin record', 'admin-test'])
+        expect.arrayContaining(['mock-uuid-123', 5, 'Fake dev record', 'dev-test'])
       );
 
       // Verify loadLastCheckIn was called (cache refreshed)

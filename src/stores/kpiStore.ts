@@ -14,6 +14,7 @@ import { createKpiService } from '@/services/kpiService';
 import type { KpiService } from '@/services/kpiService';
 import { getDatabase } from '@/data/database';
 import { computeFakeRecordTimestamp } from '@/utils/kpiBadgeUtils';
+import { useWalletStore } from '@/stores/walletStore';
 
 export interface KpiState {
   personalKpi: string | null;
@@ -125,6 +126,44 @@ export const useKpiStore = create<KpiState>((set, get) => ({
       );
       // Re-query to get the actual latest record (should be the fake one now)
       await get().loadLastCheckIn();
+
+      // --- Sync card stats and completions ---
+      const kpiCard = await db.getFirstAsync<{ id: string }>(
+        "SELECT id FROM cards WHERE source_library_id = 'lib-personal-kpi'"
+      );
+
+      if (kpiCard) {
+        // Delete control_values for completions newer than the fake timestamp
+        await db.runAsync(
+          'DELETE FROM control_values WHERE completion_id IN (SELECT id FROM completions WHERE card_id = ? AND completed_at > ?)',
+          [kpiCard.id, recordedAt]
+        );
+        // Delete completions newer than the fake timestamp
+        await db.runAsync(
+          'DELETE FROM completions WHERE card_id = ? AND completed_at > ?',
+          [kpiCard.id, recordedAt]
+        );
+        // Create a matching completion record
+        const completionId = Crypto.randomUUID();
+        await db.runAsync(
+          'INSERT INTO completions (id, card_id, completed_at) VALUES (?, ?, ?)',
+          [completionId, kpiCard.id, recordedAt]
+        );
+        // Update card stats: recount total_uses, set streak to 1, update last_used_at
+        await db.runAsync(
+          'UPDATE cards SET last_used_at = ?, total_uses = (SELECT COUNT(*) FROM completions WHERE card_id = ?), current_streak = 1, updated_at = ? WHERE id = ?',
+          [recordedAt, kpiCard.id, new Date().toISOString(), kpiCard.id]
+        );
+      } else {
+        console.warn('KPI card not found in DB, skipping card sync');
+      }
+
+      // Refresh wallet UI
+      try {
+        await useWalletStore.getState().loadCards();
+      } catch {
+        console.warn('Failed to refresh wallet cards after createFakeRecord');
+      }
     } catch (error) {
       Alert.alert('Error', 'Failed to create fake record');
     }
@@ -134,7 +173,36 @@ export const useKpiStore = create<KpiState>((set, get) => ({
     try {
       const db = await getDatabase();
       await db.runAsync('DELETE FROM kpi_records');
+
+      // Find the KPI card
+      const kpiCard = await db.getFirstAsync<{ id: string }>(
+        "SELECT id FROM cards WHERE source_library_id = 'lib-personal-kpi'"
+      );
+
+      if (kpiCard) {
+        // Delete control_values for this card's completions
+        await db.runAsync(
+          'DELETE FROM control_values WHERE completion_id IN (SELECT id FROM completions WHERE card_id = ?)',
+          [kpiCard.id]
+        );
+        // Delete completions for this card
+        await db.runAsync('DELETE FROM completions WHERE card_id = ?', [kpiCard.id]);
+        // Reset card stats
+        await db.runAsync(
+          'UPDATE cards SET total_uses = 0, current_streak = 0, last_used_at = NULL, updated_at = ? WHERE id = ?',
+          [new Date().toISOString(), kpiCard.id]
+        );
+      } else {
+        console.warn('KPI card not found in DB, skipping card sync');
+      }
+
       set({ lastCheckInDate: null, lastCheckInLoaded: true });
+
+      try {
+        await useWalletStore.getState().loadCards();
+      } catch {
+        console.warn('Failed to refresh wallet cards after reset');
+      }
     } catch (error) {
       Alert.alert('Error', 'Failed to reset KPI records');
     }
