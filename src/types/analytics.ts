@@ -28,7 +28,8 @@ export type AnalyticsEventType =
   | 'external_resource_opened'
   | 'session_ended'
   | 'guided_checkin_started'
-  | 'guided_checkin_completed';
+  | 'guided_checkin_completed'
+  | 'insights_viewed';
 
 // --- Base Event Interface ---
 

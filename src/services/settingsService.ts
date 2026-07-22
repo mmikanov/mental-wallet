@@ -130,3 +130,60 @@ export async function hasStartMode(): Promise<boolean> {
 
   return !!row && VALID_START_MODES.includes(row.value as StartMode);
 }
+
+/**
+ * Reads the "include archived tools in insights" setting.
+ * Defaults to false (archived tools excluded) if not set.
+ */
+export async function getIncludeArchivedTools(): Promise<boolean> {
+  try {
+    const db = await getDatabase();
+    const row = await db.getFirstAsync<{ value: string }>(
+      'SELECT value FROM settings WHERE key = ?',
+      ['insights_include_archived_tools']
+    );
+    return row?.value === 'true';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Persists the "include archived tools in insights" setting.
+ */
+export async function setIncludeArchivedTools(include: boolean): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync(
+    'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+    ['insights_include_archived_tools', include ? 'true' : 'false']
+  );
+}
+
+/**
+ * Reads the outcome prompt enabled setting.
+ * Defaults to true (prompts enabled) if not set.
+ */
+export async function getOutcomePromptEnabled(): Promise<boolean> {
+  try {
+    const db = await getDatabase();
+    const row = await db.getFirstAsync<{ value: string }>(
+      'SELECT value FROM settings WHERE key = ?',
+      ['outcome_prompt_enabled']
+    );
+    if (!row) return true; // Default: enabled
+    return row.value !== 'false';
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Persists the outcome prompt enabled setting.
+ */
+export async function setOutcomePromptEnabled(enabled: boolean): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync(
+    'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+    ['outcome_prompt_enabled', enabled ? 'true' : 'false']
+  );
+}

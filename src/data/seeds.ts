@@ -21,7 +21,7 @@ export async function seedData(db: SQLiteDatabase): Promise<void> {
     // Seed categories
     for (const category of SEED_CATEGORIES) {
       await db.runAsync(
-        `INSERT INTO categories (id, name, color_hex, display_order) VALUES (?, ?, ?, ?)`,
+        `INSERT OR IGNORE INTO categories (id, name, color_hex, display_order) VALUES (?, ?, ?, ?)`,
         [category.id, category.name, category.colorHex, category.displayOrder]
       );
     }
@@ -29,7 +29,7 @@ export async function seedData(db: SQLiteDatabase): Promise<void> {
     // Seed crisis resources
     for (const resource of SEED_CRISIS_RESOURCES) {
       await db.runAsync(
-        `INSERT INTO crisis_resources (id, country_code, name, phone, url, is_default, display_order) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT OR IGNORE INTO crisis_resources (id, country_code, name, phone, url, is_default, display_order) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           resource.id,
           resource.countryCode,
@@ -47,7 +47,7 @@ export async function seedData(db: SQLiteDatabase): Promise<void> {
 
     // Mark as initialized
     await db.runAsync(
-      `INSERT INTO settings (key, value) VALUES ('initialized', 'true')`
+      `INSERT OR REPLACE INTO settings (key, value) VALUES ('initialized', 'true')`
     );
 
     await db.execAsync('COMMIT');

@@ -41,17 +41,25 @@ export default function WelcomeScreen() {
   }, []);
 
   const handleContinue = async () => {
-    await acknowledgeDisclaimer();
+    try {
+      await acknowledgeDisclaimer();
+    } catch (error) {
+      console.warn('[WelcomeScreen] acknowledgeDisclaimer failed:', error);
+    }
     navigation.navigate('PrivacyNotice');
   };
 
   const handleSkip = async () => {
-    await acknowledgeDisclaimer();
-    await onboardingService.seedStarterCards(null);
-    await useKpiStore.getState().setKpi('Feeling good overall');
-    await onboardingService.seedKpiCard('Feeling good overall');
-    await completeOnboardingScreens(null);
-    await useOnboardingStore.getState().completeKpiSelection();
+    try {
+      await acknowledgeDisclaimer();
+      await onboardingService.seedStarterCards(null);
+      await useKpiStore.getState().setKpi('Feeling good overall');
+      await onboardingService.seedKpiCard('Feeling good overall');
+      await completeOnboardingScreens(null);
+      await useOnboardingStore.getState().completeKpiSelection();
+    } catch (error) {
+      console.warn('[WelcomeScreen] skip intro failed:', error);
+    }
     navigation.dispatch(
       CommonActions.reset({ index: 0, routes: [{ name: 'MainTabs' }] }),
     );

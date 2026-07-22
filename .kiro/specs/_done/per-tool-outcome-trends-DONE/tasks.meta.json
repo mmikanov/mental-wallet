@@ -1,0 +1,347 @@
+{
+  "pbtResults": {
+    "1.3 Write property tests for `computeToolOutcomeTrend` logic": {
+      "status": "passed",
+      "lastRunTimestamp": 1784599722051
+    },
+    "3.2 Write unit tests for `OutcomeTrendsSection`": {
+      "status": "passed",
+      "lastRunTimestamp": 1784599868532
+    },
+    "6.7 Write property test for daily bucket granularity (Property 8)": {
+      "status": "passed",
+      "lastRunTimestamp": 1784659468254
+    }
+  },
+  "executionHistory": {
+    "1.1 Add `computeToolOutcomeTrend` to the `CorrelationEngine` interface and implement the method in `createCorrelationEngine()`": [
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784599155380
+      },
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784599165093
+      },
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784599320704
+      }
+    ],
+    "1.2 Implement `determinePerToolTrend` and `generatePerToolSummaryText` helper functions": [
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784599155698
+      },
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784599327271
+      },
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784599370852
+      }
+    ],
+    "1.3 Write property tests for `computeToolOutcomeTrend` logic": [
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784599155821
+      },
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784599374984
+      },
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784599734215
+      }
+    ],
+    "2. Checkpoint - Ensure CorrelationEngine tests pass": [
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784599155873
+      },
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784599746606
+      },
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784599880691
+      }
+    ],
+    "3.1 Create `src/components/insights/OutcomeTrendsSection.tsx`": [
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784599156628
+      },
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784599376098
+      },
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784599734890
+      }
+    ],
+    "3.2 Write unit tests for `OutcomeTrendsSection`": [
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784599156686
+      },
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784599747148
+      },
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784599881595
+      }
+    ],
+    "4.1 Wire `OutcomeTrendsSection` into `src/screens/ToolInsightsScreen.tsx`": [
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784599156742
+      },
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784599747962
+      },
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784599883467
+      }
+    ],
+    "4.2 Write integration test for section ordering and conditional rendering": [
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784599156785
+      },
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784599889384
+      },
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784600039160
+      }
+    ],
+    "5. Final checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784599156841
+      },
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784600043353
+      },
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784600130530
+      }
+    ],
+    "1. Add `computeToolOutcomeTrend` method to CorrelationEngine": [
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784599734253
+      }
+    ],
+    "3. Create `OutcomeTrendsSection` component": [
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784599881697
+      }
+    ],
+    "4. Integrate into ToolInsightsScreen": [
+      {
+        "executionId": "073521fa-0db4-4534-ad4f-0ce615d57fb5",
+        "chatSessionId": "sess_bdde3018-6592-44e4-a810-55b44ac4fb6b",
+        "timestamp": 1784600039203
+      }
+    ],
+    "6.1 Add `granularity` parameter to `computeToolOutcomeTrend`": [
+      {
+        "executionId": "acfb6ea0-a1aa-43d9-8225-b436b8af30c0",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784657794187
+      },
+      {
+        "executionId": "acfb6ea0-a1aa-43d9-8225-b436b8af30c0",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784657799541
+      },
+      {
+        "executionId": "3f43a590-6e36-46ce-bdbb-04389404aa93",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784659198067
+      }
+    ],
+    "6.2 Add `granularity` parameter to `computeWalletCorrelation`": [
+      {
+        "executionId": "acfb6ea0-a1aa-43d9-8225-b436b8af30c0",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784657794241
+      },
+      {
+        "executionId": "acfb6ea0-a1aa-43d9-8225-b436b8af30c0",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784657800370
+      },
+      {
+        "executionId": "3f43a590-6e36-46ce-bdbb-04389404aa93",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784659198728
+      }
+    ],
+    "6.3 Add `granularity` and `rangeStartDate` fields to `WalletCorrelationResult`": [
+      {
+        "executionId": "acfb6ea0-a1aa-43d9-8225-b436b8af30c0",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784657794284
+      },
+      {
+        "executionId": "acfb6ea0-a1aa-43d9-8225-b436b8af30c0",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784657801387
+      },
+      {
+        "executionId": "3f43a590-6e36-46ce-bdbb-04389404aa93",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784659199536
+      }
+    ],
+    "6.4 Update DualAxisChart to support daily x-axis labels": [
+      {
+        "executionId": "acfb6ea0-a1aa-43d9-8225-b436b8af30c0",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784657794391
+      },
+      {
+        "executionId": "3f43a590-6e36-46ce-bdbb-04389404aa93",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784659213997
+      }
+    ],
+    "6.5 Update ToolInsightsScreen to pass granularity": [
+      {
+        "executionId": "acfb6ea0-a1aa-43d9-8225-b436b8af30c0",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784657794431
+      },
+      {
+        "executionId": "3f43a590-6e36-46ce-bdbb-04389404aa93",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784659219074
+      },
+      {
+        "executionId": "3f43a590-6e36-46ce-bdbb-04389404aa93",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784659481898
+      }
+    ],
+    "6.6 Update WalletInsightsScreen to pass granularity": [
+      {
+        "executionId": "acfb6ea0-a1aa-43d9-8225-b436b8af30c0",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784657794516
+      },
+      {
+        "executionId": "3f43a590-6e36-46ce-bdbb-04389404aa93",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784659219812
+      },
+      {
+        "executionId": "3f43a590-6e36-46ce-bdbb-04389404aa93",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784659482567
+      }
+    ],
+    "6.7 Write property test for daily bucket granularity (Property 8)": [
+      {
+        "executionId": "acfb6ea0-a1aa-43d9-8225-b436b8af30c0",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784657794564
+      },
+      {
+        "executionId": "3f43a590-6e36-46ce-bdbb-04389404aa93",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784659220663
+      },
+      {
+        "executionId": "3f43a590-6e36-46ce-bdbb-04389404aa93",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784659483499
+      }
+    ],
+    "6.8 Write unit tests for adaptive granularity": [
+      {
+        "executionId": "acfb6ea0-a1aa-43d9-8225-b436b8af30c0",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784657794664
+      },
+      {
+        "executionId": "3f43a590-6e36-46ce-bdbb-04389404aa93",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784659221453
+      },
+      {
+        "executionId": "3f43a590-6e36-46ce-bdbb-04389404aa93",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784659484482
+      }
+    ],
+    "7. Final checkpoint — Adaptive granularity": [
+      {
+        "executionId": "acfb6ea0-a1aa-43d9-8225-b436b8af30c0",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784657794701
+      },
+      {
+        "executionId": "3f43a590-6e36-46ce-bdbb-04389404aa93",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784659488671
+      },
+      {
+        "executionId": "3f43a590-6e36-46ce-bdbb-04389404aa93",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784659674714
+      }
+    ],
+    "6. Adaptive Bucket Granularity": [
+      {
+        "executionId": "3f43a590-6e36-46ce-bdbb-04389404aa93",
+        "chatSessionId": "sess_f5cfed2c-5f05-4388-9eb6-7b003969284d",
+        "timestamp": 1784659484532
+      }
+    ]
+  }
+}

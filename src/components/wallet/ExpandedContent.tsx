@@ -12,7 +12,7 @@
  * Validates: Requirements 3.1, 3.4, 3.5, 3.6, 3.7, 5.3, 5.4, 5.5, 5.8
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import ControlRenderer from '@/components/controls/ControlRenderer';
 import PrimaryActionButton from './PrimaryActionButton';
@@ -21,6 +21,7 @@ import { useCompletionStore } from '@/stores/completionStore';
 import { useWalletStore } from '@/stores/walletStore';
 import { useKpiStore } from '@/stores/kpiStore';
 import { logEvent } from '@/services/analyticsEventLogger';
+import { getOutcomePromptEnabled } from '@/services/settingsService';
 import type { Card, Control } from '@/types/index';
 
 interface ExpandedContentProps {
@@ -110,6 +111,11 @@ export default function ExpandedContent({ card }: ExpandedContentProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showOutcomePrompt, setShowOutcomePrompt] = useState(false);
+  const [outcomePromptEnabled, setOutcomePromptEnabled] = useState(true);
+
+  useEffect(() => {
+    getOutcomePromptEnabled().then(setOutcomePromptEnabled).catch(() => {});
+  }, []);
 
   // Get stored input values for this card
   const currentInputValues = useCompletionStore((s) => s.currentInputValues);
@@ -177,10 +183,19 @@ export default function ExpandedContent({ card }: ExpandedContentProps) {
       await loadCards();
       // Show brief success feedback then collapse
       setShowSuccess(true);
-      setTimeout(() => {
-        setShowSuccess(false);
-        collapseCard();
-      }, 1200);
+      if (outcomePromptEnabled && card.sourceLibraryId !== 'lib-personal-kpi') {
+        // Show outcome prompt after brief success feedback
+        setTimeout(() => {
+          setShowSuccess(false);
+          setShowOutcomePrompt(true);
+        }, 1200);
+      } else {
+        // No outcome prompt — collapse after success
+        setTimeout(() => {
+          setShowSuccess(false);
+          collapseCard();
+        }, 1200);
+      }
     } catch (err) {
       Alert.alert(
         'Submission failed',
@@ -189,7 +204,7 @@ export default function ExpandedContent({ card }: ExpandedContentProps) {
     } finally {
       setIsSubmitting(false);
     }
-  }, [card.id, card.controls, cardValues, isSubmitting, submitCompletion, loadCards, collapseCard]);
+  }, [card.id, card.controls, card.sourceLibraryId, cardValues, isSubmitting, outcomePromptEnabled, submitCompletion, loadCards, collapseCard]);
 
   return (
     <View style={styles.container}>
@@ -221,14 +236,10 @@ export default function ExpandedContent({ card }: ExpandedContentProps) {
         </View>
       )}
 
-      {/* Outcome prompt — disabled for now. The OutcomePrompt component and
-          outcome_response event logging are fully implemented and ready to
-          re-enable when the UX is finalized. To bring it back:
-          1. Restore setShowOutcomePrompt(true) in handleSubmit after success
-          2. Uncomment the JSX below */}
-      {/* {showOutcomePrompt && (
+      {/* Outcome prompt */}
+      {showOutcomePrompt && (
         <OutcomePrompt onDismiss={() => { setShowOutcomePrompt(false); collapseCard(); }} />
-      )} */}
+      )}
 
       {/* Primary action button */}
       <View style={styles.actionContainer}>
