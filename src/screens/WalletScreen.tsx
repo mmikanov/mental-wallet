@@ -586,6 +586,17 @@ export default function WalletScreen() {
     [navigation]
   );
 
+  const handleViewInsights = useCallback(
+    (cardId: string) => {
+      navigation.navigate('ToolInsights', { cardId });
+    },
+    [navigation]
+  );
+
+  const handleOpenInsights = useCallback(() => {
+    navigation.navigate('WalletInsights');
+  }, [navigation]);
+
   const handleArchive = useCallback(
     async (cardId: string) => {
       try {
@@ -710,6 +721,7 @@ export default function WalletScreen() {
         onSettingsPress={handleSettingsPress}
         onAddToolPress={handleAddToolPress}
         onCreateToolPress={handleCreateToolPress}
+        onInsightsPress={handleOpenInsights}
       />
       {/* First Action Checklist — show when store says visible, or briefly for celebration before dismiss */}
       {(isChecklistVisible || (isChecklistComplete && !checklistDismissed)) && (!focusedCardId || isChecklistComplete) && (
@@ -833,6 +845,7 @@ export default function WalletScreen() {
           onSetReminder={handleSetReminder}
           onArchive={handleArchive}
           onCustomizeBackground={handleCustomizeBackground}
+          onViewInsights={handleViewInsights}
         />
       )}
       {focusedCard && (

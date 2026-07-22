@@ -30,6 +30,9 @@ import KpiChangeScreen from '@/screens/KpiChangeScreen';
 import CrisisResourcesScreen from '@/screens/CrisisResourcesScreen';
 import PrivacyPolicyScreen from '@/screens/PrivacyPolicyScreen';
 import DevEventViewerScreen from '@/screens/DevEventViewerScreen';
+import WalletInsightsScreen from '@/screens/WalletInsightsScreen';
+import ToolInsightsScreen from '@/screens/ToolInsightsScreen';
+import InsightsHelpScreen from '@/screens/InsightsHelpScreen';
 import OnboardingNavigator from './OnboardingNavigator';
 import MainTabNavigator from './MainTabNavigator';
 import { hasStartMode, getStartMode, getLastUsedMode } from '@/services/settingsService';
@@ -150,6 +153,9 @@ export default function RootNavigator() {
       />
       <Stack.Screen name="Archive" component={ArchiveScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="WalletInsights" component={WalletInsightsScreen} />
+      <Stack.Screen name="ToolInsights" component={ToolInsightsScreen} />
+      <Stack.Screen name="InsightsHelp" component={InsightsHelpScreen} />
       <Stack.Screen name="KpiChange" component={KpiChangeScreen} />
       <Stack.Screen name="CrisisResources" component={CrisisResourcesScreen} />
       <Stack.Screen name="UsageHistory" component={UsageHistoryScreen} />

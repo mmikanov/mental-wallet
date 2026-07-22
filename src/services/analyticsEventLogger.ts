@@ -37,6 +37,7 @@ const VALID_EVENT_TYPES: readonly AnalyticsEventType[] = [
   'session_ended',
   'guided_checkin_started',
   'guided_checkin_completed',
+  'insights_viewed',
 ] as const;
 
 /** Events allowed when opted out (no contextual properties). */

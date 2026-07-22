@@ -23,4 +23,7 @@ export type RootStackParamList = {
   KpiChange: undefined;
   PrivacyPolicy: undefined;
   DevEventViewer: undefined;
+  WalletInsights: undefined;
+  ToolInsights: { cardId: string };
+  InsightsHelp: undefined;
 };

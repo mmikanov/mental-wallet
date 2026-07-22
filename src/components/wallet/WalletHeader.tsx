@@ -21,6 +21,7 @@ export interface WalletHeaderProps {
   onSettingsPress: () => void;
   onAddToolPress?: () => void;
   onCreateToolPress?: () => void;
+  onInsightsPress?: () => void;
 }
 
 export default function WalletHeader({
@@ -28,6 +29,7 @@ export default function WalletHeader({
   onSettingsPress,
   onAddToolPress,
   onCreateToolPress,
+  onInsightsPress,
 }: WalletHeaderProps) {
   const [menuVisible, setMenuVisible] = useState(false);
 
@@ -40,16 +42,18 @@ export default function WalletHeader({
     <View style={styles.container}>
       <Text style={styles.title}>My Wallet</Text>
 
-      <TouchableOpacity
-        style={styles.menuButton}
-        onPress={() => setMenuVisible(true)}
-        accessibilityRole="button"
-        accessibilityLabel="Wallet menu"
-        accessibilityHint="Opens menu with Archive and Settings options"
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-      >
-        <Text style={styles.menuIcon}>⋮</Text>
-      </TouchableOpacity>
+      <View style={styles.headerActions}>
+        <TouchableOpacity
+          style={styles.menuButton}
+          onPress={() => setMenuVisible(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Wallet menu"
+          accessibilityHint="Opens menu with Archive and Settings options"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Text style={styles.menuIcon}>⋮</Text>
+        </TouchableOpacity>
+      </View>
 
       <Modal
         visible={menuVisible}
@@ -86,6 +90,21 @@ export default function WalletHeader({
                   accessibilityLabel="Create Tool"
                 >
                   <Text style={styles.menuItemText}>Create Tool</Text>
+                </TouchableOpacity>
+
+                <View style={styles.menuDivider} />
+              </>
+            )}
+
+            {onInsightsPress && (
+              <>
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => handleMenuOption(onInsightsPress)}
+                  accessibilityRole="menuitem"
+                  accessibilityLabel="Insights"
+                >
+                  <Text style={styles.menuItemText}>Insights</Text>
                 </TouchableOpacity>
 
                 <View style={styles.menuDivider} />
@@ -131,6 +150,10 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
     color: '#1C1C1E',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   menuButton: {
     width: 44,

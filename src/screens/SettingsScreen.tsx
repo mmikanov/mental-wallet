@@ -20,6 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { createExportService } from '../services/exportService';
+import { getIncludeArchivedTools, setIncludeArchivedTools, getOutcomePromptEnabled, setOutcomePromptEnabled } from '@/services/settingsService';
 import { CommonActions } from '@react-navigation/native';
 import StartExperienceSetting from '@/components/settings/StartExperienceSetting';
 import { getDatabase, closeDatabase } from '@/data/database';
@@ -27,6 +28,7 @@ import { useOnboardingStore } from '@/stores/onboardingStore';
 import { useKpiStore } from '@/stores/kpiStore';
 import { useAnalyticsStore } from '@/stores/analyticsStore';
 import { AdminKpiBadgeTools } from '@/components/settings/AdminKpiBadgeTools';
+import { SeedInsightsButton } from '@/components/settings/SeedInsightsButton';
 import { getFlushIntervalMs, setFlushIntervalMs } from '@/config/analytics';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
@@ -36,6 +38,8 @@ export default function SettingsScreen({ navigation }: Props) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isResettingAnalytics, setIsResettingAnalytics] = useState(false);
   const [currentFlushInterval, setCurrentFlushInterval] = useState(getFlushIntervalMs());
+  const [includeArchivedTools, setIncludeArchivedToolsState] = useState(false);
+  const [outcomePromptEnabled, setOutcomePromptEnabledState] = useState(true);
 
   // Triple-tap on header title to open dev event viewer (dev builds only)
   const tapCountRef = useRef(0);
@@ -61,6 +65,24 @@ export default function SettingsScreen({ navigation }: Props) {
 
   useEffect(() => {
     loadKpi();
+  }, []);
+
+  useEffect(() => {
+    getIncludeArchivedTools().then(setIncludeArchivedToolsState);
+  }, []);
+
+  useEffect(() => {
+    getOutcomePromptEnabled().then(setOutcomePromptEnabledState);
+  }, []);
+
+  const handleToggleIncludeArchived = useCallback(async (value: boolean) => {
+    setIncludeArchivedToolsState(value);
+    await setIncludeArchivedTools(value);
+  }, []);
+
+  const handleToggleOutcomePrompt = useCallback(async (value: boolean) => {
+    setOutcomePromptEnabledState(value);
+    await setOutcomePromptEnabled(value);
   }, []);
 
   const exportService = createExportService();
@@ -304,6 +326,45 @@ export default function SettingsScreen({ navigation }: Props) {
           </TouchableOpacity>
         </View>
 
+        {/* Insights Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Insights</Text>
+
+          <View style={styles.menuItem}>
+            <View style={styles.toggleContent}>
+              <Text style={styles.menuItemText}>
+                Include archived tools in insights
+              </Text>
+              <Text style={styles.toggleSubtitle}>
+                When enabled, data from archived tools is included in your insights analysis
+              </Text>
+            </View>
+            <Switch
+              value={includeArchivedTools}
+              onValueChange={handleToggleIncludeArchived}
+              accessibilityLabel="Include archived tools in insights"
+              accessibilityRole="switch"
+            />
+          </View>
+
+          <View style={styles.menuItem}>
+            <View style={styles.toggleContent}>
+              <Text style={styles.menuItemText}>
+                Post-use check-in
+              </Text>
+              <Text style={styles.toggleSubtitle}>
+                Ask how you feel after completing a tool
+              </Text>
+            </View>
+            <Switch
+              value={outcomePromptEnabled}
+              onValueChange={handleToggleOutcomePrompt}
+              accessibilityLabel="Post-use check-in prompt"
+              accessibilityRole="switch"
+            />
+          </View>
+        </View>
+
         {/* Data Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Data</Text>
@@ -506,6 +567,7 @@ export default function SettingsScreen({ navigation }: Props) {
             </TouchableOpacity>
 
             <AdminKpiBadgeTools />
+            <SeedInsightsButton />
           </View>
         )}
       </ScrollView>

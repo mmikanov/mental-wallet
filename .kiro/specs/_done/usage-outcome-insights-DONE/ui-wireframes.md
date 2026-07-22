@@ -1,0 +1,314 @@
+# UI Wireframes: Insight Screens
+
+## Screen 1: Per-Tool Insights Panel
+
+Accessed via: Focused card → kebab menu (⋮) → "View insights"
+
+```
+┌─────────────────────────────────────┐
+│  ←  Box Breathing · Insights        │
+├─────────────────────────────────────┤
+│                                     │
+│  ── Daily Check-In Impact ───────── │
+│                                     │
+│  ┌─────────────────────────────────┐ │
+│  │ ↗  On days you use this tool,  │ │
+│  │    your check-in tends to be   │ │
+│  │    about 0.8 points higher.    │ │
+│  │                                 │ │
+│  │    This tool seems to be a     │ │
+│  │    good fit for you.           │ │
+│  │                                 │ │
+│  │  ⓘ Based on limited data       │ │  ← Only at Preliminary tier
+│  └─────────────────────────────────┘ │
+│                                     │
+│  [ 7d ][ 30d ][ 90d ][ All ]       │
+│                                     │
+│  ── Engagement ──────────────────── │
+│                                     │
+│  Average time          4m 32s       │
+│  Trend              ↗ Spending      │
+│                       more time     │
+│                                     │
+│  ┌─ Usage Chart ──────────────────┐ │
+│  │  ▁▃▅▇▅▃▁▃▅▇█▅▃▁              │ │
+│  │  (existing bar chart)           │ │
+│  │  [ 7d ][ 30d ][ Year ][ All ]  │ │
+│  └─────────────────────────────────┘ │
+│                                     │
+│  ── Mood Trend (existing) ───────── │
+│  │  ...                            │ │
+│  └─────────────────────────────────┘ │
+│                                     │
+│  ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈ │
+│  ⓘ Patterns reflect associations,  │
+│  not proof that a tool caused       │
+│  change.                            │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+### Nascent/Empty State (fewer than 5 uses of this card)
+
+```
+┌─────────────────────────────────────┐
+│  ←  Box Breathing · Insights        │
+├─────────────────────────────────────┤
+│                                     │
+│  ── Daily Check-In Impact ───────── │
+│                                     │
+│  ┌─────────────────────────────────┐ │
+│  │  🌱                             │ │
+│  │  Use this tool a few more      │ │
+│  │  times and we'll show how it   │ │
+│  │  relates to your check-in      │ │
+│  │  scores.                       │ │
+│  │                                 │ │
+│  │  ┌───────────────────────────┐ │ │
+│  │  │     Practice now →        │ │ │  ← Opens card in focused view
+│  │  └───────────────────────────┘ │ │
+│  └─────────────────────────────────┘ │
+│                                     │
+│  ── Engagement ──────────────────── │
+│                                     │
+│  "Use this tool a few more times   │
+│   to see your engagement patterns" │
+│                                     │
+│  ┌─ Usage Chart ──────────────────┐ │
+│  │  (existing, shows whatever     │ │
+│  │   data exists)                  │ │
+│  └─────────────────────────────────┘ │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+---
+
+## Screen 2: Wallet-Level Insights Screen
+
+Accessed via: Wallet header → kebab menu (⋮) → "Insights"
+
+### Confident Tier (full data)
+
+```
+┌─────────────────────────────────────┐
+│  ←  Insights                        │
+├─────────────────────────────────────┤
+│                                     │
+│  ⓘ All analysis happens on your    │  ← First visit only
+│  device. No data leaves your phone. │
+│                                     │
+│  ── Best Tools for You ──────────── │
+│                                     │
+│  ┌─────────────────────────────────┐ │
+│  │  1. 🫁 Box Breathing           │ │
+│  │     ↗ Linked to +1.2 higher   │ │
+│  │       check-in days            │ │
+│  ├─────────────────────────────────┤ │
+│  │  2. 🧘 Body Scan              │ │
+│  │     ↗ Linked to +0.9 higher   │ │
+│  │       check-in days            │ │
+│  ├─────────────────────────────────┤ │
+│  │  3. ✍️ Thought Record          │ │
+│  │     → Similar on days used     │ │
+│  │       and not used             │ │
+│  └─────────────────────────────────┘ │
+│                                     │
+│  ┌─────────────────────────────────┐ │
+│  │ 💪 You've been more active     │ │  ← or gentle "quieter week" msg
+│  │    this week — nice work.      │ │
+│  └─────────────────────────────────┘ │
+│                                     │
+│  ── Outcome Trends ──────────────── │
+│                                     │
+│  ┌─────────────────────────────────┐ │
+│  │  "Weeks where you practiced    │ │
+│  │   more tended to have higher   │ │
+│  │   check-in scores"             │ │
+│  └─────────────────────────────────┘ │
+│                                     │
+│  ┌─ Weekly Trends Chart ──────────┐ │
+│  │   📈 Check-in score (left axis)│ │
+│  │   ⏱  Practice time (right axis)│ │
+│  │                                 │ │
+│  │  10│         ╭─╮      ╭──    │120m│
+│  │   8│    ╭──╮╯   ╰╮╭──╯      │ 90m│
+│  │   6│╭──╯          ╰╯         │ 60m│
+│  │   4│                          │ 30m│
+│  │   2│                          │  0m│
+│  │    └──┬──┬──┬──┬──┬──┬──┬──  │    │
+│  │      W1 W2 W3 W4 W5 W6 W7 W8 │    │
+│  └─────────────────────────────────┘ │
+│  [ 7d ][ 30d ][ 90d ][ All ]       │
+│                                     │
+│  ── Try Something Different ─────── │
+│                                     │
+│  You haven't used these recently:   │
+│  ┌──────────────┐ ┌──────────────┐ │
+│  │ 🌊 5-4-3-2-1 │ │ 💬 Self-Talk │ │  ← Tap → focuses card
+│  └──────────────┘ └──────────────┘ │
+│                                     │
+│  ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈ │
+│  ⓘ Patterns reflect associations,  │
+│  not proof of cause. Reaching for   │
+│  tools on tough days is a sign of   │
+│  good self-care.                    │
+│                                     │
+│  🏥 Crisis Resources →              │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+### Preliminary Tier (~1 week of data)
+
+```
+┌─────────────────────────────────────┐
+│  ←  Insights                        │
+├─────────────────────────────────────┤
+│                                     │
+│  ── Best Tools (Early) ──────────── │
+│                                     │
+│  ┌─────────────────────────────────┐ │
+│  │  1. 🫁 Box Breathing           │ │
+│  │     Might be linked to higher  │ │
+│  │     check-in days — keep       │ │
+│  │     using to confirm           │ │
+│  │              [Practice →]      │ │  ← Tap → focuses card
+│  └─────────────────────────────────┘ │
+│                                     │
+│  ┌─────────────────────────────────┐ │
+│  │  🔍 Early signs: days you      │ │
+│  │  practice tend to have slightly │ │
+│  │  higher check-in scores.       │ │
+│  │                                 │ │
+│  │  ⓘ Early pattern — still       │ │
+│  │    gathering data               │ │
+│  └─────────────────────────────────┘ │
+│                                     │
+│  ── Your Journey So Far ─────────── │
+│                                     │
+│  Check-in trend (last 7 days):      │
+│  ┌─────────────────────────────────┐ │
+│  │   ·    ·                        │ │
+│  │  · ·  · ·  ·                   │ │
+│  │       ·                          │ │
+│  │  M  T  W  T  F  S  S           │ │
+│  └─────────────────────────────────┘ │
+│                                     │
+│  7 check-ins · 6 practice sessions  │
+│                                     │
+│  ── Tools You've Been Using ─────── │
+│                                     │
+│  ┌──────────────┐ ┌──────────────┐ │
+│  │ 🫁 Box       │ │ 🧘 Body Scan │ │  ← Tap → focuses card
+│  │ Breathing    │ │              │ │
+│  │ 4 uses       │ │ 2 uses       │ │
+│  └──────────────┘ └──────────────┘ │
+│                                     │
+│  ┌─────────────────────────────────┐ │
+│  │  🔓 A couple more weeks of     │ │
+│  │  data will unlock full         │ │
+│  │  insights and your complete    │ │
+│  │  Best Tools ranking.           │ │
+│  └─────────────────────────────────┘ │
+│                                     │
+│  ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈ │
+│  ⓘ Disclaimer...                   │
+└─────────────────────────────────────┘
+```
+
+### Nascent Tier (~3 days of data)
+
+```
+┌─────────────────────────────────────┐
+│  ←  Insights                        │
+├─────────────────────────────────────┤
+│                                     │
+│  ── Your Journey So Far ─────────── │
+│                                     │
+│  Check-in trend:                    │
+│  ┌─────────────────────────────────┐ │
+│  │       ·                          │ │
+│  │  ·       ·                      │ │
+│  │  M    W    F                    │ │
+│  └─────────────────────────────────┘ │
+│                                     │
+│  3 check-ins · 3 practice sessions  │
+│  [ 7d ][ All ]                      │
+│                                     │
+│  ┌─────────────────────────────────┐ │
+│  │  🌱 You're building a picture  │ │
+│  │  of your wellness patterns.    │ │
+│  │                                 │ │
+│  │  Keep it up — a few more days  │ │
+│  │  and we'll start spotting      │ │
+│  │  patterns for you.             │ │
+│  │                                 │ │
+│  │  ┌───────────────────────────┐ │ │
+│  │  │   Back to my tools →      │ │ │  ← Navigates to wallet
+│  │  └───────────────────────────┘ │ │
+│  └─────────────────────────────────┘ │
+│                                     │
+│  ┌─────────────────────────────────┐ │
+│  │  🔓 Check in a few more times  │ │
+│  │  to unlock early patterns.     │ │
+│  │                                 │ │
+│  │  ████████░░░░ 3/7 check-ins    │ │  ← Progress bar
+│  │  ██████░░░░░░ 3/5 tool uses    │ │
+│  └─────────────────────────────────┘ │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+### Below Nascent (brand new user)
+
+```
+┌─────────────────────────────────────┐
+│  ←  Insights                        │
+├─────────────────────────────────────┤
+│                                     │
+│            🌱                        │
+│                                     │
+│     Your insights are growing       │
+│                                     │
+│  Check in and practice your tools   │
+│  — after a few days, you'll start   │
+│  seeing how they connect to how     │
+│  you're feeling.                    │
+│                                     │
+│  ┌─────────────────────────────────┐ │
+│  │  ████░░░░░░░░ 1/3 check-ins    │ │
+│  │  ██░░░░░░░░░░ 1/3 tool uses    │ │
+│  └─────────────────────────────────┘ │
+│                                     │
+│  ┌─────────────────────────────────┐ │
+│  │     Explore your tools →        │ │  ← Navigates to wallet
+│  └─────────────────────────────────┘ │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+---
+
+## Design Notes
+
+### Visual Hierarchy
+- **Tier qualifiers** ("Early pattern", "Based on limited data") use muted text color and smaller font weight
+- **Confident-tier insights** use full-weight text and colored trend indicators (green ↗, gray →)
+- **Engagement CTAs** are styled as tappable pill buttons or text links with arrow, using the app's primary accent color
+- **Progress bars** use the app's green accent (#4CAF50) against a light gray track
+
+### Interaction Patterns
+- Tool names in "Best Tools" and "Tools you've been using" are tappable — they navigate to the card's focused view in the wallet
+- "Practice now" / "Back to my tools" CTAs navigate to the wallet screen
+- Time period selectors are segmented controls (matching existing per-tool-insights pattern)
+- Back arrow on per-tool insights (when navigated from Best Tools) returns to wallet-level Insights screen
+
+### Accessibility
+- All chart elements have `accessibilityLabel` describing the trend in words
+- Duration values announced as full words ("four minutes thirty-two seconds")
+- All tap targets minimum 44×44pt
+- Disclaimer text is reachable via screen reader after main content
+
+### Tier Transition
+- When a user crosses a threshold between visits, the new content should appear with a subtle highlight or "New" badge on first view to draw attention to unlocked sections

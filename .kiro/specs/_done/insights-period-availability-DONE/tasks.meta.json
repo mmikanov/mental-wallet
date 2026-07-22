@@ -1,0 +1,188 @@
+{
+  "pbtResults": {
+    "1.3 Write property tests for `formatTrackingLabel` in `src/utils/__tests__/dataAge.test.ts`": {
+      "status": "passed",
+      "lastRunTimestamp": 1784649262216
+    },
+    "1.2 Write property tests for `getDisabledPeriods` and `formatTrackingLabel` in `src/utils/__tests__/dataAge.test.ts`": {
+      "status": "passed",
+      "lastRunTimestamp": 1784649283097
+    }
+  },
+  "executionHistory": {
+    "1.1 Create `src/utils/dataAge.ts` with `computeDataAge`, `getDisabledPeriods`, and `formatTrackingLabel`": [
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784648956858
+      },
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784648966354
+      },
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784649138557
+      }
+    ],
+    "1.2 Write property tests for `getDisabledPeriods` and `formatTrackingLabel` in `src/utils/__tests__/dataAge.test.ts`": [
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784648956939
+      },
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784649145292
+      },
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784649300365
+      }
+    ],
+    "1.3 Write property tests for `formatTrackingLabel` in `src/utils/__tests__/dataAge.test.ts`": [
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784648956992
+      },
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784649146122
+      },
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784649302150
+      }
+    ],
+    "2.1 Add `disabledPeriods` prop and disabled rendering logic to `src/components/insights/TimePeriodSelector.tsx`": [
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784648957089
+      },
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784649147155
+      },
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784649302200
+      }
+    ],
+    "2.2 Write unit tests for `TimePeriodSelector` disabled behavior": [
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784648957123
+      },
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784649308826
+      },
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784649546927
+      }
+    ],
+    "3. Checkpoint": [
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784648957171
+      },
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784649559198
+      },
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784649705010
+      }
+    ],
+    "4.1 Integrate `computeDataAge`, disabled periods, and tracking label into `src/screens/WalletInsightsScreen.tsx`": [
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784648957209
+      },
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784649309639
+      },
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784649547766
+      }
+    ],
+    "4.2 Integrate `computeDataAge`, disabled periods, and tracking label into `src/screens/ToolInsightsScreen.tsx`": [
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784648957253
+      },
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784649310753
+      },
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784649548658
+      }
+    ],
+    "5. Final checkpoint": [
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784648957288
+      },
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784649709092
+      },
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784649830587
+      }
+    ],
+    "1. Create data age utility module": [
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784649302249
+      }
+    ],
+    "2. Update `TimePeriodSelector` with disabled periods support": [
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784649547056
+      }
+    ],
+    "4. Integrate data age into insights screens": [
+      {
+        "executionId": "cca89d01-7934-47b7-8072-e1b005c84d6f",
+        "chatSessionId": "sess_e2f336ca-eb36-4fc7-b4a9-73f4acea2e62",
+        "timestamp": 1784649548699
+      }
+    ]
+  }
+}

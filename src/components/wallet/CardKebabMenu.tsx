@@ -33,6 +33,7 @@ export interface CardKebabMenuProps {
   onSetReminder: (cardId: string) => void;
   onArchive: (cardId: string) => void;
   onCustomizeBackground?: (cardId: string) => void;
+  onViewInsights?: (cardId: string) => void;
 }
 
 interface MenuItem {
@@ -70,6 +71,7 @@ export default function CardKebabMenu({
   onSetReminder,
   onArchive,
   onCustomizeBackground,
+  onViewInsights,
 }: CardKebabMenuProps) {
   const isEditable = card.originBadge === 'my_tool';
 
@@ -119,6 +121,11 @@ export default function CardKebabMenu({
     onCustomizeBackground?.(card.id);
   };
 
+  const handleViewInsights = () => {
+    onClose();
+    onViewInsights?.(card.id);
+  };
+
   // Build menu items based on origin badge (Req 10.1, 10.2, 10.4)
   const menuItems: MenuItem[] = [];
 
@@ -128,6 +135,9 @@ export default function CardKebabMenu({
 
   menuItems.push({ label: 'Duplicate tool', icon: '📋', action: handleDuplicate });
   menuItems.push({ label: 'View usage history', icon: '📊', action: handleViewUsageHistory });
+  if (onViewInsights) {
+    menuItems.push({ label: 'Insights', icon: '💡', action: handleViewInsights });
+  }
   menuItems.push({ label: 'Set reminder', icon: '⏰', action: handleSetReminder });
 
   // Customize background — only for Library/Community cards with the flag enabled

@@ -97,3 +97,33 @@ export const MIN_TAP_TARGET = {
 export async function isScreenReaderActive(): Promise<boolean> {
   return AccessibilityInfo.isScreenReaderEnabled();
 }
+
+/**
+ * Converts a numeric Score_Delta into spoken words for screen readers.
+ * Examples: 1.2 → "one point two", 0.5 → "zero point five", 2.0 → "two"
+ *
+ * Validates: Requirement 9.3 (correlation descriptors announced in full words)
+ */
+export function scoreDeltaToWords(delta: number): string {
+  const DIGIT_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+
+  const abs = Math.abs(delta);
+  const rounded = Math.round(abs * 10) / 10;
+  const str = rounded.toFixed(1);
+  const [intPart, decPart] = str.split('.');
+
+  const intWord = parseInt(intPart, 10) < 10
+    ? DIGIT_WORDS[parseInt(intPart, 10)]
+    : intPart;
+
+  // If decimal is 0, just return the integer part
+  if (decPart === '0') {
+    return intWord;
+  }
+
+  const decWord = parseInt(decPart, 10) < 10
+    ? DIGIT_WORDS[parseInt(decPart, 10)]
+    : decPart;
+
+  return `${intWord} point ${decWord}`;
+}
