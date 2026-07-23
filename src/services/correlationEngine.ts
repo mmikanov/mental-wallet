@@ -35,6 +35,8 @@ export interface ToolCorrelationResult {
 export interface WalletCorrelationResult {
   weeklyAvgScore: number[];
   weeklyTotalDurationMin: number[];
+  /** Per-bucket positive outcome rate (0–1). Null entries mean no outcome data for that bucket. */
+  weeklyPositiveOutcomeRate?: (number | null)[];
   overallTrend: 'positive' | 'neutral' | 'negative';
   summaryText: string;
   granularity?: 'daily' | 'weekly';
@@ -1168,6 +1170,25 @@ export function createCorrelationEngine(): CorrelationEngine {
           started_at: string;
         }>(durationQuery, durationParams);
 
+        // 4.5 Fetch outcome_responses for this cardId (optionally filtered by startDate)
+        let outcomeRecords: { category: string; created_at: string }[] = [];
+        try {
+          let outcomeQuery = 'SELECT category, created_at FROM outcome_responses WHERE card_id = ?';
+          const outcomeParams: (string | number)[] = [cardId];
+          if (startDate) {
+            outcomeQuery += ' AND created_at >= ?';
+            outcomeParams.push(startDate);
+          }
+          outcomeQuery += ' ORDER BY created_at ASC';
+          outcomeRecords = await db.getAllAsync<{
+            category: string;
+            created_at: string;
+          }>(outcomeQuery, outcomeParams);
+        } catch {
+          // outcome_responses table may not exist yet; proceed without outcome data
+          outcomeRecords = [];
+        }
+
         if (effectiveGranularity === 'daily') {
           // --- DAILY GRANULARITY ---
           // Group KPI records by date
@@ -1212,6 +1233,16 @@ export function createCorrelationEngine(): CorrelationEngine {
           // Build output arrays: for each date, use KPI score directly or 0, sum duration for that day
           const dailyScores: number[] = [];
           const dailyDurationMin: number[] = [];
+          const dailyPositiveOutcomeRate: (number | null)[] = [];
+
+          // Group outcome records by date
+          const outcomeByDate = new Map<string, string[]>();
+          for (const r of outcomeRecords) {
+            const day = toDateString(r.created_at);
+            const existing = outcomeByDate.get(day) ?? [];
+            existing.push(r.category);
+            outcomeByDate.set(day, existing);
+          }
 
           for (const dateKey of allDateKeys) {
             const score = kpiByDate.get(dateKey) ?? 0;
@@ -1220,15 +1251,30 @@ export function createCorrelationEngine(): CorrelationEngine {
 
             dailyScores.push(Math.round(score * 100) / 100);
             dailyDurationMin.push(Math.round(durationMin * 100) / 100);
+
+            // Compute positive outcome rate for this day (null if no outcomes)
+            const dayOutcomes = outcomeByDate.get(dateKey);
+            if (dayOutcomes && dayOutcomes.length > 0) {
+              const positiveCount = dayOutcomes.filter((cat) =>
+                (POSITIVE_OUTCOME_CATEGORIES as readonly string[]).includes(cat)
+              ).length;
+              dailyPositiveOutcomeRate.push(Math.round((positiveCount / dayOutcomes.length) * 100) / 100);
+            } else {
+              dailyPositiveOutcomeRate.push(null);
+            }
           }
 
           // Determine overall trend using per-tool trend logic
           const overallTrend = determinePerToolTrend(dailyScores);
           const summaryText = generatePerToolSummaryText(overallTrend);
 
+          // Only include outcome rate if there's at least some outcome data
+          const hasOutcomeData = dailyPositiveOutcomeRate.some((r) => r !== null);
+
           return {
             weeklyAvgScore: dailyScores,
             weeklyTotalDurationMin: dailyDurationMin,
+            ...(hasOutcomeData ? { weeklyPositiveOutcomeRate: dailyPositiveOutcomeRate } : {}),
             overallTrend,
             summaryText,
             granularity: 'daily',
@@ -1287,6 +1333,17 @@ export function createCorrelationEngine(): CorrelationEngine {
 
         const weeklyAvgScore: number[] = [];
         const weeklyTotalDurationMin: number[] = [];
+        const weeklyPositiveOutcomeRate: (number | null)[] = [];
+
+        // Group outcome records by week
+        const outcomeByWeek: Record<string, string[]> = {};
+        for (const r of outcomeRecords) {
+          const key = getWeekKey(r.created_at);
+          if (!outcomeByWeek[key]) {
+            outcomeByWeek[key] = [];
+          }
+          outcomeByWeek[key].push(r.category);
+        }
 
         for (const weekKey of uniqueWeekKeys) {
           const kpiValues = kpiByWeek[weekKey];
@@ -1304,6 +1361,17 @@ export function createCorrelationEngine(): CorrelationEngine {
           weeklyTotalDurationMin.push(
             Math.round(totalDurationMin * 100) / 100
           );
+
+          // Compute positive outcome rate for this week (null if no outcomes)
+          const weekOutcomes = outcomeByWeek[weekKey];
+          if (weekOutcomes && weekOutcomes.length > 0) {
+            const positiveCount = weekOutcomes.filter((cat) =>
+              (POSITIVE_OUTCOME_CATEGORIES as readonly string[]).includes(cat)
+            ).length;
+            weeklyPositiveOutcomeRate.push(Math.round((positiveCount / weekOutcomes.length) * 100) / 100);
+          } else {
+            weeklyPositiveOutcomeRate.push(null);
+          }
         }
 
         // 9. If fewer than 2 qualifying buckets exist, return null
@@ -1317,9 +1385,13 @@ export function createCorrelationEngine(): CorrelationEngine {
         // 11. Generate summary text based on trend direction
         const summaryText = generatePerToolSummaryText(overallTrend);
 
+        // Only include outcome rate if there's at least some outcome data
+        const hasOutcomeData = weeklyPositiveOutcomeRate.some((r) => r !== null);
+
         return {
           weeklyAvgScore,
           weeklyTotalDurationMin,
+          ...(hasOutcomeData ? { weeklyPositiveOutcomeRate } : {}),
           overallTrend,
           summaryText,
           granularity: 'weekly',

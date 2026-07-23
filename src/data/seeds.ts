@@ -176,22 +176,31 @@ export const SEED_CATEGORIES = [
  */
 export const SEED_CRISIS_RESOURCES = [
   {
+    id: 'ca-988-lifeline',
+    countryCode: 'CA',
+    name: '988 Suicide Crisis Helpline',
+    phone: '988',
+    url: 'https://988.ca',
+    isDefault: true,
+    displayOrder: 1,
+  },
+  {
     id: 'us-988-lifeline',
     countryCode: 'US',
     name: '988 Suicide & Crisis Lifeline',
     phone: '988',
     url: 'https://988lifeline.org',
     isDefault: true,
-    displayOrder: 1,
+    displayOrder: 2,
   },
   {
     id: 'iasp-directory',
     countryCode: 'INTL',
     name: 'International Association for Suicide Prevention - Crisis Centre Directory',
     phone: null,
-    url: 'https://www.iasp.info/resources/Crisis_Centres/',
+    url: 'https://findahelpline.com/i/iasp',
     isDefault: true,
-    displayOrder: 2,
+    displayOrder: 3,
   },
 ] as const;
 

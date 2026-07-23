@@ -28,6 +28,7 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
   await runGuidedCheckinMigration(db);
   await runEmotionTagsExpansionMigration(db);
   await runEmotionSessionsExpansionMigration(db);
+  await runCrisisResourcesCanadaMigration(db);
 }
 
 /**
@@ -606,4 +607,32 @@ async function runEmotionSessionsExpansionMigration(db: SQLiteDatabase): Promise
     await db.execAsync('PRAGMA foreign_keys = ON');
     throw error;
   }
+}
+
+
+/**
+ * Adds Canada 988 Suicide Crisis Helpline to crisis_resources and
+ * reorders existing resources (Canada first, then US, then INTL).
+ * Uses INSERT OR IGNORE for idempotency.
+ */
+async function runCrisisResourcesCanadaMigration(db: SQLiteDatabase): Promise<void> {
+  // Insert Canada resource if it doesn't exist
+  await db.runAsync(
+    `INSERT OR IGNORE INTO crisis_resources (id, country_code, name, phone, url, is_default, display_order)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    ['ca-988-lifeline', 'CA', '988 Suicide Crisis Helpline', '988', 'https://988.ca', 1, 1]
+  );
+
+  // Update IASP URL to point directly to the helpline finder
+  await db.runAsync(
+    `UPDATE crisis_resources SET url = 'https://findahelpline.com/i/iasp' WHERE id = 'iasp-directory'`
+  );
+
+  // Reorder: Canada = 1, US = 2, INTL = 3
+  await db.runAsync(
+    `UPDATE crisis_resources SET display_order = 2 WHERE id = 'us-988-lifeline'`
+  );
+  await db.runAsync(
+    `UPDATE crisis_resources SET display_order = 3 WHERE id = 'iasp-directory'`
+  );
 }

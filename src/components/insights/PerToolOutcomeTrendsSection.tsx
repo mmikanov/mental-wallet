@@ -47,6 +47,7 @@ export function PerToolOutcomeTrendsSection({
       <DualAxisChart
         weeklyAvgScore={data.weeklyAvgScore}
         weeklyTotalDurationMin={data.weeklyTotalDurationMin}
+        weeklyPositiveOutcomeRate={data.weeklyPositiveOutcomeRate}
         overallTrend={data.overallTrend}
         summaryText={data.summaryText}
         granularity={data.granularity}

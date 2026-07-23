@@ -151,7 +151,7 @@ export default function SettingsScreen({ navigation }: Props) {
   function handleResetAnalyticsData() {
     Alert.alert(
       'Reset Analytics Data',
-      'This will delete your locally stored anonymous usage data and generate a new anonymous identity. Your app content (cards, entries, settings) will not be affected. This action cannot be undone.',
+      'This will clear your anonymous usage statistics and generate a new anonymous identity.\n\nYour cards, entries, mood logs, and settings will NOT be affected — only anonymous analytics data is removed.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -333,23 +333,6 @@ export default function SettingsScreen({ navigation }: Props) {
           <View style={styles.menuItem}>
             <View style={styles.toggleContent}>
               <Text style={styles.menuItemText}>
-                Include archived tools in insights
-              </Text>
-              <Text style={styles.toggleSubtitle}>
-                When enabled, data from archived tools is included in your insights analysis
-              </Text>
-            </View>
-            <Switch
-              value={includeArchivedTools}
-              onValueChange={handleToggleIncludeArchived}
-              accessibilityLabel="Include archived tools in insights"
-              accessibilityRole="switch"
-            />
-          </View>
-
-          <View style={styles.menuItem}>
-            <View style={styles.toggleContent}>
-              <Text style={styles.menuItemText}>
                 Post-use check-in
               </Text>
               <Text style={styles.toggleSubtitle}>
@@ -363,11 +346,56 @@ export default function SettingsScreen({ navigation }: Props) {
               accessibilityRole="switch"
             />
           </View>
+
+          <View style={styles.menuItem}>
+            <View style={styles.toggleContent}>
+              <Text style={styles.menuItemText}>
+                Include archived tools in insights
+              </Text>
+              <Text style={styles.toggleSubtitle}>
+                When enabled, data from archived tools is included in your insights analysis
+              </Text>
+            </View>
+            <Switch
+              value={includeArchivedTools}
+              onValueChange={handleToggleIncludeArchived}
+              accessibilityLabel="Include archived tools in insights"
+              accessibilityRole="switch"
+            />
+          </View>
         </View>
 
-        {/* Data Section */}
+        {/* Privacy & Data Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Data</Text>
+          <Text style={styles.sectionTitle}>Privacy & Data</Text>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('PrivacyPolicy')}
+            accessibilityLabel="Privacy Policy"
+            accessibilityRole="button"
+          >
+            <Text style={styles.menuItemIcon}>📋</Text>
+            <Text style={styles.menuItemText}>Privacy Policy</Text>
+            <Text style={styles.menuItemChevron}>›</Text>
+          </TouchableOpacity>
+
+          <View style={styles.menuItem}>
+            <View style={styles.toggleContent}>
+              <Text style={styles.menuItemText}>
+                Help improve the app
+              </Text>
+              <Text style={styles.toggleSubtitle}>
+                Share anonymous usage data (event counts and timing only — no personal information, messages, or identifiers)
+              </Text>
+            </View>
+            <Switch
+              value={analyticsOptIn}
+              onValueChange={(value) => useAnalyticsStore.getState().setOptIn(value)}
+              accessibilityLabel="Toggle anonymous analytics data collection"
+              accessibilityRole="switch"
+            />
+          </View>
 
           <TouchableOpacity
             style={styles.menuItem}
@@ -385,76 +413,42 @@ export default function SettingsScreen({ navigation }: Props) {
 
           <TouchableOpacity
             style={styles.menuItem}
+            onPress={handleResetAnalyticsData}
+            disabled={isResettingAnalytics}
+            accessibilityLabel="Reset anonymous analytics data"
+            accessibilityRole="button"
+          >
+            <Text style={styles.menuItemIcon}>🔃</Text>
+            <View style={styles.menuItemContent}>
+              <Text style={styles.menuItemText}>Reset my analytics data</Text>
+              <Text style={styles.menuItemSubtitle}>
+                Clears anonymous usage statistics and generates a new anonymous identity. Your cards, entries, and settings are not affected.
+              </Text>
+            </View>
+            {isResettingAnalytics && (
+              <ActivityIndicator size="small" color="#5C6BC0" style={styles.menuItemSpinner} />
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
             onPress={handleDeleteAllData}
             disabled={isDeleting}
             accessibilityLabel="Delete all data"
             accessibilityRole="button"
           >
             <Text style={styles.menuItemIcon}>🗑️</Text>
-            <Text style={[styles.menuItemText, styles.destructiveText]}>
-              Delete All Data
-            </Text>
+            <View style={styles.menuItemContent}>
+              <Text style={[styles.menuItemText, styles.destructiveText]}>
+                Delete All Data
+              </Text>
+              <Text style={styles.menuItemSubtitle}>
+                Permanently removes everything — cards, entries, mood logs, statistics — and resets the app to its initial state. Cannot be undone.
+              </Text>
+            </View>
             {isDeleting && (
               <ActivityIndicator size="small" color="#E53935" style={styles.menuItemSpinner} />
             )}
-          </TouchableOpacity>
-        </View>
-
-        {/* Privacy & Data Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Privacy & Data</Text>
-          <Text style={styles.sectionSubtitle}>
-            Control how anonymous usage data is collected to help improve the app.
-          </Text>
-
-          <View style={styles.menuItem}>
-            <View style={styles.toggleContent}>
-              <Text style={styles.menuItemText}>
-                Help improve the app with anonymous usage data
-              </Text>
-              <Text style={styles.toggleSubtitle}>
-                We collect event counts and timing data. No personal information, messages, or identifiers are included.
-              </Text>
-            </View>
-            <Switch
-              value={analyticsOptIn}
-              onValueChange={(value) => useAnalyticsStore.getState().setOptIn(value)}
-              accessibilityLabel="Toggle anonymous analytics data collection"
-              accessibilityRole="switch"
-            />
-          </View>
-
-          {/* Separate visual group for data reset — ≥16pt spacing */}
-          <View style={styles.resetGroup}>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={handleResetAnalyticsData}
-              disabled={isResettingAnalytics}
-              accessibilityLabel="Reset my app data"
-              accessibilityRole="button"
-            >
-              <Text style={styles.menuItemIcon}>🔃</Text>
-              <View style={styles.menuItemContent}>
-                <Text style={styles.menuItemText}>Reset my app data</Text>
-                <Text style={styles.menuItemSubtitle}>
-                  Get a new anonymous identity and clear usage history
-                </Text>
-              </View>
-              {isResettingAnalytics && (
-                <ActivityIndicator size="small" color="#5C6BC0" style={styles.menuItemSpinner} />
-              )}
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => navigation.navigate('PrivacyPolicy')}
-            accessibilityLabel="Privacy Policy"
-            accessibilityRole="button"
-          >
-            <Text style={styles.menuItemIcon}>📋</Text>
-            <Text style={styles.menuItemText}>Privacy Policy</Text>
-            <Text style={styles.menuItemChevron}>›</Text>
           </TouchableOpacity>
         </View>
 
@@ -677,9 +671,6 @@ const styles = StyleSheet.create({
     color: '#888888',
     marginTop: 4,
     lineHeight: 18,
-  },
-  resetGroup: {
-    marginTop: 16,
   },
   destructiveText: {
     color: '#E53935',

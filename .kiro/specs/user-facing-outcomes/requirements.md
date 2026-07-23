@@ -38,6 +38,7 @@ This feature complements the existing mood-logging system by providing a qualita
 5. WHEN a card completion event occurs on a card that contains a post-completion mood slider control, THE App SHALL display only the prompt(s) specified by the user's Post_Completion_Prompt_Preference setting: if set to "outcome_only" THE App SHALL display only the Outcome_Prompt, if set to "mood_only" THE App SHALL display only the mood slider prompt, and if set to "both" THE App SHALL display the Outcome_Prompt first and the mood slider prompt second.
 6. IF the user navigates away from the Outcome_Prompt or the app is backgrounded before a chip or "Skip" is tapped, THEN THE App SHALL dismiss the Outcome_Prompt without logging an Outcome_Response.
 7. WHEN the Outcome_Prompt is displayed, THE App SHALL ensure each chip and the Skip affordance are reachable via screen reader focus order and announced with their label text.
+8. WHEN a card completion event is triggered successfully, THE App SHALL immediately hide the card's input controls and save button from the expanded view, displaying only the completion confirmation message and (if applicable) the Outcome_Prompt. The user SHALL NOT be able to re-submit the tool without first collapsing and re-expanding the card.
 
 ### Requirement 2: Prompt Frequency Control
 
