@@ -10,11 +10,13 @@
  */
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, LayoutChangeEvent } from 'react-native';
+import { View, Text, StyleSheet, LayoutChangeEvent, TouchableOpacity } from 'react-native';
 
 export interface DualAxisChartProps {
   weeklyAvgScore: number[];
   weeklyTotalDurationMin: number[];
+  /** Per-bucket positive outcome rate (0–1). Null entries mean no data for that bucket. */
+  weeklyPositiveOutcomeRate?: (number | null)[];
   overallTrend: 'positive' | 'neutral' | 'negative';
   summaryText: string;
   /** Determines x-axis label format. Default 'weekly'. */
@@ -26,6 +28,7 @@ export interface DualAxisChartProps {
 const CHART_HEIGHT = 120;
 const SCORE_COLOR = '#6366F1'; // indigo for KPI score
 const DURATION_COLOR = '#10B981'; // green for duration
+const OUTCOME_COLOR = '#F59E0B'; // amber for positive outcome rate
 
 /**
  * Computes adaptive X-axis labels relative to "Now" (the rightmost point).
@@ -220,12 +223,14 @@ function normalize(value: number, min: number, max: number): number {
 export default function DualAxisChart({
   weeklyAvgScore,
   weeklyTotalDurationMin,
+  weeklyPositiveOutcomeRate,
   overallTrend,
   summaryText: _summaryText,
   granularity = 'weekly',
   rangeStartDate,
 }: DualAxisChartProps) {
   const [chartWidth, setChartWidth] = useState(0);
+  const [showOutcomeExplainer, setShowOutcomeExplainer] = useState(false);
   const weeks = Math.max(weeklyAvgScore.length, weeklyTotalDurationMin.length);
 
   if (weeks === 0) {
@@ -242,6 +247,9 @@ export default function DualAxisChart({
   // Duration uses dynamic range from the data
   const durationMin = Math.min(...weeklyTotalDurationMin, 0);
   const durationMax = Math.max(...weeklyTotalDurationMin, 1);
+
+  // Outcome rate is always 0–1
+  const hasOutcomeData = weeklyPositiveOutcomeRate && weeklyPositiveOutcomeRate.some((r) => r !== null);
 
   const accessibleDescription = buildAccessibleDescription(
     weeklyAvgScore,
@@ -271,6 +279,17 @@ export default function DualAxisChart({
     const y = CHART_HEIGHT - proportion * CHART_HEIGHT;
     return { x, y };
   });
+
+  // Compute pixel positions for outcome rate series (0–1 scale, only non-null entries)
+  const outcomePositions = hasOutcomeData
+    ? weeklyPositiveOutcomeRate!.map((rate, index) => {
+        if (rate === null) return null;
+        const proportion = rate; // already 0–1
+        const x = weeks === 1 ? chartWidth / 2 : (index / (weeks - 1)) * chartWidth;
+        const y = CHART_HEIGHT - proportion * CHART_HEIGHT;
+        return { x, y, index };
+      }).filter((pos): pos is { x: number; y: number; index: number } => pos !== null)
+    : [];
 
   return (
     <View style={styles.container}>
@@ -386,6 +405,51 @@ export default function DualAxisChart({
                   ]}
                 />
               ))}
+
+              {/* Outcome rate connecting lines — only between non-null points */}
+              {outcomePositions.map((pos, i) => {
+                if (i === outcomePositions.length - 1) return null;
+                const next = outcomePositions[i + 1];
+                const dx = next.x - pos.x;
+                const dy = next.y - pos.y;
+                const length = Math.sqrt(dx * dx + dy * dy);
+                const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+                return (
+                  <View
+                    key={`outcome-line-${pos.index}`}
+                    style={{
+                      position: 'absolute',
+                      left: pos.x,
+                      top: pos.y,
+                      width: length,
+                      height: 1.5,
+                      backgroundColor: OUTCOME_COLOR,
+                      opacity: 0.5,
+                      transform: [{ rotate: `${angle}deg` }],
+                      transformOrigin: 'left center',
+                    }}
+                  />
+                );
+              })}
+
+              {/* Outcome rate dots */}
+              {outcomePositions.map((pos) => (
+                <View
+                  key={`outcome-${pos.index}`}
+                  style={[
+                    styles.dot,
+                    {
+                      width: dotSize,
+                      height: dotSize,
+                      borderRadius: dotSize / 2,
+                      backgroundColor: OUTCOME_COLOR,
+                      top: pos.y - dotSize / 2,
+                      left: pos.x - dotSize / 2,
+                    },
+                  ]}
+                />
+              ))}
             </>
           )}
 
@@ -446,7 +510,30 @@ export default function DualAxisChart({
           <View style={[styles.legendDot, { backgroundColor: DURATION_COLOR }]} />
           <Text style={styles.legendText}>Practice time</Text>
         </View>
+        {hasOutcomeData && (
+          <TouchableOpacity
+            style={styles.legendItem}
+            onPress={() => setShowOutcomeExplainer((prev) => !prev)}
+            accessibilityRole="button"
+            accessibilityLabel="Felt better — tap for explanation"
+            accessibilityHint="Shows how this metric is calculated"
+            hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+          >
+            <View style={[styles.legendDot, { backgroundColor: OUTCOME_COLOR }]} />
+            <Text style={styles.legendText}>Felt better</Text>
+            <Text style={styles.infoIcon}>ⓘ</Text>
+          </TouchableOpacity>
+        )}
       </View>
+
+      {/* Outcome explainer tooltip */}
+      {showOutcomeExplainer && (
+        <View style={styles.explainerBubble} accessibilityRole="note">
+          <Text style={styles.explainerText}>
+            The percentage of times you reported feeling calmer, clearer, or more hopeful after using this tool. Based on your post-use check-in responses.
+          </Text>
+        </View>
+      )}
 
     </View>
   );
@@ -537,6 +624,25 @@ const styles = StyleSheet.create({
   legendText: {
     fontSize: 12,
     color: '#374151',
+  },
+  infoIcon: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginLeft: 2,
+  },
+  explainerBubble: {
+    marginTop: 8,
+    backgroundColor: '#FFFBEB',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  explainerText: {
+    fontSize: 12,
+    color: '#92400E',
+    lineHeight: 17,
   },
 
 });

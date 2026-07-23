@@ -109,6 +109,7 @@ export function validateControls(
 export default function ExpandedContent({ card }: ExpandedContentProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showOutcomePrompt, setShowOutcomePrompt] = useState(false);
   const [outcomePromptEnabled, setOutcomePromptEnabled] = useState(true);
@@ -181,7 +182,9 @@ export default function ExpandedContent({ card }: ExpandedContentProps) {
       });
       // Reload cards to reflect updated stats (totalUses, streak, lastUsedAt)
       await loadCards();
-      // Show brief success feedback then collapse
+      // Mark as completed — hides controls and save button
+      setIsCompleted(true);
+      // Show brief success feedback then transition to outcome prompt or collapse
       setShowSuccess(true);
       if (outcomePromptEnabled && card.sourceLibraryId !== 'lib-personal-kpi') {
         // Show outcome prompt after brief success feedback
@@ -221,13 +224,15 @@ export default function ExpandedContent({ card }: ExpandedContentProps) {
         <Text style={styles.collapseText}>Collapse</Text>
       </TouchableOpacity>
 
-      {/* Controls */}
-      <ControlRenderer
-        controls={card.controls}
-        values={cardValues}
-        onChange={handleChange}
-        errors={errors}
-      />
+      {/* Controls — hidden after successful completion */}
+      {!isCompleted && (
+        <ControlRenderer
+          controls={card.controls}
+          values={cardValues}
+          onChange={handleChange}
+          errors={errors}
+        />
+      )}
 
       {/* Success feedback */}
       {showSuccess && (
@@ -241,14 +246,16 @@ export default function ExpandedContent({ card }: ExpandedContentProps) {
         <OutcomePrompt onDismiss={() => { setShowOutcomePrompt(false); collapseCard(); }} />
       )}
 
-      {/* Primary action button */}
-      <View style={styles.actionContainer}>
-        <PrimaryActionButton
-          controls={card.controls}
-          onPress={handleSubmit}
-          disabled={isSubmitting}
-        />
-      </View>
+      {/* Primary action button — hidden after successful completion */}
+      {!isCompleted && (
+        <View style={styles.actionContainer}>
+          <PrimaryActionButton
+            controls={card.controls}
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+          />
+        </View>
+      )}
     </View>
   );
 }

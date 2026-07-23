@@ -1,7 +1,7 @@
 /**
  * CrisisResourcesScreen — Displays crisis hotline resources with disclaimer.
- * Shows 988 Lifeline (US default) and IASP international directory.
- * Geolocation-aware: falls back to US 988 if location unavailable.
+ * Shows country-specific resources (Canada, US) and IASP international directory.
+ * Geolocation-aware: falls back to showing all resources if location unavailable.
  *
  * Validates: Requirements 15.2, 15.3, 15.5
  */
@@ -34,6 +34,34 @@ interface CrisisResource {
   displayOrder: number;
 }
 
+/** Returns a flag emoji or globe for a country code */
+function getCountryIcon(countryCode: string): string {
+  switch (countryCode) {
+    case 'CA':
+      return '🇨🇦';
+    case 'US':
+      return '🇺🇸';
+    case 'INTL':
+      return '🌍';
+    default:
+      return '🌐';
+  }
+}
+
+/** Returns a readable label for a country code */
+function getCountryLabel(countryCode: string): string {
+  switch (countryCode) {
+    case 'CA':
+      return 'Canada';
+    case 'US':
+      return 'United States';
+    case 'INTL':
+      return 'International';
+    default:
+      return countryCode;
+  }
+}
+
 export default function CrisisResourcesScreen({ navigation }: Props) {
   const [resources, setResources] = useState<CrisisResource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,8 +91,17 @@ export default function CrisisResourcesScreen({ navigation }: Props) {
 
       setResources(mapped);
     } catch {
-      // Fallback: show hardcoded US 988 resource
+      // Fallback: show hardcoded resources
       setResources([
+        {
+          id: 'ca-988-lifeline',
+          countryCode: 'CA',
+          name: '988 Suicide Crisis Helpline',
+          phone: '988',
+          url: 'https://988.ca',
+          isDefault: true,
+          displayOrder: 1,
+        },
         {
           id: 'us-988-lifeline',
           countryCode: 'US',
@@ -72,16 +109,16 @@ export default function CrisisResourcesScreen({ navigation }: Props) {
           phone: '988',
           url: 'https://988lifeline.org',
           isDefault: true,
-          displayOrder: 1,
+          displayOrder: 2,
         },
         {
           id: 'iasp-directory',
           countryCode: 'INTL',
           name: 'International Association for Suicide Prevention - Crisis Centre Directory',
           phone: null,
-          url: 'https://www.iasp.info/resources/Crisis_Centres/',
+          url: 'https://findahelpline.com/i/iasp',
           isDefault: true,
-          displayOrder: 2,
+          displayOrder: 3,
         },
       ]);
     } finally {
@@ -131,20 +168,23 @@ export default function CrisisResourcesScreen({ navigation }: Props) {
         <View style={styles.disclaimerBanner}>
           <Text style={styles.disclaimerIcon}>⚠️</Text>
           <Text style={styles.disclaimerText}>
-            If you are in crisis, please contact your local hotline or call 988
-            (US Suicide &amp; Crisis Lifeline). You are not alone.
+            If you are in immediate danger or crisis, please contact your local
+            emergency services or one of the helplines listed below. You are not alone.
           </Text>
         </View>
 
         {/* Resource cards */}
         {resources.map((resource) => (
           <View key={resource.id} style={styles.resourceCard}>
-            <Text style={styles.resourceName}>{resource.name}</Text>
-            <Text style={styles.resourceCountry}>
-              {resource.countryCode === 'INTL'
-                ? 'International'
-                : resource.countryCode}
-            </Text>
+            <View style={styles.resourceHeader}>
+              <Text style={styles.countryIcon}>{getCountryIcon(resource.countryCode)}</Text>
+              <View style={styles.resourceHeaderText}>
+                <Text style={styles.resourceName}>{resource.name}</Text>
+                <Text style={styles.resourceCountry}>
+                  {getCountryLabel(resource.countryCode)}
+                </Text>
+              </View>
+            </View>
 
             <View style={styles.resourceActions}>
               {resource.phone && (
@@ -177,10 +217,9 @@ export default function CrisisResourcesScreen({ navigation }: Props) {
         {/* Additional info */}
         <View style={styles.infoSection}>
           <Text style={styles.infoText}>
-            These resources are available 24/7. If you cannot find a local
-            resource, the 988 Suicide &amp; Crisis Lifeline (US) is available as a
-            default, alongside the International Association for Suicide
-            Prevention directory for international resources.
+            These resources are available 24/7. If you cannot find your country
+            listed above, please use the International Association for Suicide
+            Prevention directory to find local support in your area.
           </Text>
         </View>
       </ScrollView>
@@ -261,16 +300,27 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
+  resourceHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  countryIcon: {
+    fontSize: 28,
+    marginRight: 12,
+  },
+  resourceHeaderText: {
+    flex: 1,
+  },
   resourceName: {
     fontSize: 16,
     fontWeight: '700',
     color: '#1A1A1A',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   resourceCountry: {
     fontSize: 13,
     color: '#666666',
-    marginBottom: 12,
   },
   resourceActions: {
     flexDirection: 'row',

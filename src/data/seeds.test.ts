@@ -36,8 +36,18 @@ describe('Seed Data', () => {
   });
 
   describe('SEED_CRISIS_RESOURCES', () => {
-    it('should contain at least 2 crisis resources', () => {
-      expect(SEED_CRISIS_RESOURCES.length).toBeGreaterThanOrEqual(2);
+    it('should contain at least 3 crisis resources', () => {
+      expect(SEED_CRISIS_RESOURCES.length).toBeGreaterThanOrEqual(3);
+    });
+
+    it('should include the Canada 988 Suicide Crisis Helpline', () => {
+      const canada = SEED_CRISIS_RESOURCES.find(
+        (r) => r.id === 'ca-988-lifeline'
+      );
+      expect(canada).toBeDefined();
+      expect(canada!.phone).toBe('988');
+      expect(canada!.countryCode).toBe('CA');
+      expect(canada!.isDefault).toBe(true);
     });
 
     it('should include the 988 Suicide & Crisis Lifeline', () => {
@@ -56,8 +66,16 @@ describe('Seed Data', () => {
       );
       expect(iasp).toBeDefined();
       expect(iasp!.countryCode).toBe('INTL');
-      expect(iasp!.url).toContain('iasp.info');
+      expect(iasp!.url).toContain('findahelpline.com');
       expect(iasp!.isDefault).toBe(true);
+    });
+
+    it('should order Canada before US before International', () => {
+      const ca = SEED_CRISIS_RESOURCES.find((r) => r.countryCode === 'CA');
+      const us = SEED_CRISIS_RESOURCES.find((r) => r.countryCode === 'US');
+      const intl = SEED_CRISIS_RESOURCES.find((r) => r.countryCode === 'INTL');
+      expect(ca!.displayOrder).toBeLessThan(us!.displayOrder);
+      expect(us!.displayOrder).toBeLessThan(intl!.displayOrder);
     });
 
     it('should have unique ids', () => {

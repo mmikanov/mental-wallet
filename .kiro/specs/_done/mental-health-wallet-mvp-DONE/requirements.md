@@ -215,10 +215,11 @@ Mental Health Wallet is a mobile-first application that unifies scattered mental
 #### Acceptance Criteria
 
 1. WHEN the user launches the App for the first time, THE App SHALL display a disclaimer stating "Mental Health Wallet is not a replacement for therapy or professional mental health care" and require the user to acknowledge it before accessing the main wallet screen.
-2. THE App SHALL provide crisis resource links (988 Suicide & Crisis Lifeline for US users and geolocation-aware local crisis hotlines) accessible from the main menu within 2 taps from any screen.
-3. IF the App cannot determine the user's location for local crisis hotlines, THEN THE App SHALL display the US 988 Suicide & Crisis Lifeline as the default resource alongside a link to the International Association for Suicide Prevention crisis centre directory.
+2. THE App SHALL provide crisis resource links accessible from the main menu within 2 taps from any screen. Resources SHALL include country-specific helplines (Canada 988 Suicide Crisis Helpline, US 988 Suicide & Crisis Lifeline) and the IASP international helpline finder directory.
+3. THE App SHALL display crisis resources ordered by country: Canada first, then United States, then International. Each resource SHALL be displayed with a country flag emoji (🇨🇦, 🇺🇸) or globe icon (🌍) alongside its name and country label.
 4. THE App SHALL display the mental health disclaimer in the settings screen and at the top of any analytics view.
-5. THE App SHALL display the crisis disclaimer text "If you are in crisis, please contact [local hotline] or call 988 (US Suicide & Crisis Lifeline)" alongside the crisis resource links on the crisis resources screen.
+5. THE App SHALL display a generic crisis disclaimer banner on the crisis resources screen with text that does not reference any specific country's hotline number, directing users to contact their local emergency services or one of the helplines listed on the page.
+6. THE App SHALL display a generic informational footer on the crisis resources screen directing users who cannot find their country to use the International Association for Suicide Prevention directory to find local support.
 
 ### Requirement 16: Data Privacy and Security
 
