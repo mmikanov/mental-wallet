@@ -472,20 +472,16 @@ export default function SettingsScreen({ navigation }: Props) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>About</Text>
 
-          <View style={styles.disclaimerBox}>
-            <Text style={styles.disclaimerText}>
-              Mental Health Wallet is not a replacement for therapy or
-              professional mental health care. This app is designed as a personal
-              toolkit to complement professional support, not replace it. If you
-              are experiencing a mental health crisis, please reach out to a
-              qualified professional or crisis service.
-            </Text>
-          </View>
-
-          <View style={styles.versionRow}>
-            <Text style={styles.versionLabel}>Version</Text>
-            <Text style={styles.versionValue}>1.0.0</Text>
-          </View>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('About')}
+            accessibilityLabel="About Mental Health Wallet"
+            accessibilityRole="button"
+          >
+            <Text style={styles.menuItemIcon}>ℹ️</Text>
+            <Text style={styles.menuItemText}>About Mental Health Wallet</Text>
+            <Text style={styles.menuItemChevron}>›</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Dev-only tools — hidden in production */}
@@ -682,36 +678,5 @@ const styles = StyleSheet.create({
   },
   menuItemSpinner: {
     marginLeft: 8,
-  },
-  disclaimerBox: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: '#FF9800',
-  },
-  disclaimerText: {
-    fontSize: 14,
-    color: '#4E342E',
-    lineHeight: 20,
-  },
-  versionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
-  },
-  versionLabel: {
-    fontSize: 16,
-    color: '#1A1A1A',
-    fontWeight: '500',
-  },
-  versionValue: {
-    fontSize: 16,
-    color: '#888888',
   },
 });

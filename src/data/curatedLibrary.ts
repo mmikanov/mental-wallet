@@ -229,11 +229,11 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
     rationale: {
       approach: 'psychoeducation',
       inANutshell: 'Labeling emotions by name may help reduce their intensity — putting feelings into words can activate the rational brain and calm the emotional response.',
-      howItWorks: 'Affect labeling engages the prefrontal cortex, which research suggests can dampen amygdala reactivity. By naming what you feel, you create a small cognitive distance from the emotion, which many people find helps them respond rather than react.',
+      howItWorks: 'Affect labeling engages the prefrontal cortex, which research suggests can dampen amygdala reactivity. By naming what you feel, you create a small cognitive distance from the emotion, which many people find helps them respond rather than react. This concept was popularized by Dr. Dan Siegel, clinical professor of psychiatry at UCLA.',
       evidenceLevel: 'moderate',
       researchSummary: [
         'Neuroimaging studies suggest that putting feelings into words may reduce amygdala activation during emotional distress.',
-        'Affect labeling is a core component of several evidence-based therapies including DBT and mindfulness practices.',
+        'The "name it to tame it" concept was popularized by Dr. Dan Siegel and is a core component of several evidence-based therapies including mindfulness practices.',
         'If emotions feel unmanageable or persistent, a therapist can help develop personalized coping strategies.',
       ],
       learnMoreLinks: [
@@ -609,12 +609,12 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
     timeTags: ['1_2_min'],
     rationale: {
       approach: 'self-compassion',
-      inANutshell: 'A brief practice that may help you respond to difficult moments with kindness rather than self-criticism, drawing on three core elements of self-compassion.',
-      howItWorks: 'Self-compassion practices involve acknowledging suffering, recognizing shared humanity, and offering oneself kindness. Research suggests this combination may reduce rumination and self-blame by shifting from threat-based thinking to a soothing response. The three-step structure provides a simple framework accessible even during emotional distress.',
+      inANutshell: 'A brief practice that may help you respond to difficult moments with kindness rather than self-criticism, drawing on three core elements of self-compassion developed by Dr. Kristin Neff.',
+      howItWorks: 'Self-compassion practices involve acknowledging suffering, recognizing shared humanity, and offering oneself kindness. Research by Dr. Kristin Neff suggests this combination may reduce rumination and self-blame by shifting from threat-based thinking to a soothing response. The three-step structure provides a simple framework accessible even during emotional distress.',
       evidenceLevel: 'moderate',
       researchSummary: [
         'Self-compassion interventions are associated with reduced anxiety, depression, and stress in multiple meta-analyses.',
-        'Research suggests self-compassion practices may lower cortisol and activate brain regions linked to caregiving and soothing.',
+        'Research by Dr. Kristin Neff suggests self-compassion practices may lower cortisol and activate brain regions linked to caregiving and soothing.',
         'If anger or emotional distress becomes overwhelming, a therapist can help develop personalized coping strategies.',
       ],
       learnMoreLinks: [
@@ -810,12 +810,12 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
     rationale: {
       approach: 'somatic techniques',
       inANutshell: 'Cold water on the face may trigger the mammalian dive reflex, which can rapidly slow heart rate and help calm intense emotions like anxiety or anger.',
-      howItWorks: 'Submerging the face in cold water or applying cold to the cheeks activates the dive reflex — a physiological response that slows the heart and redirects blood flow. This technique is drawn from DBT distress tolerance skills and may provide quick relief during emotional overwhelm by interrupting the fight-or-flight response.',
+      howItWorks: 'Submerging the face in cold water or applying cold to the cheeks activates the dive reflex — a physiological response that slows the heart and redirects blood flow. This technique is drawn from distress tolerance skills developed by Dr. Marsha M. Linehan and may provide quick relief during emotional overwhelm by interrupting the fight-or-flight response.',
       evidenceLevel: 'moderate',
       researchSummary: [
         'The dive reflex is a well-documented physiological response that research shows can lower heart rate and promote parasympathetic activation.',
-        'DBT distress tolerance protocols include cold water techniques as a recommended strategy for managing acute emotional arousal.',
-        'If you experience frequent intense anger or panic, a therapist trained in DBT or somatic approaches can offer structured support.',
+        'Distress tolerance protocols developed by Dr. Marsha M. Linehan include cold water techniques as a recommended strategy for managing acute emotional arousal.',
+        'If you experience frequent intense anger or panic, a therapist trained in dialectical behavior therapy or somatic approaches can offer structured support.',
       ],
       learnMoreLinks: [
         {
@@ -995,11 +995,11 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
     rationale: {
       approach: 'positive psychology',
       inANutshell: 'Writing down three good things each day may help train your brain to notice positive experiences, which can gradually shift a negative or numb outlook.',
-      howItWorks: 'The Three Good Things exercise asks you to recall and record positive moments from your day. Research in positive psychology suggests this practice may counteract negativity bias by repeatedly directing attention toward what went well. Over time, many people find it becomes easier to notice good moments naturally.',
+      howItWorks: 'The Three Good Things exercise, originally developed by Martin Seligman, Steen, Park, and Peterson (2005), asks you to recall and record positive moments from your day. Research in positive psychology suggests this practice may counteract negativity bias by repeatedly directing attention toward what went well. Over time, many people find it becomes easier to notice good moments naturally.',
       evidenceLevel: 'strong',
       researchSummary: [
-        'The Three Good Things exercise is one of the most studied positive psychology interventions, with research showing sustained improvements in happiness and reductions in depressive symptoms.',
-        'A landmark study found that participants who practiced this exercise daily for one week reported increased happiness lasting up to six months.',
+        'The Three Good Things exercise is one of the most studied positive psychology interventions, originally developed by Seligman, Steen, Park, & Peterson (2005), with research showing sustained improvements in happiness and reductions in depressive symptoms.',
+        'A landmark study found that participants who practiced this exercise daily for one week reported increased happiness lasting up to six months (Seligman et al., 2005, American Psychologist).',
       ],
       learnMoreLinks: [
         {

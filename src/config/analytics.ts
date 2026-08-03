@@ -1,10 +1,9 @@
 /**
  * Analytics configuration — centralized config for the analytics system.
  *
- * Development builds point to the local mock analytics server (task 10.1).
- * Production URL is left as an empty string placeholder until the real
- * backend decision is made. The batch transmitter will not attempt to send
- * when the URL is empty.
+ * Development builds point to the local mock analytics server.
+ * Production builds point to the Cloudflare Worker analytics backend.
+ * The batch transmitter will not attempt to send when the URL is empty.
  *
  * Validates: Requirements 13.8
  */
@@ -14,11 +13,14 @@ import type { TransmitterConfig } from '@/types/analytics';
 /**
  * Analytics base URL.
  * - Dev: local mock server at http://localhost:3001
- * - Production: empty string (deferred backend decision)
+ * - Production: Cloudflare Worker (update after deploying analytics-worker/)
+ *
+ * After deploying the Worker, replace the production URL below with your
+ * actual Worker URL, e.g. 'https://mental-wallet-analytics.<your-subdomain>.workers.dev'
  */
 export const ANALYTICS_BASE_URL: string = __DEV__
   ? 'http://localhost:3001'
-  : '';
+  : 'https://mental-wallet-analytics.mentalwallet.workers.dev';
 
 /**
  * Configurable flush interval in milliseconds.
