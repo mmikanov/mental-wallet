@@ -1,0 +1,12 @@
+name = "mental-wallet-analytics"
+main = "src/index.ts"
+compatibility_date = "2025-07-01"
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "analytics-db"
+database_id = "8996f51a-c715-4007-b470-c711678f741d"
+
+# Environment variables (set via `wrangler secret put`)
+# DASHBOARD_SECRET — required to access GET /dashboard and GET /events

@@ -26,4 +26,5 @@ export type RootStackParamList = {
   WalletInsights: undefined;
   ToolInsights: { cardId: string };
   InsightsHelp: undefined;
+  About: undefined;
 };

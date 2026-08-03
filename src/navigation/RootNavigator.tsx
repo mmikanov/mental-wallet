@@ -33,6 +33,7 @@ import DevEventViewerScreen from '@/screens/DevEventViewerScreen';
 import WalletInsightsScreen from '@/screens/WalletInsightsScreen';
 import ToolInsightsScreen from '@/screens/ToolInsightsScreen';
 import InsightsHelpScreen from '@/screens/InsightsHelpScreen';
+import AboutScreen from '@/screens/AboutScreen';
 import OnboardingNavigator from './OnboardingNavigator';
 import MainTabNavigator from './MainTabNavigator';
 import { hasStartMode, getStartMode, getLastUsedMode } from '@/services/settingsService';
@@ -161,6 +162,7 @@ export default function RootNavigator() {
       <Stack.Screen name="UsageHistory" component={UsageHistoryScreen} />
       <Stack.Screen name="ReminderConfig" component={ReminderConfigScreen} />
       <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+      <Stack.Screen name="About" component={AboutScreen} />
       {__DEV__ && (
         <Stack.Screen name="DevEventViewer" component={DevEventViewerScreen} />
       )}

@@ -1,0 +1,17 @@
+{
+  "name": "mental-wallet-analytics",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate:local": "wrangler d1 execute analytics-db --local --file=./migrations/0001_create_events.sql",
+    "db:migrate:remote": "wrangler d1 execute analytics-db --remote --file=./migrations/0001_create_events.sql",
+    "tail": "wrangler tail"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "4.20250620.0",
+    "typescript": "5.7.3",
+    "wrangler": "4.14.4"
+  }
+}
