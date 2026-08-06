@@ -86,9 +86,9 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
       "If symptoms persist or worsen, consider speaking with a therapist or mental health professional.",
     ],
     learnMoreLinks: [
-      { title: "5-4-3-2-1 Coping Technique for Anxiety – University of Rochester Medical Center", url: "https://www.urmc.rochester.edu/behavioral-health-partners/bhp-blog/april-2018/5-4-3-2-1-coping-technique-for-anxiety" },
+      { title: "5 Grounding Techniques Therapists Use — and Why They Work – Psychology Today", url: "https://www.psychologytoday.com/nz/blog/the-truth-about-exercise-addiction/202508/5-grounding-techniques-therapist-use-and-why-they" },
       { title: "Feeling Anxious? Try the 5-4-3-2-1 Grounding Technique – Verywell Mind", url: "https://www.verywellmind.com/5-4-3-2-1-grounding-technique-8639390" },
-      { title: "Coping Skill Spotlight: 5 4 3 2 1 Grounding Technique – Coping Skills for Kids", url: "https://copingskillsforkids.com/blog/2016/4/27/coping-skill-spotlight-5-4-3-2-1-grounding-technique" },
+      { title: "Grounding Techniques for Anxiety: 10 Evidence-Based Strategies – Therapist.com", url: "https://www.therapist.com/disorders/anxiety/grounding-techniques-for-anxiety/" },
     ],
   },
 },
@@ -133,8 +133,12 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
           url: 'https://www.medicalnewstoday.com/articles/321805',
         },
         {
-          title: 'Box breathing relaxation technique – Sunnybrook Hospital',
-          url: 'https://www.youtube.com/watch?v=tEmt1Znux58',
+          title: 'The Physiological Effects of Slow Breathing in the Healthy Human (why box breathing calms the nervous system) – PMC',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC5709795/',
+        },
+        {
+          title: 'How Breath-Control Can Change Your Life (systematic review of slow breathing effects) – PMC',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC6137615/',
         },
       ],
     },
@@ -180,12 +184,12 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
           url: 'https://www.nhsinform.scot/healthy-living/mental-wellbeing/breathing-and-relaxation-exercises/progressive-muscle-relaxation/',
         },
         {
-          title: 'Grounding Techniques – University of Prince Edward Island',
-          url: 'https://files.upei.ca/vpaf/svpro/grounding_techniques_peirsac.pdf',
+          title: 'Efficacy of Progressive Muscle Relaxation in Adults for Stress, Anxiety, and Depression – PubMed',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/38322293/',
         },
         {
-          title: 'Grounding techniques for anxiety: 10 evidence-based strategies – Therapist.com',
-          url: 'https://www.therapist.com/disorders/anxiety/grounding-techniques-for-anxiety/',
+          title: 'A Contemporary View of Applied Relaxation for Generalized Anxiety Disorder (how muscle relaxation treats GAD) – PMC',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC3797858/',
         },
       ],
     },
@@ -242,12 +246,12 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
           url: 'https://mindfulness.com/mindful-living/name-it-to-tame-it',
         },
         {
-          title: 'Grounding Techniques – University of Prince Edward Island',
-          url: 'https://files.upei.ca/vpaf/svpro/grounding_techniques_peirsac.pdf',
+          title: 'Putting Feelings Into Words (the research behind "Name It to Tame It") – PubMed',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/17576282/',
         },
         {
-          title: 'Grounding Techniques To Help Calm Anxiety – Cleveland Clinic',
-          url: 'https://health.clevelandclinic.org/grounding-techniques',
+          title: 'Subjective Responses to Emotional Stimuli During Labeling, Reappraisal, and Distraction (why naming feelings works) – PMC',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC3444304/',
         },
       ],
     },
@@ -311,8 +315,16 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
       ],
       learnMoreLinks: [
         {
-          title: 'Cognitive Behavioral Therapy overview — NHS',
-          url: 'https://nhs.uk/mental-health/talking-therapies-medicine-treatments/talking-therapies-and-counselling/cognitive-behavioural-therapy-cbt/overview/',
+          title: 'Cognitive Behavioral Therapy (how thoughts, feelings, and behaviors connect) – Simply Psychology',
+          url: 'https://www.simplypsychology.org/cognitive-therapy.html',
+        },
+        {
+          title: 'Cognitive Behavior Therapy (the Thought–Feeling–Action cycle explained) – StatPearls/NCBI',
+          url: 'https://www.ncbi.nlm.nih.gov/books/NBK470241/',
+        },
+        {
+          title: 'Cognitive Behavioral Therapy for Depression (how mapping thoughts, feelings, and behaviors supports change) – PMC',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC7001356/',
         },
       ],
     },
@@ -362,8 +374,16 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
       ],
       learnMoreLinks: [
         {
-          title: 'Cognitive restructuring techniques — PubMed',
-          url: 'https://pubmed.ncbi.nlm.nih.gov/28527096/',
+          title: 'Catastrophizing: Definition, Examples & How to Stop – CBT Los Angeles',
+          url: 'https://cogbtherapy.com/cbt-blog/cognitive-distortions-definition-of-catastrophizing',
+        },
+        {
+          title: 'Cognitive Restructuring and Psychotherapy Outcome (the technique behind Decatastrophizing) – PMC',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC10440210/',
+        },
+        {
+          title: 'A Randomized Clinical Trial of Targeted CBT to Reduce Catastrophizing (showing reduced anxiety) – PubMed',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/17690017/',
         },
       ],
     },
@@ -415,8 +435,16 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
       ],
       learnMoreLinks: [
         {
-          title: 'Mindfulness-based stress reduction overview — PMC',
-          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC6312586/',
+          title: 'Body Scan Meditation: Benefits and How to Do It – Verywell Mind',
+          url: 'https://www.verywellmind.com/body-scan-meditation-why-and-how-3144782',
+        },
+        {
+          title: 'The effects of body scan meditation: A systematic review and meta-analysis – PubMed',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/35538557/',
+        },
+        {
+          title: 'Effects of Mindfulness on Psychological Health (review covering body awareness practices) – PMC',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC3679190/',
         },
       ],
     },
@@ -469,8 +497,16 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
       ],
       learnMoreLinks: [
         {
-          title: 'Self-monitoring in behavioral interventions — PMC',
-          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC5568610/',
+          title: 'Mobile Therapy: Case Study Evaluations of a Cell Phone Application for Emotional Self-Awareness (how mood self-monitoring helps) – PubMed',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/20439251/',
+        },
+        {
+          title: 'The Clinical Impacts of Mobile Mood-Monitoring in Young People (showing reduced negative mood) – Frontiers',
+          url: 'https://www.frontiersin.org/journals/psychiatry/articles/10.3389/fpsyt.2021.687270/full',
+        },
+        {
+          title: 'Mood Monitoring, Mood Tracking, and Ambulatory Assessment Interventions (systematic review of mood monitoring benefits) – PMC',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC12779106/',
         },
       ],
     },
@@ -510,8 +546,16 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
       ],
       learnMoreLinks: [
         {
-          title: 'Positive psychology interventions — a meta-analysis',
-          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC4760272/',
+          title: 'Positive Psychology Interventions (the research behind exercises like Win of the Day) – PubMed',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/23390882/',
+        },
+        {
+          title: 'Current Progress and Future Directions for Theory and Research on Savoring (why celebrating daily wins boosts wellbeing) – PMC',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC8712667/',
+        },
+        {
+          title: 'From Small Steps to Big Wins: The Importance of Celebrating – Psychology Today',
+          url: 'https://www.psychologytoday.com/us/blog/empower-your-mind/202406/from-small-steps-to-big-wins-the-importance-of-celebrating',
         },
       ],
     },
@@ -574,8 +618,16 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
       ],
       learnMoreLinks: [
         {
-          title: 'Gratitude and sleep quality research — PMC',
-          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC6296939/',
+          title: 'How Gratitude Helps You Sleep at Night – Psychology Today',
+          url: 'https://www.psychologytoday.com/blog/minding-the-body/201111/how-gratitude-helps-you-sleep-night',
+        },
+        {
+          title: 'Gratitude Influences Sleep Through the Mechanism of Pre-Sleep Cognitions (how positive thoughts before bed improve rest) – PubMed',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/19073292/',
+        },
+        {
+          title: 'The Impact of a Brief Gratitude Intervention on Subjective Well-Being, Biology and Sleep (how evening gratitude improves sleep quality) – PubMed',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/25736389/',
         },
       ],
     },
@@ -619,8 +671,16 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
       ],
       learnMoreLinks: [
         {
-          title: 'Self-compassion and mental health — PubMed',
-          url: 'https://pubmed.ncbi.nlm.nih.gov/20633387/',
+          title: 'Exploring Compassion (meta-analysis showing self-compassion\'s protective effects) – PubMed',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/22796446/',
+        },
+        {
+          title: 'Try a 5-Minute Self-Compassion Break – Mindful.org',
+          url: 'https://www.mindful.org/try-a-self-compassion-break/',
+        },
+        {
+          title: 'Self-Compassion: Theory, Method, Research, and Intervention (Kristin Neff\'s comprehensive review of the three components) – PDF',
+          url: 'https://self-compassion.org/wp-content/uploads/2023/01/Neff-2023.pdf',
         },
       ],
     },
@@ -660,8 +720,8 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
       ],
       learnMoreLinks: [
         {
-          title: 'Self-compassion: theory and research — ScienceDirect',
-          url: 'https://sciencedirect.com/science/article/pii/S0272735812001651',
+          title: 'Common Humanity as an Under-acknowledged Mechanism for Mental Health Peer Support (how recognizing shared struggle helps us feel less alone) – Springer',
+          url: 'https://link.springer.com/article/10.1007/s11469-022-00916-9',
         },
       ],
     },
@@ -715,8 +775,16 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
       ],
       learnMoreLinks: [
         {
-          title: 'Behavioral activation for depression — PubMed',
-          url: 'https://pubmed.ncbi.nlm.nih.gov/24313570/',
+          title: 'How Small Steps Can Help You Combat Loneliness – Psychology Today',
+          url: 'https://www.psychologytoday.com/us/blog/the-narrative-nurse-practitioner/202404/how-small-steps-can-help-you-combat-loneliness',
+        },
+        {
+          title: 'One way to combat loneliness? Strengthen relationships you already have – Harvard Health',
+          url: 'https://www.health.harvard.edu/mind-and-mood/one-way-to-combat-loneliness-strengthen-relationships-you-already-have',
+        },
+        {
+          title: 'Behavioural Activation for Depression: An Update of Meta-Analysis (the science behind small steps toward connection) – PMC',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC4061095/',
         },
       ],
     },
@@ -768,8 +836,16 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
       ],
       learnMoreLinks: [
         {
-          title: 'Walking meditation and anxiety reduction — PubMed',
-          url: 'https://pubmed.ncbi.nlm.nih.gov/25196403/',
+          title: 'What Is Walking Meditation? How To Do It (the practice behind Mindful Walking) – Cleveland Clinic',
+          url: 'https://health.clevelandclinic.org/walking-meditation',
+        },
+        {
+          title: 'Mindful Walking in Psychologically Distressed Individuals: A Randomized Controlled Trial – PMC',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC3747483/',
+        },
+        {
+          title: 'The Effects of a Guided Mindful Walk on Mental Health (reduces anxiety and stress) – PubMed',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/38860179/',
         },
       ],
     },
@@ -819,8 +895,16 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
       ],
       learnMoreLinks: [
         {
-          title: 'Dive reflex and emotional regulation — PubMed',
-          url: 'https://pubmed.ncbi.nlm.nih.gov/29227558/',
+          title: 'Ice and Anxiety (the Mammalian Dive Response behind the Cold Water Reset) – Psychology Today',
+          url: 'https://www.psychologytoday.com/za/blog/dbt-for-daily-life/202504/ice-and-anxiety',
+        },
+        {
+          title: 'The Implications of the Diving Response in Reducing Panic Symptoms (clinical evidence for the Cold Water Reset) – Frontiers',
+          url: 'https://www.frontiersin.org/journals/psychiatry/articles/10.3389/fpsyt.2021.784884/full',
+        },
+        {
+          title: 'Physiology, Diving Reflex (how cold water triggers your body\'s calming response) – StatPearls/NCBI',
+          url: 'https://www.ncbi.nlm.nih.gov/books/NBK538245/',
         },
       ],
     },
@@ -876,8 +960,16 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
       ],
       learnMoreLinks: [
         {
-          title: 'Grounding techniques for anxiety — NHS',
-          url: 'https://nhs.uk/mental-health/self-help/tips-and-support/how-to-reduce-stress/',
+          title: 'How to Build an Anxiety Toolkit (using all five senses to self-soothe) – JED Foundation',
+          url: 'https://jedfoundation.org/resource/how-to-build-an-anxiety-toolkit/',
+        },
+        {
+          title: 'Sensory Approaches in Mental Health (why engaging your senses helps) – PubMed',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/26358506/',
+        },
+        {
+          title: 'Trauma-Informed Care in Behavioral Health Services: Grounding Strategies (how sensory tools help when emotions flood) – NCBI',
+          url: 'https://www.ncbi.nlm.nih.gov/books/NBK207188/box/part1_ch4.box5/',
         },
       ],
     },
@@ -939,8 +1031,16 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
       ],
       learnMoreLinks: [
         {
-          title: 'Cognitive therapy for depression — PMC',
-          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC8993759/',
+          title: 'Examine the Evidence: A Powerful CBT Technique – CBT Therapy',
+          url: 'https://www.cbttherapy.com/post/examine-the-evidence-a-powerful-cbt-technique',
+        },
+        {
+          title: 'Cognitive Behavior Therapy (the framework behind Evidence For & Against) – StatPearls/NCBI',
+          url: 'https://www.ncbi.nlm.nih.gov/books/NBK470241/',
+        },
+        {
+          title: 'Cognitive Restructuring and Psychotherapy Outcome (meta-analysis supporting thought challenging) – PMC',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC10440210/',
         },
       ],
     },
@@ -1003,8 +1103,16 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
       ],
       learnMoreLinks: [
         {
-          title: 'Three Good Things intervention research — PMC',
-          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC4760272/',
+          title: 'Three Good Things – Greater Good in Action (UC Berkeley)',
+          url: 'https://ggia.berkeley.edu/practice/three-good-things',
+        },
+        {
+          title: 'Do Positive Psychology Exercises Work? (replication confirming Three Good Things\' lasting effects) – PubMed',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/24469930/',
+        },
+        {
+          title: '"Three Good Things" Digital Intervention Among Health Care Workers – PMC',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC10202508/',
         },
       ],
     },
@@ -1056,8 +1164,16 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
       ],
       learnMoreLinks: [
         {
-          title: 'Self-compassion and self-criticism — PubMed',
-          url: 'https://pubmed.ncbi.nlm.nih.gov/23070875/',
+          title: 'Rewiring Our Inner Critic: Cultivating Kindness and Positivity – Psychology Today',
+          url: 'https://www.psychologytoday.com/gb/blog/disconnection-dynamics/202406/rewiring-our-inner-critic-cultivating-kindness-and-positivity',
+        },
+        {
+          title: 'Becoming Aware of Inner Self-Critique and Kinder Toward Self (how self-compassion training shifts self-talk) – PMC',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC6908517/',
+        },
+        {
+          title: 'Breaking the Vicious Cycles of Self-Criticism (practical approaches to a kinder inner voice) – PMC',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11916919/',
         },
       ],
     },
@@ -1117,8 +1233,16 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
       ],
       learnMoreLinks: [
         {
-          title: 'ACT and psychological flexibility — PubMed',
-          url: 'https://pubmed.ncbi.nlm.nih.gov/22506909/',
+          title: 'Navigating the Path to Fulfillment (embrace psychological flexibility — the approach behind giving yourself permission) – Mindful.org',
+          url: 'https://www.mindful.org/navigating-the-path-to-fulfillment-embrace-psychological-flexibility-with-act-for-beginners/',
+        },
+        {
+          title: 'Acceptance and Commitment Therapy: Towards a Unified Model of Behavior Change (why values-aligned permission reduces guilt) – PMC',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC6502411/',
+        },
+        {
+          title: 'A Meta-Analysis of the Efficacy of ACT (evidence that the approach behind Permission Slip works) – PubMed',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/25547522/',
         },
       ],
     },
@@ -1178,8 +1302,16 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
       ],
       learnMoreLinks: [
         {
-          title: 'Gratitude interventions and wellbeing — PMC',
-          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC6296939/',
+          title: 'The Ripple Effects of a Thank You – Greater Good (UC Berkeley)',
+          url: 'https://greatergood.berkeley.edu/article/item/the_ripple_effects_of_a_thank_you',
+        },
+        {
+          title: 'Are Some Ways of Expressing Gratitude More Beneficial Than Others? (why sending a personal message boosts wellbeing) – PMC',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC10104980/',
+        },
+        {
+          title: 'Gratitude Adds More Than Years – Stanford Longevity Center',
+          url: 'https://longevity.stanford.edu/gratitude-adds-more-than-years/',
         },
       ],
     },
@@ -1238,8 +1370,16 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
       ],
       learnMoreLinks: [
         {
-          title: 'Active listening and relationship quality — PubMed',
-          url: 'https://pubmed.ncbi.nlm.nih.gov/27064394/',
+          title: 'Active Listening Tips for Improved Communication – HelpGuide.org',
+          url: 'https://www.helpguide.org/relationships/communication/active-listening',
+        },
+        {
+          title: 'Perceiving Active Listening Activates the Reward System (why being heard feels good) – PMC',
+          url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC4270393/',
+        },
+        {
+          title: 'Listening Quality Leads to Greater Working Alliance and Well-Being (how active listening improves relationships) – PubMed',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/38946045/',
         },
       ],
     },
