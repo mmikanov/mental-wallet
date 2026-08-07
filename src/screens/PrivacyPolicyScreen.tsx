@@ -16,6 +16,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
+import { APP_NAME, APP_CONTACT_EMAIL } from '@/config/appInfo';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PrivacyPolicy'>;
 
@@ -24,7 +25,7 @@ const LAST_UPDATED = 'June 15, 2025';
 const PRIVACY_POLICY_SECTIONS = [
   {
     title: '1. Data Controller',
-    body: `Mental Health Wallet ("we", "us", or "our") is the data controller responsible for your information when you use this application.\n\nContact: privacy@mentalhealthwallet.app`,
+    body: `${APP_NAME} ("we", "us", or "our") is the data controller responsible for your information when you use this application.\n\nContact: ${APP_CONTACT_EMAIL}`,
   },
   {
     title: '2. What Data We Collect',
@@ -48,7 +49,7 @@ const PRIVACY_POLICY_SECTIONS = [
   },
   {
     title: "7. Children's Privacy",
-    body: `Mental Health Wallet is not directed at children under the age of 13. We do not knowingly collect data from children under 13. If you believe a child under 13 has used this app, please contact us and we will take appropriate steps to remove any associated anonymous data.\n\nUsers between 13 and 18 should review this policy with a parent or guardian.`,
+    body: `${APP_NAME} is not directed at children under the age of 13. We do not knowingly collect data from children under 13. If you believe a child under 13 has used this app, please contact us and we will take appropriate steps to remove any associated anonymous data.\n\nUsers between 13 and 18 should review this policy with a parent or guardian.`,
   },
   {
     title: '8. Data Security',
@@ -80,7 +81,7 @@ export default function PrivacyPolicyScreen({ navigation }: Props) {
         <Text style={styles.lastUpdated}>Last updated: {LAST_UPDATED}</Text>
 
         <Text style={styles.introText}>
-          This Privacy Policy describes how Mental Health Wallet handles your information.
+          This Privacy Policy describes how {APP_NAME} handles your information.
           We are committed to protecting your privacy and maintaining your trust.
         </Text>
 

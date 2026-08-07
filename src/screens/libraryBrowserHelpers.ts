@@ -71,7 +71,7 @@ export function getLibraryCardButtonState(
   const isAlreadyInWallet = activeCards.some(
     (c) =>
       (c.sourceLibraryId != null && c.sourceLibraryId === libraryCardId) ||
-      (c.title === libraryCardTitle && c.originBadge === 'library')
+      (c.title === libraryCardTitle && (c.originBadge === 'library' || c.originBadge === 'app'))
   );
 
   if (isAlreadyInWallet) {

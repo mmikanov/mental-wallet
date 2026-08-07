@@ -27,8 +27,8 @@ export async function generateInsightsMockData(days?: number): Promise<InsightsM
   const db = await getDatabase();
 
   // Get active wallet cards (exclude session_launcher and archived)
-  const cards = await db.getAllAsync<{ id: string }>(
-    `SELECT id FROM cards WHERE is_archived = 0 AND card_type != 'session_launcher'`
+  const cards = await db.getAllAsync<{ id: string; origin_badge: string }>(
+    `SELECT id, origin_badge FROM cards WHERE is_archived = 0 AND card_type != 'session_launcher'`
   );
 
   if (cards.length === 0) {
@@ -36,6 +36,7 @@ export async function generateInsightsMockData(days?: number): Promise<InsightsM
   }
 
   const cardIds = cards.map((c) => c.id);
+  const appCardIds = new Set(cards.filter((c) => c.origin_badge === 'app').map((c) => c.id));
 
   // Load each card's controls from the DB
   const cardControls = new Map<string, Array<{ id: string; type: string; config: string }>>();
@@ -217,19 +218,23 @@ export async function generateInsightsMockData(days?: number): Promise<InsightsM
       });
 
       // Duration record
-      const durationVariance = (Math.random() - 0.5) * typicalDuration * 0.5;
-      const activeDuration = Math.max(30, Math.round(typicalDuration + durationVariance));
-      const startedAt = new Date(new Date(completedAt).getTime() - activeDuration * 1000);
-      const endStatus = Math.random() < 0.85 ? 'completed' : 'collapsed';
+      // For external app cards: skip duration record entirely (we don't know how long they used the external app)
+      // For native cards: use typical duration with variance
+      const isAppCard = appCardIds.has(cardId);
+      if (!isAppCard) {
+        const activeDuration = Math.max(30, Math.round(typicalDuration + (Math.random() - 0.5) * typicalDuration * 0.5));
+        const startedAt = new Date(new Date(completedAt).getTime() - activeDuration * 1000).toISOString();
+        const endStatus = Math.random() < 0.85 ? 'completed' : 'collapsed';
 
-      durations.push({
-        id: Crypto.randomUUID(),
-        card_id: cardId,
-        started_at: startedAt.toISOString(),
-        ended_at: completedAt,
-        active_duration_sec: activeDuration,
-        end_status: endStatus,
-      });
+        durations.push({
+          id: Crypto.randomUUID(),
+          card_id: cardId,
+          started_at: startedAt,
+          ended_at: completedAt,
+          active_duration_sec: activeDuration,
+          end_status: endStatus,
+        });
+      }
 
       // Outcome response (~70% of completions)
       if (Math.random() < 0.7) {

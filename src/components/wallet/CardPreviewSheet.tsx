@@ -126,6 +126,7 @@ export default function CardPreviewSheet({
           iconValue: card.iconValue,
           size: 48,
           fallbackEmoji: card.iconValue || '📋',
+          sourceId: card.id,
         })}
       </View>
 
@@ -187,15 +188,35 @@ export default function CardPreviewSheet({
             {cardShellContent}
           </View>
 
-          {/* Controls (read-only) */}
-          <View style={styles.controlsContainer}>
-            <ControlRenderer
-              controls={controls}
-              values={{}}
-              onChange={() => {}}
-              readOnly={true}
-            />
-          </View>
+          {/* Controls (read-only) — hidden for external app cards */}
+          {!card.externalApp && (
+            <View style={styles.controlsContainer}>
+              <ControlRenderer
+                controls={controls}
+                values={{}}
+                onChange={() => {}}
+                readOnly={true}
+              />
+            </View>
+          )}
+
+          {/* External app indicator */}
+          {card.externalApp && (
+            <View style={styles.controlsContainer}>
+              <View style={styles.externalAppNote}>
+                <Text style={styles.externalAppNoteIcon}>↗</Text>
+                <Text style={styles.externalAppNoteText}>
+                  Opens in {card.externalApp.appName}
+                </Text>
+              </View>
+              {/* Inline affiliate disclosure (FTC — visible at discovery point) */}
+              {(!!card.externalApp.hasAffiliateLink || card.controls.some((c) => c.type === 'link_button' && (c.config as any).isAffiliate)) && (
+                <Text style={styles.inlineDisclosure}>
+                  Affiliate link — we may earn a commission
+                </Text>
+              )}
+            </View>
+          )}
         </ScrollView>
 
         {/* Footer */}
@@ -256,6 +277,7 @@ export default function CardPreviewSheet({
           rationale={card.rationale}
           cardTitle={card.title}
           isDistressRelated={isDistressRelated}
+          showAffiliateDisclosure={!!card.externalApp?.hasAffiliateLink || card.controls.some((c) => c.type === 'link_button' && (c.config as any).isAffiliate)}
           onDismiss={() => setRationaleVisible(false)}
           onCrisisResourcesPress={() => {
             setRationaleVisible(false);
@@ -337,6 +359,34 @@ const styles = StyleSheet.create({
   },
   controlsContainer: {
     paddingBottom: 16,
+  },
+  externalAppNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#F0F9FF',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  externalAppNoteIcon: {
+    fontSize: 16,
+    color: '#0284C7',
+    marginRight: 8,
+  },
+  externalAppNoteText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#0284C7',
+  },
+  inlineDisclosure: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 8,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   footer: {
     borderTopWidth: StyleSheet.hairlineWidth,

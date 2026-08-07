@@ -94,6 +94,7 @@ export default function CollapsedStack({
           iconValue: topCard.iconValue,
           size: 20,
           fallbackEmoji: topCard.iconValue || '📋',
+          sourceId: topCard.sourceLibraryId || topCard.id,
         })}
         <Text
           style={[styles.topCardTitle, { color: textColor }]}

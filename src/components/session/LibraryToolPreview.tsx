@@ -9,6 +9,7 @@ import type { Control } from '@/types/index';
 import ControlRenderer from '@/components/controls/ControlRenderer';
 import { RationaleEntryPoint } from '@/components/rationale/RationaleEntryPoint';
 import { RationaleSheet } from '@/components/rationale/RationaleSheet';
+import { renderCardIcon } from '@/utils/renderCardIcon';
 
 interface LibraryToolPreviewProps {
   card: CuratedCardDefinition;
@@ -63,7 +64,15 @@ export default function LibraryToolPreview({
       <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
         {/* Card shell */}
         <View style={[styles.cardShell, { backgroundColor: card.backgroundValue || '#F5F5F5' }]}>
-          <Text style={styles.icon}>{card.iconValue}</Text>
+          <View style={styles.iconContainer}>
+            {renderCardIcon({
+              iconType: card.iconType,
+              iconValue: card.iconValue,
+              size: 48,
+              fallbackEmoji: card.iconType === 'third_party' ? '📋' : (card.iconValue || '📋'),
+              sourceId: card.id,
+            })}
+          </View>
           <Text style={styles.title}>{card.title}</Text>
           <Text style={styles.description}>
             {card.description}
@@ -146,9 +155,10 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 16,
   },
-  icon: {
-    fontSize: 36,
+  iconContainer: {
     marginBottom: 8,
+    width: 48,
+    height: 48,
   },
   title: {
     fontSize: 20,

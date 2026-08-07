@@ -70,6 +70,7 @@ export default function CardEdge({
             iconValue: card.iconValue,
             size: 28,
             fallbackEmoji: card.iconValue || '📋',
+            sourceId: card.sourceLibraryId || card.id,
           })}
         </View>
         <Text

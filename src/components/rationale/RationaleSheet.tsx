@@ -31,6 +31,7 @@ import {
 } from 'react-native';
 import type { RationaleMetadata } from '@/types/rationale';
 import { getEvidenceLevelLabel } from '@/utils/evidenceLevelLabels';
+import { APP_NAME } from '@/config/appInfo';
 
 interface RationaleSheetProps {
   visible: boolean;
@@ -39,6 +40,8 @@ interface RationaleSheetProps {
   cardTitle: string;
   /** Whether the card's emotion tags include distress emotions */
   isDistressRelated: boolean;
+  /** Whether to show affiliate disclosure (true when card has hasAffiliateLink flag set) */
+  showAffiliateDisclosure?: boolean;
   onDismiss: () => void;
   /** Navigate to Crisis Resources screen */
   onCrisisResourcesPress: () => void;
@@ -53,6 +56,7 @@ export function RationaleSheet({
   rationale,
   cardTitle,
   isDistressRelated,
+  showAffiliateDisclosure = false,
   onDismiss,
   onCrisisResourcesPress,
 }: RationaleSheetProps) {
@@ -176,6 +180,15 @@ export function RationaleSheet({
                 <Text style={styles.disclaimerText}>
                   This tool draws on general wellbeing principles. It has not been
                   specifically studied in this exact form.
+                </Text>
+              </View>
+            )}
+
+            {/* Affiliate disclosure (FTC compliance) */}
+            {showAffiliateDisclosure && (
+              <View style={styles.affiliateDisclosure}>
+                <Text style={styles.affiliateDisclosureText}>
+                  {APP_NAME} may earn a commission if you subscribe through this link. This doesn't affect which tools we show you.
                 </Text>
               </View>
             )}
@@ -358,5 +371,18 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#DC2626',
     marginTop: 8,
+  },
+  affiliateDisclosure: {
+    marginBottom: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+  },
+  affiliateDisclosureText: {
+    fontSize: 12,
+    color: '#6B7280',
+    lineHeight: 17,
+    fontStyle: 'italic',
   },
 });

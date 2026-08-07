@@ -48,6 +48,7 @@ const ORIGIN_LABEL_MAP: Record<OriginBadge, string> = {
   library: 'Library',
   my_tool: 'My Tool',
   community: 'Community',
+  app: 'App',
 };
 
 const CATEGORY_IDS = [

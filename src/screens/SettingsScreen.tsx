@@ -30,6 +30,7 @@ import { useAnalyticsStore } from '@/stores/analyticsStore';
 import { AdminKpiBadgeTools } from '@/components/settings/AdminKpiBadgeTools';
 import { SeedInsightsButton } from '@/components/settings/SeedInsightsButton';
 import { getFlushIntervalMs, setFlushIntervalMs } from '@/config/analytics';
+import { APP_NAME } from '@/config/appInfo';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 
@@ -475,11 +476,11 @@ export default function SettingsScreen({ navigation }: Props) {
           <TouchableOpacity
             style={styles.menuItem}
             onPress={() => navigation.navigate('About')}
-            accessibilityLabel="About Mental Health Wallet"
+            accessibilityLabel={`About ${APP_NAME}`}
             accessibilityRole="button"
           >
             <Text style={styles.menuItemIcon}>ℹ️</Text>
-            <Text style={styles.menuItemText}>About Mental Health Wallet</Text>
+            <Text style={styles.menuItemText}>About {APP_NAME}</Text>
             <Text style={styles.menuItemChevron}>›</Text>
           </TouchableOpacity>
         </View>

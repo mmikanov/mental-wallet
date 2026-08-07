@@ -241,6 +241,7 @@ export default function FocusedCardView({
           iconValue: card.iconValue,
           size: 48,
           fallbackEmoji: card.iconValue || '📋',
+          sourceId: card.sourceLibraryId || card.id,
         })}
       </View>
 
@@ -260,6 +261,7 @@ export default function FocusedCardView({
         <RationaleEntryPoint
           inANutshell={rationale?.inANutshell}
           onPress={handleRationalePress}
+          color={isLight ? undefined : '#93C5FD'}
         />
       </Text>
 
@@ -298,6 +300,7 @@ export default function FocusedCardView({
                         iconValue: card.iconValue,
                         size: 24,
                         fallbackEmoji: card.iconValue || '📋',
+                        sourceId: card.sourceLibraryId || card.id,
                       })}
                     </View>
                     <Text
@@ -331,6 +334,7 @@ export default function FocusedCardView({
             rationale={rationale}
             cardTitle={card.title}
             isDistressRelated={isDistressRelated}
+            showAffiliateDisclosure={!!curatedCard?.externalApp?.hasAffiliateLink || card.controls.some((c) => c.type === 'link_button' && (c.config as any).isAffiliate) || curatedCard?.controls.some((c) => c.type === 'link_button' && (c.config as any).isAffiliate)}
             onDismiss={handleRationaleDismiss}
             onCrisisResourcesPress={handleCrisisResourcesPress}
           />
@@ -416,6 +420,7 @@ export default function FocusedCardView({
           rationale={rationale}
           cardTitle={card.title}
           isDistressRelated={isDistressRelated}
+          showAffiliateDisclosure={!!curatedCard?.externalApp?.hasAffiliateLink || card.controls.some((c) => c.type === 'link_button' && (c.config as any).isAffiliate) || curatedCard?.controls.some((c) => c.type === 'link_button' && (c.config as any).isAffiliate)}
           onDismiss={handleRationaleDismiss}
           onCrisisResourcesPress={handleCrisisResourcesPress}
         />
@@ -506,6 +511,13 @@ const styles = StyleSheet.create({
   badgeRow: {
     flexDirection: 'row',
     marginBottom: 8,
+  },
+  affiliateDisclosure: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    fontStyle: 'italic',
+    marginTop: 6,
+    marginBottom: 4,
   },
   statsContainer: {
     paddingHorizontal: 20,

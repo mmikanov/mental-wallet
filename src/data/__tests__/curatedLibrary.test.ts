@@ -62,7 +62,7 @@ describe('Curated Library Validation', () => {
       expect(card.id).toBeTruthy();
       expect(card.title).toBeTruthy();
       expect(card.description).toBeTruthy();
-      expect(card.iconType).toBe('emoji');
+      expect(card.iconType).toMatch(/^(emoji|third_party)$/);
       expect(card.iconValue).toBeTruthy();
       expect(card.backgroundType).toBe('color');
       expect(card.backgroundValue).toMatch(/^#[0-9A-Fa-f]{6}$/);

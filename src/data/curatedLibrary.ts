@@ -10,6 +10,8 @@
 
 import type { ControlType, ControlConfig, EmotionType, ContextType, TimeType } from '@/types/index';
 import type { RationaleMetadata } from '@/types/rationale';
+import type { ExternalAppConfig } from '@/types/externalApp';
+import { EXTERNAL_APP_CARDS } from './externalAppCards';
 
 export interface CuratedControlDefinition {
   type: ControlType;
@@ -33,6 +35,7 @@ export interface CuratedCardDefinition {
   contextTags?: ContextType[];
   timeTags?: TimeType[];
   rationale?: RationaleMetadata;
+  externalApp?: ExternalAppConfig;
 }
 
 /**
@@ -1384,6 +1387,9 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
       ],
     },
   },
+
+  // ─── External App Tools (imported from externalAppCards.ts) ─────────────────
+  ...EXTERNAL_APP_CARDS,
 ];
 
 /**

@@ -1,12 +1,13 @@
 /**
  * OriginBadge — Small pill/tag showing the card's origin source.
  *
- * Displays "Library", "Community", or "My tool" with color coding:
+ * Displays "Library", "Community", "My tool", or "App" with color coding:
  * - Library: blue
  * - Community: green
  * - My tool: purple
+ * - App: dark blue (external wellness apps)
  *
- * Validates: Requirements 9.1
+ * Validates: Requirements 9.1, External App Tools 1.2
  */
 
 import React from 'react';
@@ -21,6 +22,7 @@ const BADGE_CONFIG: Record<OriginBadgeType, { label: string; color: string; back
   library: { label: 'Library', color: '#1A56DB', backgroundColor: '#DBEAFE' },
   community: { label: 'Community', color: '#047857', backgroundColor: '#D1FAE5' },
   my_tool: { label: 'My tool', color: '#6B21A8', backgroundColor: '#EDE9FE' },
+  app: { label: 'App', color: '#1D4ED8', backgroundColor: '#DBEAFE' },
 };
 
 export default function OriginBadge({ origin }: OriginBadgeProps) {

@@ -29,7 +29,8 @@ export type AnalyticsEventType =
   | 'session_ended'
   | 'guided_checkin_started'
   | 'guided_checkin_completed'
-  | 'insights_viewed';
+  | 'insights_viewed'
+  | 'external_app_launched';
 
 // --- Base Event Interface ---
 
@@ -155,6 +156,16 @@ export type GuidedCheckinCompletedEvent = AnalyticsEventBase & {
   };
 };
 
+export type ExternalAppLaunchedEvent = AnalyticsEventBase & {
+  event_type: 'external_app_launched';
+  properties: {
+    card_id: string;
+    app_name: string;
+    launch_method: 'deep_link' | 'app_store' | 'web_fallback' | 'affiliate_fallback';
+    has_affiliate: boolean;
+  };
+};
+
 // --- Discriminated Union of All Analytics Events ---
 
 export type AnalyticsEvent =
@@ -177,7 +188,8 @@ export type AnalyticsEvent =
   | ExternalResourceOpenedEvent
   | SessionEndedEvent
   | GuidedCheckinStartedEvent
-  | GuidedCheckinCompletedEvent;
+  | GuidedCheckinCompletedEvent
+  | ExternalAppLaunchedEvent;
 
 // --- Event Queue ---
 
