@@ -5,7 +5,7 @@
 
 // --- Enums and Literal Types ---
 
-export type OriginBadge = 'library' | 'community' | 'my_tool';
+export type OriginBadge = 'library' | 'community' | 'my_tool' | 'app';
 
 export type ControlType =
   | 'static_text'
@@ -83,6 +83,8 @@ export interface LinkButtonConfig {
   label: string;
   targetUrl: string;
   fallbackUrl?: string;
+  /** Admin flag: marks the fallback URL as an affiliate link (triggers FTC disclosure) */
+  isAffiliate?: boolean;
 }
 
 export interface DisplayMediaConfig {

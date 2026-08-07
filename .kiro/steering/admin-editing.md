@@ -63,3 +63,34 @@
 4. **Compare against static source of truth** — Draft status is determined by diff, not by mere existence of DB data.
 5. **Admin mode is Zustand-based** — it persists across screen navigations within a session but resets on screen blur for CardCreator. The Library screen has its own triple-tap activation.
 6. **`createStaticOverride` is idempotent-ish** — it tries INSERT, swallows duplicate key errors. The existing row (with any rationale data) is preserved.
+
+## Operator Workflow: Shipping a Card Edit to Users
+
+Admin edits create DB overrides that only affect *your* device. To ship changes to all users:
+
+### Steps
+
+1. **Edit in admin mode** — Triple-tap Library title → find card → Edit → make changes (shell, controls, rationale, affiliate toggle, etc.) → Save
+2. **Verify** — Preview the card in the library to confirm it looks right
+3. **Export** — In admin mode, tap Export on the card → TypeScript literal copied to clipboard
+4. **Paste into code** — Replace the card's entry in the appropriate source file:
+   - Native library cards: `src/data/curatedLibrary.ts`
+   - External app cards: `src/data/externalAppCards.ts`
+5. **Delete the DB override** — In admin mode, tap Delete → "Revert to Original" (removes the DB copy so the updated static definition takes effect)
+6. **Verify again** — Confirm the card now loads from the static file (no Draft/Stale badge)
+7. **Build and deploy** — `eas build` → submit to App Store / Play Store
+
+### Affiliate Link Workflow
+
+1. Sign up for the affiliate network → get your tracking URL
+2. Admin edit the card → Step 2 (Controls) → put affiliate URL in **Fallback URL** field
+3. Toggle **"Affiliate link"** switch ON (appears below fallback URL in admin mode)
+4. Save → the card now shows FTC disclosure text
+5. Export → paste into code → delete override → deploy
+
+### Important Notes
+
+- There is NO over-the-air (OTA) card update mechanism — changes ship with app builds
+- Cards already in a user's wallet retain their DB copy from when they were added. Updating the static definition does NOT retroactively update wallet copies.
+- The Draft badge means the DB override differs from the static source
+- The Stale badge means the static source was updated but the DB override still has old data — delete the override to pick up the new static version

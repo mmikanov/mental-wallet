@@ -12,7 +12,7 @@
  * Validates: Requirements 3.1, 3.4, 3.5, 3.6, 3.7, 5.3, 5.4, 5.5, 5.8
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import ControlRenderer from '@/components/controls/ControlRenderer';
 import PrimaryActionButton from './PrimaryActionButton';
@@ -20,8 +20,9 @@ import OutcomePrompt from './OutcomePrompt';
 import { useCompletionStore } from '@/stores/completionStore';
 import { useWalletStore } from '@/stores/walletStore';
 import { useKpiStore } from '@/stores/kpiStore';
-import { logEvent } from '@/services/analyticsEventLogger';
+import { logEvent, logExternalAppLaunched } from '@/services/analyticsEventLogger';
 import { getOutcomePromptEnabled } from '@/services/settingsService';
+import { CURATED_LIBRARY } from '@/data/curatedLibrary';
 import type { Card, Control } from '@/types/index';
 
 interface ExpandedContentProps {
@@ -39,6 +40,20 @@ const USER_INPUT_CONTROL_TYPES = new Set([
   'image_attachment',
   'datetime_stamp',
 ]);
+
+/**
+ * Determines if a card qualifies for auto-completion on link button tap.
+ * A card qualifies if it has NO user-input controls AND has at least one link_button.
+ * Cards with only static_text/display_media (no link_button) still need the
+ * "Mark as done" button to record a completion.
+ *
+ * Validates: Requirements 5.2, 5.3
+ */
+function isLinkOnlyCard(controls: Control[]): boolean {
+  const hasUserInput = controls.some((c) => USER_INPUT_CONTROL_TYPES.has(c.type));
+  const hasLinkButton = controls.some((c) => c.type === 'link_button');
+  return !hasUserInput && hasLinkButton;
+}
 
 /**
  * Determines if a control value is considered "empty" for validation purposes.
@@ -118,6 +133,23 @@ export default function ExpandedContent({ card }: ExpandedContentProps) {
     getOutcomePromptEnabled().then(setOutcomePromptEnabled).catch(() => {});
   }, []);
 
+  // Determine if this card auto-completes on link tap (no user-input controls)
+  const isLinkOnly = useMemo(() => isLinkOnlyCard(card.controls), [card.controls]);
+
+  // Check if card has an affiliate link (from DB controls or static source)
+  const hasAffiliate = useMemo(() => {
+    // Check DB card controls
+    const dbHas = card.controls.some((c) => c.type === 'link_button' && (c.config as any).isAffiliate);
+    if (dbHas) return true;
+    // Check static curated source
+    if (card.sourceLibraryId) {
+      const curated = CURATED_LIBRARY.find((c) => c.id === card.sourceLibraryId);
+      if (curated?.controls.some((c) => c.type === 'link_button' && (c.config as any).isAffiliate)) return true;
+      if (curated?.externalApp?.hasAffiliateLink) return true;
+    }
+    return false;
+  }, [card.controls, card.sourceLibraryId]);
+
   // Get stored input values for this card
   const currentInputValues = useCompletionStore((s) => s.currentInputValues);
   const setControlValue = useCompletionStore((s) => s.setControlValue);
@@ -126,6 +158,54 @@ export default function ExpandedContent({ card }: ExpandedContentProps) {
   const collapseCard = useWalletStore((s) => s.collapseCard);
 
   const cardValues = currentInputValues[card.id] ?? {};
+
+  /**
+   * Auto-records a completion for link-only cards when the link button is tapped.
+   * Skips validation (no user inputs to validate) and outcome prompt (user just left the app).
+   */
+  const handleLinkOnlyAutoComplete = useCallback(async () => {
+    if (isSubmitting || isCompleted) return;
+    setIsSubmitting(true);
+
+    try {
+      await submitCompletion(card.id, card.controls);
+      // Log tool_completed analytics event
+      const analyticsCardId = card.sourceLibraryId || card.id;
+      void logEvent('tool_completed', {
+        card_id: analyticsCardId,
+        card_category: card.categoryId,
+        origin_badge: card.originBadge,
+      });
+
+      // For app-origin cards, also log the external_app_launched event
+      if (card.originBadge === 'app' && card.sourceLibraryId) {
+        const curatedCard = CURATED_LIBRARY.find((c) => c.id === card.sourceLibraryId);
+        if (curatedCard?.externalApp) {
+          void logExternalAppLaunched(
+            analyticsCardId,
+            curatedCard.externalApp.appName,
+            'deep_link', // Best-effort — the actual method is determined by LinkButtonControl
+            !!curatedCard.externalApp.hasAffiliateLink
+          );
+        }
+      }
+
+      // Reload cards to reflect updated stats
+      await loadCards();
+      // Mark as completed
+      setIsCompleted(true);
+      // Brief success feedback then collapse (no outcome prompt for link-only cards)
+      setShowSuccess(true);
+      setTimeout(() => {
+        setShowSuccess(false);
+        collapseCard();
+      }, 1200);
+    } catch {
+      // Silently fail — don't interrupt the external app launch experience
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [card.id, card.controls, card.sourceLibraryId, card.categoryId, card.originBadge, isSubmitting, isCompleted, submitCompletion, loadCards, collapseCard]);
 
   const handleChange = useCallback(
     (controlId: string, value: string) => {
@@ -138,8 +218,15 @@ export default function ExpandedContent({ card }: ExpandedContentProps) {
         }
         return prev;
       });
+
+      // Auto-complete for link-only cards: when a link_button reports "opened",
+      // automatically record a completion without requiring a separate submit tap.
+      if (isLinkOnly && value === 'opened') {
+        // Trigger auto-submit asynchronously
+        void handleLinkOnlyAutoComplete();
+      }
     },
-    [card.id, setControlValue]
+    [card.id, setControlValue, isLinkOnly, handleLinkOnlyAutoComplete]
   );
 
   const handleCollapse = useCallback(() => {
@@ -234,6 +321,13 @@ export default function ExpandedContent({ card }: ExpandedContentProps) {
         />
       )}
 
+      {/* Inline affiliate disclosure — shown below link button before first use */}
+      {isLinkOnly && card.totalUses === 0 && !isCompleted && hasAffiliate && (
+        <Text style={styles.affiliateDisclosure}>
+          Affiliate link — we may earn a commission
+        </Text>
+      )}
+
       {/* Success feedback */}
       {showSuccess && (
         <View style={styles.successBanner} accessibilityRole="alert">
@@ -246,8 +340,8 @@ export default function ExpandedContent({ card }: ExpandedContentProps) {
         <OutcomePrompt onDismiss={() => { setShowOutcomePrompt(false); collapseCard(); }} />
       )}
 
-      {/* Primary action button — hidden after successful completion */}
-      {!isCompleted && (
+      {/* Primary action button — hidden after successful completion AND hidden for link-only cards */}
+      {!isCompleted && !isLinkOnly && (
         <View style={styles.actionContainer}>
           <PrimaryActionButton
             controls={card.controls}
@@ -286,6 +380,13 @@ const styles = StyleSheet.create({
   },
   actionContainer: {
     marginTop: 16,
+  },
+  affiliateDisclosure: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 8,
   },
   successBanner: {
     marginTop: 12,

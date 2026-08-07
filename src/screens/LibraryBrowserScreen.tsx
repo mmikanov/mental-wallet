@@ -51,6 +51,7 @@ import type { SortMode, ButtonState } from './libraryBrowserHelpers';
 import { CURATED_LIBRARY, type CuratedCardDefinition } from '@/data/curatedLibrary';
 
 const ALL_FILTER = 'all';
+const APPS_FILTER = 'apps';
 
 interface CategorySection {
   title: string;
@@ -120,7 +121,7 @@ export default function LibraryBrowserScreen() {
 
       // Query cards with source_library_id
       const bySourceId = await db.getAllAsync<{ source_library_id: string; id: string }>(
-        `SELECT source_library_id, id FROM cards WHERE origin_badge = 'library' AND is_archived = 1 AND source_library_id IS NOT NULL`
+        `SELECT source_library_id, id FROM cards WHERE origin_badge IN ('library', 'app') AND is_archived = 1 AND source_library_id IS NOT NULL`
       );
       for (const row of bySourceId) {
         map.set(row.source_library_id, row.id);
@@ -128,7 +129,7 @@ export default function LibraryBrowserScreen() {
 
       // Query legacy cards without source_library_id (title fallback)
       const byTitle = await db.getAllAsync<{ title: string; id: string }>(
-        `SELECT title, id FROM cards WHERE origin_badge = 'library' AND is_archived = 1 AND source_library_id IS NULL`
+        `SELECT title, id FROM cards WHERE origin_badge IN ('library', 'app') AND is_archived = 1 AND source_library_id IS NULL`
       );
       for (const row of byTitle) {
         map.set(row.title, row.id);
@@ -164,7 +165,7 @@ export default function LibraryBrowserScreen() {
         rationale_research_summary: string | null;
       }>(
         `SELECT id, rationale_approach, rationale_in_a_nutshell, rationale_how_it_works, rationale_evidence_level, rationale_research_summary
-         FROM cards WHERE rationale_approach IS NOT NULL AND origin_badge = 'library' AND stack_position = -1 AND id NOT LIKE 'admin-lib-%'`
+         FROM cards WHERE rationale_approach IS NOT NULL AND origin_badge IN ('library', 'app') AND stack_position = -1 AND id NOT LIKE 'admin-lib-%'`
       );
 
       // Check each DB rationale against its static original — only mark dirty if different
@@ -247,7 +248,7 @@ export default function LibraryBrowserScreen() {
         id: string;
         rationale_learn_more_links: string | null;
       }>(
-        `SELECT id, rationale_learn_more_links FROM cards WHERE rationale_approach IS NOT NULL AND origin_badge = 'library' AND stack_position = -1 AND id NOT LIKE 'admin-lib-%'`
+        `SELECT id, rationale_learn_more_links FROM cards WHERE rationale_approach IS NOT NULL AND origin_badge IN ('library', 'app') AND stack_position = -1 AND id NOT LIKE 'admin-lib-%'`
       );
       const linksMap = new Map(rationaleLinksRows.map((r) => [r.id, r.rationale_learn_more_links]));
 
@@ -304,11 +305,15 @@ export default function LibraryBrowserScreen() {
 
   // Apply category + search filters
   const filteredCards = useMemo(() => {
-    // Apply category filter
-    const categoryFiltered =
-      selectedCategory === ALL_FILTER
-        ? libraryCards
-        : libraryCards.filter((c) => c.categoryId === selectedCategory);
+    // Apply category or apps filter
+    let categoryFiltered: CuratedCardDefinition[];
+    if (selectedCategory === ALL_FILTER) {
+      categoryFiltered = libraryCards;
+    } else if (selectedCategory === APPS_FILTER) {
+      categoryFiltered = libraryCards.filter((c) => !!c.externalApp);
+    } else {
+      categoryFiltered = libraryCards.filter((c) => c.categoryId === selectedCategory);
+    }
 
     // Apply search filter (triggers after 1 character)
     if (searchQuery.length >= 1) {
@@ -371,9 +376,12 @@ export default function LibraryBrowserScreen() {
 
   const handleAddToWallet = useCallback(
     async (card: CuratedCardDefinition) => {
+      // Determine origin badge based on card type
+      const originBadge = card.externalApp ? 'app' as const : 'library' as const;
+
       // Check for duplicate by title
       const existingCard = cards.find(
-        (c) => c.title === card.title && c.originBadge === 'library'
+        (c) => c.title === card.title && (c.originBadge === 'library' || c.originBadge === 'app')
       );
       if (existingCard) {
         Alert.alert(
@@ -402,7 +410,7 @@ export default function LibraryBrowserScreen() {
             config: ctrl.config,
             isRequired: ctrl.isRequired,
           })),
-          'library',
+          originBadge,
           card.categoryId,
           card.id // Pass sourceLibraryId for future archive lookups
         );
@@ -417,7 +425,7 @@ export default function LibraryBrowserScreen() {
         void logEvent('tool_added', {
           card_id: card.id,
           card_category: card.categoryId,
-          origin_badge: 'library',
+          origin_badge: originBadge,
         });
 
         Alert.alert('Added', `"${card.title}" has been added to your wallet.`);
@@ -473,9 +481,12 @@ export default function LibraryBrowserScreen() {
   // These avoid showing Alerts (the sheet has its own inline error/success UI).
   const handlePreviewAddToWallet = useCallback(
     async (card: CuratedCardDefinition) => {
+      // Determine origin badge based on card type
+      const originBadge = card.externalApp ? 'app' as const : 'library' as const;
+
       // Check for duplicate by title
       const existingCard = cards.find(
-        (c) => c.title === card.title && c.originBadge === 'library'
+        (c) => c.title === card.title && (c.originBadge === 'library' || c.originBadge === 'app')
       );
       if (existingCard) {
         throw new Error('This card is already in your wallet.');
@@ -497,7 +508,7 @@ export default function LibraryBrowserScreen() {
           config: ctrl.config,
           isRequired: ctrl.isRequired,
         })),
-        'library',
+        originBadge,
         card.categoryId,
         card.id
       );
@@ -510,7 +521,7 @@ export default function LibraryBrowserScreen() {
       void logEvent('tool_added', {
         card_id: card.id,
         card_category: card.categoryId,
-        origin_badge: 'library',
+        origin_badge: originBadge,
       });
     },
     [cards, loadCards, loadArchivedCards, loadMergedLibrary]
@@ -761,12 +772,16 @@ export default function LibraryBrowserScreen() {
           accessibilityLabel={`Preview ${item.title}`}
           accessibilityHint="Opens a full card preview"
         >
-          <View style={styles.cardIcon}>
+          <View style={[
+            styles.cardIcon,
+            item.iconType === 'third_party' && styles.cardIconApp,
+          ]}>
             {renderCardIcon({
               iconType: item.iconType,
               iconValue: item.iconValue,
-              size: 24,
+              size: item.iconType === 'third_party' ? 48 : 24,
               fallbackEmoji: item.iconValue || '📋',
+              sourceId: item.id,
             })}
           </View>
           <View style={styles.cardContent}>
@@ -791,7 +806,9 @@ export default function LibraryBrowserScreen() {
                   </View>
                 )}
                 <View style={styles.libraryBadge}>
-                  <Text style={styles.libraryBadgeText}>Library</Text>
+                  <Text style={styles.libraryBadgeText}>
+                    {item.externalApp ? 'App' : 'Library'}
+                  </Text>
                 </View>
                 {isAdminMode && (item.id.startsWith('admin-lib-') || dirtyOverrideIds.has(item.id)) && (
                   <View style={styles.draftBadge}>
@@ -951,6 +968,29 @@ export default function LibraryBrowserScreen() {
             </Text>
           </TouchableOpacity>
         ))}
+        {/* Apps orthogonal filter — filters by origin badge, not category */}
+        <TouchableOpacity
+          style={[
+            styles.filterPill,
+            selectedCategory === APPS_FILTER && styles.filterPillActive,
+            selectedCategory === APPS_FILTER && {
+              backgroundColor: '#4A90D9',
+            },
+          ]}
+          onPress={() => setSelectedCategory(APPS_FILTER)}
+          accessibilityRole="button"
+          accessibilityState={{ selected: selectedCategory === APPS_FILTER }}
+          accessibilityLabel="Filter by Apps"
+        >
+          <Text
+            style={[
+              styles.filterPillText,
+              selectedCategory === APPS_FILTER && styles.filterPillTextActive,
+            ]}
+          >
+            Apps
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
 
       {/* Sort toggle */}
@@ -1207,6 +1247,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+  },
+  cardIconApp: {
+    backgroundColor: 'transparent',
+    borderRadius: 0,
+    overflow: 'hidden',
   },
   cardIconText: {
     fontSize: 24,

@@ -15,6 +15,7 @@ import { CURATED_LIBRARY } from '../data/curatedLibrary';
 import type { Card, ControlConfig, ValidationResult } from '../types/index';
 import type { ExportService } from '../types/services';
 import type { LearnMoreLink } from '../types/rationale';
+import { APP_NAME } from '@/config/appInfo';
 
 interface RationaleRow {
   rationale_approach: string | null;
@@ -267,6 +268,32 @@ export async function serializeToCuratedDefinition(card: Card): Promise<string> 
 
   lines.push('  },');
 
+  // ExternalApp block — only include for external app cards
+  const staticCard = CURATED_LIBRARY.find((c) => c.id === card.id || c.id === card.sourceLibraryId);
+  if (staticCard?.externalApp) {
+    const ea = staticCard.externalApp;
+    lines.push('  externalApp: {');
+    lines.push(`    appName: ${JSON.stringify(ea.appName)},`);
+    if (ea.deepLinkUrl) {
+      lines.push(`    deepLinkUrl: ${JSON.stringify(ea.deepLinkUrl)},`);
+    }
+    lines.push(`    webUrl: ${JSON.stringify(ea.webUrl)},`);
+    if (ea.affiliateUrl) {
+      lines.push(`    affiliateUrl: ${JSON.stringify(ea.affiliateUrl)},`);
+    }
+    if (ea.appStoreId) {
+      lines.push(`    appStoreId: ${JSON.stringify(ea.appStoreId)},`);
+    }
+    if (ea.playStoreId) {
+      lines.push(`    playStoreId: ${JSON.stringify(ea.playStoreId)},`);
+    }
+    if (ea.affiliateNetwork) {
+      lines.push(`    affiliateNetwork: ${JSON.stringify(ea.affiliateNetwork)},`);
+    }
+    lines.push(`    monogram: ${JSON.stringify(ea.monogram)},`);
+    lines.push('  },');
+  }
+
   lines.push('}');
 
   return lines.join('\n');
@@ -335,7 +362,7 @@ export function createExportService(): ExportService {
     if (isSharingAvailable) {
       await Sharing.shareAsync(filePath, {
         mimeType: format === 'json' ? 'application/json' : 'text/csv',
-        dialogTitle: 'Export Mental Health Wallet Data',
+        dialogTitle: `Export ${APP_NAME} Data`,
       });
     }
 

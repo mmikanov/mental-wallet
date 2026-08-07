@@ -9,6 +9,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
+import { APP_NAME } from '@/config/appInfo';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'About'>;
 
@@ -31,7 +32,7 @@ export default function AboutScreen({ navigation }: Props) {
       <ScrollView contentContainerStyle={styles.content}>
         {/* App Identity */}
         <View style={styles.appIdentitySection}>
-          <Text style={styles.appName}>Mental Health Wallet</Text>
+          <Text style={styles.appName}>{APP_NAME}</Text>
           <Text style={styles.versionText}>Version 1.0.0</Text>
         </View>
 
@@ -40,7 +41,7 @@ export default function AboutScreen({ navigation }: Props) {
           <Text style={styles.sectionTitle}>Disclaimer</Text>
           <View style={styles.disclaimerBox}>
             <Text style={styles.bodyText}>
-              Mental Health Wallet is not a replacement for therapy or
+              {APP_NAME} is not a replacement for therapy or
               professional mental health care. This app is designed as a personal
               toolkit to complement professional support, not replace it. If you
               are experiencing a mental health crisis, please reach out to a

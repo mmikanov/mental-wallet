@@ -617,6 +617,7 @@ export function cardToCuratedDefinition(card: Card): CuratedCardDefinition {
     contextTags: staticOriginal?.contextTags,
     timeTags: staticOriginal?.timeTags,
     rationale: staticOriginal?.rationale,
+    externalApp: staticOriginal?.externalApp,
   };
 }
 

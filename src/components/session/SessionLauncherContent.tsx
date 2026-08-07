@@ -388,6 +388,7 @@ export default function SessionLauncherContent({
                     cardId={tool.cardId}
                     title={tool.title}
                     description={tool.description}
+                    iconType={tool.iconType as any}
                     iconValue={tool.iconValue}
                     source="wallet"
                     onPress={handleOpenTool}
@@ -406,6 +407,7 @@ export default function SessionLauncherContent({
                     cardId={tool.cardId}
                     title={tool.title}
                     description={tool.description}
+                    iconType={tool.iconType as any}
                     iconValue={tool.iconValue}
                     source="library"
                     onPress={handleOpenTool}

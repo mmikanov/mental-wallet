@@ -162,8 +162,8 @@ export default function ThirdPartyIcon({
   return (
     <Image
       source={{ uri: localUri }}
-      style={{ width: size, height: size }}
-      resizeMode="contain"
+      style={{ width: size, height: size, borderRadius: size * 0.22 }}
+      resizeMode="cover"
       onLoad={handleLoad}
       onError={handleError}
       accessibilityLabel="Third-party brand icon"

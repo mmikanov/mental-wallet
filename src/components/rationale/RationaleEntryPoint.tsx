@@ -16,16 +16,18 @@ interface RationaleEntryPointProps {
   inANutshell: string | undefined;
   /** Callback when tapped — opens the RationaleSheet */
   onPress: () => void;
+  /** Optional override color for the link text (for contrast on colored backgrounds) */
+  color?: string;
 }
 
-export function RationaleEntryPoint({ inANutshell, onPress }: RationaleEntryPointProps) {
+export function RationaleEntryPoint({ inANutshell, onPress, color }: RationaleEntryPointProps) {
   if (!inANutshell || inANutshell.trim().length === 0) {
     return null;
   }
 
   return (
     <Text
-      style={styles.link}
+      style={[styles.link, color ? { color } : undefined]}
       onPress={onPress}
       accessibilityRole="link"
       accessibilityLabel="Learn more about why this might help"
@@ -39,7 +41,8 @@ export function RationaleEntryPoint({ inANutshell, onPress }: RationaleEntryPoin
 const styles = StyleSheet.create({
   link: {
     fontSize: 14,
-    color: '#2563EB',
-    fontWeight: '500',
+    color: '#1D4ED8',
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });

@@ -21,6 +21,7 @@ export interface ToolRecommendation {
   cardId: string;
   title: string;
   description: string;
+  iconType?: string;
   iconValue: string;
   source: 'wallet' | 'library';
   contextRelevanceScore: number;
@@ -73,18 +74,20 @@ function sortRecommendations(tools: ToolRecommendation[]): ToolRecommendation[] 
  */
 async function getWalletCardDetails(
   cardId: string
-): Promise<{ title: string; description: string; iconValue: string } | null> {
+): Promise<{ title: string; description: string; iconType: string; iconValue: string } | null> {
   const db = await getDatabase();
   const row = await db.getFirstAsync<{
     title: string;
     description: string;
+    icon_type: string;
     icon_value: string;
-  }>(`SELECT title, description, icon_value FROM cards WHERE id = ?`, [cardId]);
+  }>(`SELECT title, description, icon_type, icon_value FROM cards WHERE id = ?`, [cardId]);
 
   if (!row) return null;
   return {
     title: row.title,
     description: row.description,
+    iconType: row.icon_type,
     iconValue: row.icon_value,
   };
 }
@@ -127,6 +130,7 @@ async function getWalletRecommendations(
       cardId,
       title: cardDetails.title,
       description: cardDetails.description,
+      iconType: cardDetails.iconType,
       iconValue: cardDetails.iconValue,
       source: 'wallet',
       contextRelevanceScore: contextScore,
@@ -171,6 +175,7 @@ function getLibraryRecommendations(
       cardId: card.id,
       title: card.title,
       description: card.description,
+      iconType: card.iconType,
       iconValue: card.iconValue,
       source: 'library',
       contextRelevanceScore: contextScore,

@@ -29,6 +29,7 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
   await runEmotionTagsExpansionMigration(db);
   await runEmotionSessionsExpansionMigration(db);
   await runCrisisResourcesCanadaMigration(db);
+  await runOriginBadgeAppMigration(db);
 }
 
 /**
@@ -84,7 +85,7 @@ CREATE TABLE IF NOT EXISTS cards (
   background_type TEXT NOT NULL CHECK(background_type IN ('color', 'gradient', 'image')),
   background_value TEXT NOT NULL,
   category_id TEXT NOT NULL REFERENCES categories(id),
-  origin_badge TEXT NOT NULL CHECK(origin_badge IN ('library', 'community', 'my_tool')),
+  origin_badge TEXT NOT NULL CHECK(origin_badge IN ('library', 'community', 'my_tool', 'app')),
   stack_position INTEGER NOT NULL DEFAULT 0,
   total_uses INTEGER NOT NULL DEFAULT 0,
   current_streak INTEGER NOT NULL DEFAULT 0,
@@ -333,7 +334,7 @@ async function runIconTypeCheckMigration(db: SQLiteDatabase): Promise<void> {
         background_type TEXT NOT NULL CHECK(background_type IN ('color', 'gradient', 'image')),
         background_value TEXT NOT NULL,
         category_id TEXT NOT NULL REFERENCES categories(id),
-        origin_badge TEXT NOT NULL CHECK(origin_badge IN ('library', 'community', 'my_tool')),
+        origin_badge TEXT NOT NULL CHECK(origin_badge IN ('library', 'community', 'my_tool', 'app')),
         stack_position INTEGER NOT NULL DEFAULT 0,
         total_uses INTEGER NOT NULL DEFAULT 0,
         current_streak INTEGER NOT NULL DEFAULT 0,
@@ -635,4 +636,125 @@ async function runCrisisResourcesCanadaMigration(db: SQLiteDatabase): Promise<vo
   await db.runAsync(
     `UPDATE crisis_resources SET display_order = 3 WHERE id = 'iasp-directory'`
   );
+}
+
+
+/**
+ * Migrates the cards table CHECK constraint on origin_badge to include 'app'.
+ * SQLite cannot ALTER CHECK constraints, so we rebuild the table.
+ * Idempotent: checks current constraint via a test INSERT + ROLLBACK.
+ */
+async function runOriginBadgeAppMigration(db: SQLiteDatabase): Promise<void> {
+  // Test if 'app' is already allowed by attempting an insert in a savepoint
+  try {
+    await db.execAsync('SAVEPOINT origin_badge_check_test');
+    await db.runAsync(
+      `INSERT INTO cards (id, title, description, icon_type, icon_value, background_type, background_value, category_id, origin_badge, stack_position, allow_background_customization, created_at, updated_at)
+       VALUES ('__origin_badge_test__', 'test', 'test', 'emoji', '🧪', 'color', '#FFF', 'grounding-calming', 'app', -999, 0, datetime('now'), datetime('now'))`,
+      []
+    );
+    // If we get here, the constraint already allows 'app'
+    await db.execAsync('ROLLBACK TO origin_badge_check_test');
+    await db.execAsync('RELEASE origin_badge_check_test');
+    return; // No migration needed
+  } catch {
+    // The INSERT failed — constraint doesn't include 'app', need to rebuild
+    try {
+      await db.execAsync('ROLLBACK TO origin_badge_check_test');
+      await db.execAsync('RELEASE origin_badge_check_test');
+    } catch {
+      // Savepoint may already be rolled back
+    }
+  }
+
+  // Rebuild the cards table with the updated origin_badge CHECK constraint
+  await db.execAsync('PRAGMA foreign_keys = OFF');
+  await db.execAsync('BEGIN TRANSACTION');
+  try {
+    // Get current columns to know which ones exist (rationale columns may exist)
+    const columns = await db.getAllAsync<{ name: string }>(
+      `PRAGMA table_info(cards)`
+    );
+    const columnNames = columns.map((c) => c.name);
+
+    // Build column list dynamically based on what exists
+    const baseColumns = [
+      'id', 'title', 'description', 'icon_type', 'icon_value',
+      'background_type', 'background_value', 'category_id', 'origin_badge',
+      'stack_position', 'total_uses', 'current_streak', 'last_used_at',
+      'is_archived', 'archived_at', 'previous_stack_position',
+      'allow_background_customization', 'source_library_id', 'card_type',
+      'created_at', 'updated_at',
+    ];
+    const rationaleColumns = [
+      'rationale_approach', 'rationale_in_a_nutshell', 'rationale_how_it_works',
+      'rationale_evidence_level', 'rationale_research_summary', 'rationale_learn_more_links',
+    ];
+
+    const existingColumns = baseColumns.filter((c) => columnNames.includes(c));
+    const existingRationaleColumns = rationaleColumns.filter((c) => columnNames.includes(c));
+    const allExistingColumns = [...existingColumns, ...existingRationaleColumns];
+
+    // 1. Create temp table with updated origin_badge constraint
+    const rationaleColumnDefs = existingRationaleColumns.length > 0
+      ? `,\n        ${existingRationaleColumns.map((c) => {
+          if (c === 'rationale_evidence_level') {
+            return `${c} TEXT CHECK(${c} IS NULL OR ${c} IN ('strong', 'moderate', 'emerging', 'not_specifically_studied'))`;
+          }
+          return `${c} TEXT`;
+        }).join(',\n        ')}`
+      : '';
+
+    await db.execAsync(`
+      CREATE TABLE cards_new (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL CHECK(length(trim(title)) > 0),
+        description TEXT NOT NULL CHECK(length(trim(description)) > 0),
+        icon_type TEXT NOT NULL CHECK(icon_type IN ('library', 'emoji', 'custom_image', 'third_party')),
+        icon_value TEXT NOT NULL,
+        background_type TEXT NOT NULL CHECK(background_type IN ('color', 'gradient', 'image')),
+        background_value TEXT NOT NULL,
+        category_id TEXT NOT NULL REFERENCES categories(id),
+        origin_badge TEXT NOT NULL CHECK(origin_badge IN ('library', 'community', 'my_tool', 'app')),
+        stack_position INTEGER NOT NULL DEFAULT 0,
+        total_uses INTEGER NOT NULL DEFAULT 0,
+        current_streak INTEGER NOT NULL DEFAULT 0,
+        last_used_at TEXT,
+        is_archived INTEGER NOT NULL DEFAULT 0,
+        archived_at TEXT,
+        previous_stack_position INTEGER,
+        allow_background_customization INTEGER NOT NULL DEFAULT 0,
+        source_library_id TEXT,
+        card_type TEXT NOT NULL DEFAULT 'standard' CHECK(card_type IN ('standard', 'session_launcher')),
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))${rationaleColumnDefs}
+      )
+    `);
+
+    // 2. Copy all data from old table
+    const columnList = allExistingColumns.join(', ');
+    await db.execAsync(
+      `INSERT INTO cards_new (${columnList}) SELECT ${columnList} FROM cards`
+    );
+
+    // 3. Drop old table
+    await db.execAsync('DROP TABLE cards');
+
+    // 4. Rename new table
+    await db.execAsync('ALTER TABLE cards_new RENAME TO cards');
+
+    // 5. Recreate indexes
+    await db.execAsync(`
+      CREATE INDEX IF NOT EXISTS idx_cards_archived ON cards(is_archived);
+      CREATE INDEX IF NOT EXISTS idx_cards_stack_position ON cards(stack_position) WHERE is_archived = 0;
+      CREATE INDEX IF NOT EXISTS idx_cards_category ON cards(category_id);
+    `);
+
+    await db.execAsync('COMMIT');
+    await db.execAsync('PRAGMA foreign_keys = ON');
+  } catch (error) {
+    await db.execAsync('ROLLBACK');
+    await db.execAsync('PRAGMA foreign_keys = ON');
+    throw error;
+  }
 }

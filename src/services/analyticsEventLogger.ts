@@ -38,6 +38,7 @@ const VALID_EVENT_TYPES: readonly AnalyticsEventType[] = [
   'guided_checkin_started',
   'guided_checkin_completed',
   'insights_viewed',
+  'external_app_launched',
 ] as const;
 
 /** Events allowed when opted out (no contextual properties). */
@@ -237,3 +238,21 @@ export async function logEvent(
 }
 
 export type { EventLoggedCallback };
+
+/**
+ * Convenience wrapper for logging external app launches with typed properties.
+ * Validates: Requirements 4.7, 8.1
+ */
+export async function logExternalAppLaunched(
+  cardId: string,
+  appName: string,
+  launchMethod: 'deep_link' | 'app_store' | 'web_fallback' | 'affiliate_fallback',
+  hasAffiliate: boolean
+): Promise<void> {
+  return logEvent('external_app_launched', {
+    card_id: cardId,
+    app_name: appName,
+    launch_method: launchMethod,
+    has_affiliate: hasAffiliate ? 1 : 0,
+  });
+}

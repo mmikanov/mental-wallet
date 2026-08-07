@@ -28,6 +28,7 @@ import {
 } from 'react-native';
 import * as Crypto from 'expo-crypto';
 import type { Control, ControlType, ControlConfig } from '@/types/index';
+import { useAdminStore } from '@/stores/adminStore';
 import MediaConfigEditor from '@/components/creator/MediaConfigEditor';
 
 interface Step2ControlsProps {
@@ -639,7 +640,8 @@ function ControlConfigEditor({
     }
 
     case 'link_button': {
-      const c = config as { label: string; targetUrl: string; fallbackUrl?: string };
+      const c = config as { label: string; targetUrl: string; fallbackUrl?: string; isAffiliate?: boolean };
+      const isAdminMode = useAdminStore.getState().isAdminMode;
       return (
         <View>
           <ConfigInput
@@ -666,6 +668,16 @@ function ControlConfigEditor({
             placeholder="https://fallback.example.com"
             keyboardType="url"
           />
+          {isAdminMode && c.fallbackUrl && c.fallbackUrl.length > 0 && (
+            <View style={configStyles.affiliateToggleRow}>
+              <Text style={configStyles.affiliateToggleLabel}>Affiliate link</Text>
+              <Switch
+                value={!!c.isAffiliate}
+                onValueChange={(val) => onConfigChange({ ...c, isAffiliate: val })}
+                accessibilityLabel="Mark fallback URL as an affiliate link"
+              />
+            </View>
+          )}
         </View>
       );
     }
@@ -852,6 +864,19 @@ const configStyles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
     marginBottom: 6,
+  },
+  affiliateToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+  },
+  affiliateToggleLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#374151',
   },
 });
 

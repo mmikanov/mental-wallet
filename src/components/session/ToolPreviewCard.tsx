@@ -12,12 +12,15 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { RationaleEntryPoint } from '@/components/rationale/RationaleEntryPoint';
 import { RationaleSheet } from '@/components/rationale/RationaleSheet';
+import { renderCardIcon } from '@/utils/renderCardIcon';
+import type { IconType } from '@/types/index';
 import type { RationaleMetadata } from '@/types/rationale';
 
 export interface ToolPreviewCardProps {
   cardId: string;
   title: string;
   description: string;
+  iconType?: IconType;
   iconValue: string;
   source: 'wallet' | 'library';
   onPress: (cardId: string) => void;
@@ -47,6 +50,7 @@ export default function ToolPreviewCard({
   cardId,
   title,
   description,
+  iconType: iconTypeProp,
   iconValue,
   source,
   onPress,
@@ -70,7 +74,15 @@ export default function ToolPreviewCard({
         accessibilityLabel={`${title}, ${sourceLabel}`}
         activeOpacity={0.7}
       >
-        <Text style={styles.icon}>{iconValue}</Text>
+        <View style={styles.iconContainer}>
+          {renderCardIcon({
+            iconType: iconTypeProp || 'emoji',
+            iconValue,
+            size: 24,
+            fallbackEmoji: iconTypeProp === 'third_party' ? '📋' : (iconValue || '📋'),
+            sourceId: cardId,
+          })}
+        </View>
         <View style={styles.textStack}>
           <Text style={styles.title} numberOfLines={1}>
             {title}
@@ -132,9 +144,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minHeight: 48,
   },
-  icon: {
-    fontSize: 24,
+  iconContainer: {
+    width: 24,
+    height: 24,
     marginRight: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   textStack: {
     flex: 1,

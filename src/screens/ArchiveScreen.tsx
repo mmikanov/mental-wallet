@@ -22,6 +22,7 @@ import { createCardService } from '../services/cardService';
 import { logEvent } from '@/services/analyticsEventLogger';
 import { renderCardIcon } from '@/utils/renderCardIcon';
 import { getDatabase } from '../data/database';
+import { SEED_CATEGORIES } from '@/data/seeds';
 import type { Card } from '../types/index';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Archive'>;
@@ -159,6 +160,11 @@ export default function ArchiveScreen({ navigation }: Props) {
     return labels[categoryId] || categoryId;
   }
 
+  function getCategoryColor(categoryId: string): string {
+    const cat = SEED_CATEGORIES.find((c) => c.id === categoryId);
+    return cat?.colorHex || '#6B7280';
+  }
+
   function getOriginLabel(origin: string): string {
     const labels: Record<string, string> = {
       library: 'Library',
@@ -186,7 +192,8 @@ export default function ArchiveScreen({ navigation }: Props) {
               iconType: item.iconType,
               iconValue: item.iconValue,
               size: 32,
-              fallbackEmoji: item.iconValue || '📄',
+              fallbackEmoji: item.iconType === 'third_party' ? '📋' : (item.iconValue || '📄'),
+              sourceId: item.sourceLibraryId || item.id,
             })}
           </View>
           <View style={styles.cardInfo}>
@@ -194,8 +201,8 @@ export default function ArchiveScreen({ navigation }: Props) {
               {item.title}
             </Text>
             <View style={styles.cardMeta}>
-              <View style={styles.categoryTag}>
-                <Text style={styles.categoryTagText}>
+              <View style={[styles.categoryTag, { backgroundColor: getCategoryColor(item.categoryId) + '20' }]}>
+                <Text style={[styles.categoryTagText, { color: getCategoryColor(item.categoryId) }]}>
                   {getCategoryLabel(item.categoryId)}
                 </Text>
               </View>
@@ -362,7 +369,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   categoryTag: {
-    backgroundColor: '#E3F2FD',
     borderRadius: 4,
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -370,7 +376,6 @@ const styles = StyleSheet.create({
   categoryTagText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#1565C0',
   },
   lastUsed: {
     fontSize: 12,
