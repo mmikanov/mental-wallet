@@ -337,7 +337,7 @@ export default function ExpandedContent({ card }: ExpandedContentProps) {
 
       {/* Outcome prompt */}
       {showOutcomePrompt && (
-        <OutcomePrompt onDismiss={() => { setShowOutcomePrompt(false); collapseCard(); }} />
+        <OutcomePrompt cardId={card.id} onDismiss={() => { setShowOutcomePrompt(false); collapseCard(); }} />
       )}
 
       {/* Primary action button — hidden after successful completion AND hidden for link-only cards */}

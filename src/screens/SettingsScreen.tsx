@@ -30,7 +30,9 @@ import { useAnalyticsStore } from '@/stores/analyticsStore';
 import { AdminKpiBadgeTools } from '@/components/settings/AdminKpiBadgeTools';
 import { SeedInsightsButton } from '@/components/settings/SeedInsightsButton';
 import { getFlushIntervalMs, setFlushIntervalMs } from '@/config/analytics';
-import { APP_NAME } from '@/config/appInfo';
+import * as WebBrowser from 'expo-web-browser';
+import { APP_NAME, PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from '@/config/appInfo';
+import { requestAppReview, shareApp, contactSupport, sendFeedback } from '@/services/appActionsService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 
@@ -372,12 +374,23 @@ export default function SettingsScreen({ navigation }: Props) {
 
           <TouchableOpacity
             style={styles.menuItem}
-            onPress={() => navigation.navigate('PrivacyPolicy')}
+            onPress={() => WebBrowser.openBrowserAsync(PRIVACY_POLICY_URL)}
             accessibilityLabel="Privacy Policy"
             accessibilityRole="button"
           >
             <Text style={styles.menuItemIcon}>📋</Text>
             <Text style={styles.menuItemText}>Privacy Policy</Text>
+            <Text style={styles.menuItemChevron}>›</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => WebBrowser.openBrowserAsync(TERMS_OF_SERVICE_URL)}
+            accessibilityLabel="Terms of Service"
+            accessibilityRole="button"
+          >
+            <Text style={styles.menuItemIcon}>📄</Text>
+            <Text style={styles.menuItemText}>Terms of Service</Text>
             <Text style={styles.menuItemChevron}>›</Text>
           </TouchableOpacity>
 
@@ -466,6 +479,56 @@ export default function SettingsScreen({ navigation }: Props) {
             <Text style={styles.menuItemIcon}>🆘</Text>
             <Text style={styles.menuItemText}>Crisis Resources</Text>
             <Text style={styles.menuItemChevron}>›</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Support Us Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Support Us</Text>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={requestAppReview}
+            accessibilityLabel={`Rate ${APP_NAME}`}
+            accessibilityRole="button"
+          >
+            <Text style={styles.menuItemIcon}>⭐</Text>
+            <Text style={styles.menuItemText}>Rate {APP_NAME}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={shareApp}
+            accessibilityLabel="Share with a Friend"
+            accessibilityRole="button"
+          >
+            <Text style={styles.menuItemIcon}>💜</Text>
+            <Text style={styles.menuItemText}>Share with a Friend</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Help & Feedback Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Help & Feedback</Text>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={contactSupport}
+            accessibilityLabel="Contact Support"
+            accessibilityRole="button"
+          >
+            <Text style={styles.menuItemIcon}>💬</Text>
+            <Text style={styles.menuItemText}>Contact Support</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={sendFeedback}
+            accessibilityLabel="Send Feedback"
+            accessibilityRole="button"
+          >
+            <Text style={styles.menuItemIcon}>💡</Text>
+            <Text style={styles.menuItemText}>Send Feedback</Text>
           </TouchableOpacity>
         </View>
 

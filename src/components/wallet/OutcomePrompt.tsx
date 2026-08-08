@@ -10,6 +10,8 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { logEvent } from '@/services/analyticsEventLogger';
+import { getDatabase } from '@/data/database';
+import * as Crypto from 'expo-crypto';
 
 type OutcomeValue = 'calmer' | 'clearer' | 'hopeful' | 'same' | 'worse';
 
@@ -28,11 +30,12 @@ const OUTCOME_OPTIONS: OutcomeOption[] = [
 ];
 
 interface OutcomePromptProps {
+  cardId: string;
   /** Called after the user selects an outcome. */
   onDismiss: () => void;
 }
 
-export default function OutcomePrompt({ onDismiss }: OutcomePromptProps) {
+export default function OutcomePrompt({ cardId, onDismiss }: OutcomePromptProps) {
   const [selected, setSelected] = useState<OutcomeValue | null>(null);
 
   const handleSelect = useCallback(
@@ -41,14 +44,28 @@ export default function OutcomePrompt({ onDismiss }: OutcomePromptProps) {
       setSelected(response);
 
       // Fire-and-forget analytics logging
-      void logEvent('outcome_response', { response });
+      void logEvent('outcome_response', { response, card_id: cardId });
+
+      // Persist to local SQLite for insights engine
+      void (async () => {
+        try {
+          const db = await getDatabase();
+          const id = Crypto.randomUUID();
+          await db.runAsync(
+            'INSERT INTO outcome_responses (id, card_id, category, created_at) VALUES (?, ?, ?, ?)',
+            [id, cardId, response, new Date().toISOString()]
+          );
+        } catch {
+          // Non-critical — don't interrupt user flow
+        }
+      })();
 
       // Brief delay so the user sees their selection before dismissal
       setTimeout(() => {
         onDismiss();
       }, 400);
     },
-    [selected, onDismiss]
+    [selected, onDismiss, cardId]
   );
 
   return (

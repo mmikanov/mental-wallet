@@ -28,7 +28,7 @@ import ArchiveScreen from '@/screens/ArchiveScreen';
 import SettingsScreen from '@/screens/SettingsScreen';
 import KpiChangeScreen from '@/screens/KpiChangeScreen';
 import CrisisResourcesScreen from '@/screens/CrisisResourcesScreen';
-import PrivacyPolicyScreen from '@/screens/PrivacyPolicyScreen';
+import LicensesScreen from '@/screens/LicensesScreen';
 import DevEventViewerScreen from '@/screens/DevEventViewerScreen';
 import WalletInsightsScreen from '@/screens/WalletInsightsScreen';
 import ToolInsightsScreen from '@/screens/ToolInsightsScreen';
@@ -161,7 +161,7 @@ export default function RootNavigator() {
       <Stack.Screen name="CrisisResources" component={CrisisResourcesScreen} />
       <Stack.Screen name="UsageHistory" component={UsageHistoryScreen} />
       <Stack.Screen name="ReminderConfig" component={ReminderConfigScreen} />
-      <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+      <Stack.Screen name="Licenses" component={LicensesScreen} />
       <Stack.Screen name="About" component={AboutScreen} />
       {__DEV__ && (
         <Stack.Screen name="DevEventViewer" component={DevEventViewerScreen} />

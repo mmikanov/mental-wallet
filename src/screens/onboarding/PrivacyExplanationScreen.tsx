@@ -19,8 +19,10 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import * as WebBrowser from 'expo-web-browser';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { OnboardingStackParamList } from '@/navigation/OnboardingNavigator';
+import { PRIVACY_POLICY_URL } from '@/config/appInfo';
 
 type PrivacyExplanationNavProp = NativeStackNavigationProp<
   OnboardingStackParamList,
@@ -64,8 +66,7 @@ export default function PrivacyExplanationScreen() {
   const navigation = useNavigation<PrivacyExplanationNavProp>();
 
   const handleViewPrivacyPolicy = () => {
-    // Navigate to the PrivacyPolicy screen on the root stack
-    (navigation as any).navigate('PrivacyPolicy');
+    WebBrowser.openBrowserAsync(PRIVACY_POLICY_URL);
   };
 
   return (

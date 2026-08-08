@@ -21,7 +21,7 @@ export type RootStackParamList = {
   UsageHistory: { cardId: string };
   ReminderConfig: { cardId: string };
   KpiChange: undefined;
-  PrivacyPolicy: undefined;
+  Licenses: undefined;
   DevEventViewer: undefined;
   WalletInsights: undefined;
   ToolInsights: { cardId: string };

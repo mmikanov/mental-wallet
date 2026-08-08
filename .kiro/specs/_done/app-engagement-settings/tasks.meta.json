@@ -1,0 +1,771 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "Add constants to `src/config/appInfo.ts`: `APP_STORE_URL`, `PLAY_STORE_URL`, `APP_SUPPORT_EMAIL`, `APP_FEEDBACK_EMAIL`": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157865430
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157888295
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157919615
+      }
+    ],
+    "Add `getStoreUrl()` function returning platform-appropriate store URL": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157865496
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157925666
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157965228
+      }
+    ],
+    "Add `getAppVersion()` function reading from `expo-constants` with dev fallback": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157865530
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157968332
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158010652
+      }
+    ],
+    "Verify type-checking passes with `npm run typecheck`": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157865561
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158013509
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158052984
+      }
+    ],
+    "Run `npx expo install expo-store-review`": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157865664
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158059359
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158104183
+      }
+    ],
+    "Verify the package is added to `package.json` dependencies": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157865696
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158107093
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158122021
+      }
+    ],
+    "Verify type-checking passes (types are bundled with the package)": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157865729
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158125021
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158128494
+      }
+    ],
+    "Add `TermsOfService` route to `RootStackParamList` in `src/navigation/types.ts`": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157865761
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158135764
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158155640
+      }
+    ],
+    "Create `src/screens/TermsOfServiceScreen.tsx` following PrivacyPolicyScreen pattern (scrollable sections, back button header, \"Last updated\" date)": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157865795
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158158895
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158240002
+      }
+    ],
+    "Write Terms of Service content as a `TERMS_SECTIONS` constant covering: acceptance of terms, license to use, prohibited uses, intellectual property, disclaimer of warranties, limitation of liability, termination/data deletion, governing law, changes to terms": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157865829
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158244322
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158247586
+      }
+    ],
+    "Register `TermsOfServiceScreen` in `RootNavigator.tsx`": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157865862
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158250918
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158282054
+      }
+    ],
+    "Add \"Terms of Service\" (📄) menu item to Settings Privacy & Data section, below Privacy Policy": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157865896
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158285265
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158316771
+      }
+    ],
+    "Verify navigation works and type-checking passes": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157865929
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158319910
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158369311
+      }
+    ],
+    "Create `scripts/generate-licenses.js` that:": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157866051
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158373307
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158443746
+      }
+    ],
+    "Add npm script: `\"generate-licenses\": \"node scripts/generate-licenses.js\"`": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157866102
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158448096
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158464229
+      }
+    ],
+    "Run the script to generate initial `src/data/licenses.json`": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157866205
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158467261
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158501965
+      }
+    ],
+    "Add EAS Build hook in `eas.json` to run the script pre-build": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157866421
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158505038
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158580620
+      }
+    ],
+    "Add `src/data/licenses.json` to `.gitignore` (generated file, not committed)": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157866494
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158583736
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158602576
+      }
+    ],
+    "Create `src/services/appActionsService.ts`": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157866596
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158609384
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158702776
+      }
+    ],
+    "Implement `requestAppReview()`: check `isAvailableAsync()` → `requestReview()` or fall back to store URL": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157866629
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158706730
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158709747
+      }
+    ],
+    "Implement `shareApp()`: use React Native `Share.share()` with pre-composed message using `APP_NAME` and `getStoreUrl()`": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157866665
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158713117
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158716362
+      }
+    ],
+    "Implement `contactSupport()`: compose mailto with `APP_SUPPORT_EMAIL`, subject using `APP_NAME`, device info footer via `getAppVersion()` and `Platform`; alert fallback": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157866759
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158719763
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158723171
+      }
+    ],
+    "Implement `sendFeedback()`: compose mailto with `APP_FEEDBACK_EMAIL`, friendly prompt body, same device info footer; alert fallback": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157866800
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158726433
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158730314
+      }
+    ],
+    "Verify type-checking passes": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158747734
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158790978
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159724111
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159727521
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159738412
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159755486
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159759807
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159774722
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159787466
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159801372
+      }
+    ],
+    "Add `Licenses` route to `RootStackParamList` in `src/navigation/types.ts`": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157866881
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158806278
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158826074
+      }
+    ],
+    "Create `src/screens/LicensesScreen.tsx`:": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157866912
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158829444
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158903252
+      }
+    ],
+    "Register `LicensesScreen` in `RootNavigator.tsx`": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157866948
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158907276
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158935626
+      }
+    ],
+    "Add \"Open-Source Licenses\" touchable to the bottom of `AboutScreen.tsx` (after Trademark Notice section)": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157866983
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158939598
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158981032
+      }
+    ],
+    "Verify navigation works": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157867012
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786158984479
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159038710
+      }
+    ],
+    "Import `requestAppReview`, `shareApp`, `contactSupport`, `sendFeedback` from `@/services/appActionsService`": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157867045
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159051280
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159113026
+      }
+    ],
+    "Import `APP_NAME` from `@/config/appInfo`": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157867098
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159116492
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159119622
+      }
+    ],
+    "Add \"Support Us\" section between \"Safety\" and \"Help & Feedback\" with:": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157867145
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159123359
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159126758
+      }
+    ],
+    "Add \"Help & Feedback\" section between \"Support Us\" and \"About\" with:": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157867182
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159130124
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159134410
+      }
+    ],
+    "Verify accessibility labels and roles on all new items": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157867239
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159137977
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159141225
+      }
+    ],
+    "Import `getAppVersion` from `@/config/appInfo`": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157867316
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159145537
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159189477
+      }
+    ],
+    "Replace hardcoded `Version 1.0.0` text with `getAppVersion()` return value": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157867345
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159193055
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159196426
+      }
+    ],
+    "Verify it displays \"Version (dev)\" in development and reads from config in production builds": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157867370
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159200979
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159235861
+      }
+    ],
+    "Run `npm run typecheck` — all passes": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157867409
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159247168
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159303021
+      }
+    ],
+    "Run `npm test` — no regressions": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157867449
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159306478
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159429354
+      }
+    ],
+    "Run `npm run lint` — no new warnings": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157867493
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159432957
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159608078
+      }
+    ],
+    "Verify Settings screen section order: Start Experience → Focus → Insights → Privacy & Data (with ToS) → Safety → Support Us → Help & Feedback → About": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157867534
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159611675
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159636363
+      }
+    ],
+    "Verify About screen shows: dynamic version, attributions, licenses link": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157867580
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159640763
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159658592
+      }
+    ],
+    "Verify each action works: rate opens review/store, share opens share sheet, contact/feedback opens email": [
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786157867614
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159662594
+      },
+      {
+        "executionId": "3ff1a65e-3af7-49f3-a079-54556c7b69fc",
+        "chatSessionId": "sess_0110d99d-5ea4-4278-be60-92d237fd3adb",
+        "timestamp": 1786159709653
+      }
+    ]
+  }
+}

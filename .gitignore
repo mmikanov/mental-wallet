@@ -36,3 +36,6 @@ yarn-error.*
 
 # Mock analytics server data
 tools/mock-analytics-server/received_events.json
+
+# Generated license data (built by scripts/generate-licenses.js)
+src/data/licenses.json

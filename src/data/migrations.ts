@@ -30,6 +30,7 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
   await runEmotionSessionsExpansionMigration(db);
   await runCrisisResourcesCanadaMigration(db);
   await runOriginBadgeAppMigration(db);
+  await runOutcomeResponsesMigration(db);
 }
 
 /**
@@ -758,3 +759,24 @@ async function runOriginBadgeAppMigration(db: SQLiteDatabase): Promise<void> {
     throw error;
   }
 }
+
+
+/**
+ * Creates the outcome_responses table for storing post-completion check-in data.
+ * Uses CREATE TABLE/INDEX IF NOT EXISTS for idempotency.
+ */
+export async function runOutcomeResponsesMigration(db: SQLiteDatabase): Promise<void> {
+  await db.execAsync(OUTCOME_RESPONSES_SCHEMA_SQL);
+}
+
+const OUTCOME_RESPONSES_SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS outcome_responses (
+  id TEXT PRIMARY KEY,
+  card_id TEXT NOT NULL,
+  category TEXT NOT NULL CHECK(category IN ('calmer', 'clearer', 'hopeful', 'same', 'worse')),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_outcome_responses_card ON outcome_responses(card_id);
+CREATE INDEX IF NOT EXISTS idx_outcome_responses_created_at ON outcome_responses(created_at);
+`;

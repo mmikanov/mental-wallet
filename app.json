@@ -22,7 +22,6 @@
     },
     "android": {
       "adaptiveIcon": {
-        //"foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.mentalhealthwallet.app",
@@ -36,7 +35,8 @@
       "expo-image-picker",
       "expo-sqlite",
       "expo-asset",
-      "expo-font"
+      "expo-font",
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {

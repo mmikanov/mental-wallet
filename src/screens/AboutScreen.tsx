@@ -9,7 +9,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
-import { APP_NAME } from '@/config/appInfo';
+import { APP_NAME, getAppVersion } from '@/config/appInfo';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'About'>;
 
@@ -33,7 +33,7 @@ export default function AboutScreen({ navigation }: Props) {
         {/* App Identity */}
         <View style={styles.appIdentitySection}>
           <Text style={styles.appName}>{APP_NAME}</Text>
-          <Text style={styles.versionText}>Version 1.0.0</Text>
+          <Text style={styles.versionText}>{getAppVersion()}</Text>
         </View>
 
         {/* Disclaimer */}
@@ -108,6 +108,19 @@ export default function AboutScreen({ navigation }: Props) {
               researchers or organizations mentioned above.
             </Text>
           </View>
+        </View>
+
+        {/* Open-Source Licenses */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={styles.licensesLink}
+            onPress={() => navigation.navigate('Licenses')}
+            accessibilityLabel="Open-Source Licenses"
+            accessibilityRole="button"
+          >
+            <Text style={styles.licensesLinkText}>Open-Source Licenses</Text>
+            <Text style={styles.licensesChevron}>›</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -211,5 +224,24 @@ const styles = StyleSheet.create({
   },
   bold: {
     fontWeight: '600',
+  },
+  licensesLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    minHeight: 52,
+  },
+  licensesLinkText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#4A90D9',
+    fontWeight: '500',
+  },
+  licensesChevron: {
+    fontSize: 22,
+    color: '#CCCCCC',
+    fontWeight: '300',
   },
 });
