@@ -50,8 +50,8 @@ npm run lint
 ## Build & Deploy
 
 - EAS Build configured via `eas.json`
-- iOS bundle ID: `com.mentalhealthwallet.app`
-- Android package: `com.mentalhealthwallet.app`
+- iOS bundle ID: `com.mentalwallet.app`
+- Android package: `com.mentalwallet.app`
 
 ## Important Conventions
 

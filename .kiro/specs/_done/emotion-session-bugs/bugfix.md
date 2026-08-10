@@ -2,13 +2,15 @@
 
 ## Introduction
 
-This document covers three bugs in the emotion session launcher that degrade the user experience when interacting with recommended tools during a session.
+This document covers four bugs in the emotion session launcher that degrade the user experience when interacting with recommended tools during a session.
 
 **Bug 1**: When a user previews a recommended library tool during an emotion session, clicking "Back to session" returns them to the top of the page (emotion selection) instead of the recommendations section where they were browsing. This disrupts the user's flow and forces them to scroll back down.
 
 **Bug 2**: When a user adds a recommended library tool to their wallet during an emotion session (button shows "Added ✓"), then navigates away from the session (e.g., focuses another card or returns to the wallet stack) and comes back, the tool reverts to showing "Add to wallet" instead of "Added ✓". The "added" state is lost because it is stored in local React component state that resets on unmount.
 
 **Bug 3**: When a user is in an emotion session, opens a recommended tool's preview, taps "Learn more" to view the rationale sheet, and then taps the "In crisis? Get support →" link, the rationale sheet closes but the Crisis Resources screen does not open. The navigation action is missing from the handler.
+
+**Bug 4**: The "Start from how I feel" session launcher card shows a "Duplicate tool" option in its kebab menu. This is a singleton system card that cannot meaningfully be duplicated, so the option should be hidden for this card only.
 
 ## Bug Analysis
 
@@ -95,3 +97,26 @@ This document covers three bugs in the emotion session launcher that degrade the
 9.3 WHEN the user dismisses the rationale sheet without tapping the crisis link (via swipe, close button, or backdrop tap) THEN the system SHALL CONTINUE TO only dismiss the sheet without any navigation
 
 9.4 WHEN the card is NOT distress-related THEN the system SHALL CONTINUE TO not show the "In crisis? Get support →" link in the rationale sheet
+
+
+---
+
+## Bug 4: Duplicate Tool Option Shown on Session Launcher Card
+
+### Current Behavior (Defect)
+
+10.1 WHEN the user focuses the "Start from how I feel" session launcher card and opens its kebab menu THEN the system displays a "Duplicate tool" option alongside the other menu items
+
+10.2 WHEN the user taps "Duplicate tool" on the session launcher card THEN the system creates a copy that cannot function as a session launcher, producing a broken card
+
+### Expected Behavior (Correct)
+
+11.1 WHEN the user focuses the "Start from how I feel" session launcher card and opens its kebab menu THEN the system SHALL NOT display the "Duplicate tool" option
+
+11.2 WHEN building the kebab menu item list for the session launcher card (id: `session-launcher`) THEN the system SHALL skip the "Duplicate tool" entry
+
+### Unchanged Behavior (Regression Prevention)
+
+12.1 WHEN the user focuses any other card (library, community, or my_tool origin) and opens its kebab menu THEN the system SHALL CONTINUE TO display the "Duplicate tool" option as it currently does
+
+12.2 WHEN the user focuses the session launcher card and opens its kebab menu THEN the system SHALL CONTINUE TO display all other menu items (View usage history, Set reminder, Archive card) as it currently does

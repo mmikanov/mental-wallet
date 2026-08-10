@@ -7,7 +7,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleDisplayName</key>
-    <string>Mental Health Wallet</string>
+    <string>Mental Wallet</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -27,13 +27,13 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>com.mentalhealthwallet.app</string>
+          <string>com.mentalwallet.app</string>
         </array>
       </dict>
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>exp+mental-health-wallet</string>
+          <string>exp+mental-wallet</string>
         </array>
       </dict>
     </array>

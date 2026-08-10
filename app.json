@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Mental Health Wallet",
-    "slug": "mental-health-wallet",
+    "name": "Mental Wallet",
+    "slug": "mental-wallet",
     "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,21 +10,22 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#788d75"
     },
     "ios": {
       "buildNumber": "1",
       "supportsTablet": true,
-      "bundleIdentifier": "com.mentalhealthwallet.app",
+      "bundleIdentifier": "com.mentalwallet.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#788d75"
       },
-      "package": "com.mentalhealthwallet.app",
+      "package": "com.mentalwallet.app",
       "permissions": [
         "android.permission.RECORD_AUDIO"
       ]

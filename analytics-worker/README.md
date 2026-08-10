@@ -70,6 +70,10 @@ npx wrangler secret put DASHBOARD_SECRET
 # Enter a strong random string when prompted
 ```
 
+You'll need it every time you open the dashboard or query raw events. It's basically the password to your analytics.
+
+Store it somewhere you keep credentials (password manager, 1Password, a secure note). If you ever lose it, you can overwrite it by running npx wrangler secret put DASHBOARD_SECRET again with a new value.
+
 ### 6. Deploy
 
 ```bash

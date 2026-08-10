@@ -1,5 +1,5 @@
 /**
- * Navigation type definitions for the Mental Health Wallet app.
+ * Navigation type definitions for the Mental Wallet app.
  * Defines the param lists for root stack and bottom tab navigators.
  */
 

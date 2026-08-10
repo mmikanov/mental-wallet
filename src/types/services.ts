@@ -1,5 +1,5 @@
 /**
- * Service layer interfaces for Mental Health Wallet MVP.
+ * Service layer interfaces for Mental Wallet MVP.
  * These define the contracts for the business logic layer.
  */
 

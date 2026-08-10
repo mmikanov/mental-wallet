@@ -2,11 +2,12 @@
 
 ## Overview
 
-This design addresses three bugs in the emotion session launcher that degrade UX when interacting with recommended library tools during a session:
+This design addresses four bugs in the emotion session launcher that degrade UX when interacting with recommended library tools during a session:
 
 1. **Scroll position lost** — Closing a library tool preview returns the user to the top of the session view instead of the recommendations section.
 2. **Added-to-wallet state lost** — The "Added ✓" indicator resets when `SessionLauncherContent` unmounts/remounts because it's stored in local React state instead of the Zustand session store.
 3. **Crisis link doesn't navigate** — Tapping "In crisis? Get support →" in the rationale sheet opened from `LibraryToolPreview` closes the sheet but doesn't navigate to the Crisis Resources screen.
+4. **Duplicate option on session launcher** — The kebab menu shows "Duplicate tool" for the singleton session launcher card, which cannot meaningfully be duplicated.
 
 All three fixes are minimal, targeted changes within the session component tree. No architectural changes are required.
 
@@ -23,6 +24,8 @@ All three fixes are minimal, targeted changes within the session component tree.
 - **addedToWalletMapping**: Local state (`Map<string, string>`) mapping library card IDs to their newly created wallet card IDs
 - **recoContainerY**: Ref storing the measured Y offset of the recommendations container for scroll targeting
 - **RationaleSheet**: Bottom sheet component at `src/components/rationale/RationaleSheet.tsx` showing evidence and research behind a tool
+- **CardKebabMenu**: Bottom-sheet menu component at `src/components/wallet/CardKebabMenu.tsx` that displays contextual actions (Edit, Duplicate, View usage history, Set reminder, Archive) for a focused card
+- **SESSION_LAUNCHER_CARD**: The seed definition (id: `session-launcher`) for the "Start from how I feel" card, a singleton system card that drives the emotion session flow
 
 ## Bug Details
 
@@ -75,11 +78,27 @@ FUNCTION isBugCondition_Bug3(state)
 END FUNCTION
 ```
 
+### Bug 4: Duplicate Tool Option Shown on Session Launcher Card
+
+The bug manifests when the user focuses the "Start from how I feel" session launcher card and opens its kebab menu. The `CardKebabMenu` component unconditionally pushes "Duplicate tool" into the menu items array for all cards. Since the session launcher is a singleton system card (id: `session-launcher`) that cannot be meaningfully duplicated, this option should be excluded.
+
+**Formal Specification:**
+```
+FUNCTION isBugCondition_Bug4(state)
+  INPUT: state of type { card: Card, menuVisible: boolean }
+  OUTPUT: boolean
+
+  RETURN state.card.id === 'session-launcher'
+         AND state.menuVisible === true
+END FUNCTION
+```
+
 ### Examples
 
 - **Bug 1**: User sees 3 recommended tools, taps tool #2 to preview, presses "← Back to session" → sees the emotion picker at the top instead of the recommendations list
 - **Bug 2**: User adds "5-4-3-2-1 Grounding" to wallet (button shows "Added ✓"), taps a wallet tool recommendation which focuses that card, returns to session launcher → button shows "Add to wallet" again instead of "Added ✓"
 - **Bug 3**: User previews "Deep Breathing" (a distress-related tool), taps "Learn more", taps "In crisis? Get support →" → rationale sheet closes but screen doesn't change; expected: navigates to Crisis Resources screen
+- **Bug 4**: User focuses the "Start from how I feel" card, taps the kebab menu → sees "Duplicate tool" option; expected: that option should not appear for this card
 
 ## Expected Behavior
 
@@ -95,11 +114,14 @@ END FUNCTION
 - Dismissing the rationale sheet without tapping the crisis link must only close the sheet
 
 **Scope:**
-All inputs that do NOT involve the three bug conditions should be completely unaffected by these fixes. This includes:
+All inputs that do NOT involve the four bug conditions should be completely unaffected by these fixes. This includes:
 - Normal session flow without previewing tools
 - Opening wallet tools from recommendations (navigates away, not inline preview)
 - Adding tools that aren't later unmount/remount-cycled
 - Crisis link from non-session surfaces (Library Browser, Focused Wallet Card)
+
+**Additionally for Bug 4:**
+- Kebab menu items for all non-session-launcher cards (library, community, my_tool)
 
 ## Hypothesized Root Cause
 
@@ -120,6 +142,12 @@ All inputs that do NOT involve the three bug conditions should be completely una
 1. **Handler only dismisses the rationale sheet**: In `LibraryToolPreview.tsx` line 111, the handler is `() => setRationaleVisible(false)`. It doesn't close the preview or trigger navigation.
 2. **`LibraryToolPreview` has no navigation prop**: Unlike `FocusedCardView` (which uses `useNavigation()`) or `CardPreviewSheet` (which receives `onCrisisResourcesPress` from its parent screen), `LibraryToolPreview` has no mechanism to navigate.
 3. **The navigation action must propagate up**: The component needs a callback prop (like `onCrisisResourcesPress`) that the parent (`SessionLauncherContent`) can wire to close the preview and navigate.
+
+### Bug 4: Unconditional "Duplicate tool" Menu Item
+
+1. **`CardKebabMenu` pushes "Duplicate tool" for all cards**: The menu item builder does not check the card's identity or type before adding the duplicate option.
+2. **Session launcher is a singleton system card**: The card with id `session-launcher` is a special-purpose card that drives the emotion session flow. Duplicating it produces a non-functional card because the session launcher behavior is tied to its specific ID.
+3. **No existing guard for card-specific menu filtering**: The only existing conditional is `isEditable` (based on `originBadge`), which controls "Edit" visibility. There was no mechanism to suppress other items for specific cards.
 
 ## Correctness Properties
 
@@ -158,6 +186,18 @@ Property 6: Preservation — Crisis Link from Other Surfaces Unchanged
 _For any_ state where the user taps the crisis link from the rationale sheet in `FocusedCardView` or `CardPreviewSheet`, the navigation behavior SHALL remain identical to the current implementation (dismiss sheet/preview, navigate to CrisisResources).
 
 **Validates: Requirements 9.1, 9.2, 9.3**
+
+Property 7: Bug Condition — Duplicate Option Hidden for Session Launcher
+
+_For any_ state where the card is the session launcher (id: `session-launcher`) and the kebab menu is open, the menu items SHALL NOT include "Duplicate tool".
+
+**Validates: Requirements 11.1, 11.2**
+
+Property 8: Preservation — Duplicate Option Available for All Other Cards
+
+_For any_ state where the card is NOT the session launcher and the kebab menu is open, the menu items SHALL include "Duplicate tool" as before.
+
+**Validates: Requirements 12.1, 12.2**
 
 ## Fix Implementation
 
@@ -210,6 +250,15 @@ _For any_ state where the user taps the crisis link from the rationale sheet in 
 **Specific Changes**:
 1. **Pass navigation callback to SessionLauncherContent**: Add an `onCrisisResourcesPress` prop that calls `navigation.navigate('CrisisResources')`.
 
+#### Bug 4: Hide Duplicate Option for Session Launcher Card
+
+**File**: `src/components/wallet/CardKebabMenu.tsx`
+
+**Specific Changes**:
+1. **Add conditional guard around "Duplicate tool" menu item**: Wrap the `menuItems.push({ label: 'Duplicate tool', ... })` call in a condition that checks `card.id !== 'session-launcher'`. The session launcher is a singleton system card that cannot be meaningfully duplicated.
+
+**Rationale**: The fix is a single-line guard in the menu item builder. No new props, state, or components are needed because the card's ID is already available via the existing `card` prop.
+
 ## Testing Strategy
 
 ### Validation Approach
@@ -226,15 +275,19 @@ The testing strategy follows a two-phase approach per bug: first, surface counte
 
 **Bug 3 Test Plan**: Write a test that renders `LibraryToolPreview` with a distress-related card, opens the rationale sheet, and simulates pressing the crisis link. Assert that the `onCrisisResourcesPress` prop was called (or that navigation occurred). Run on unfixed code to confirm the navigation doesn't happen.
 
+**Bug 4 Test Plan**: Write a test that renders `CardKebabMenu` with a card whose id is `session-launcher`. Assert that the rendered menu items do NOT include "Duplicate tool". Run on unfixed code to confirm failure (duplicate option is present).
+
 **Test Cases**:
 1. **Bug 1 — Preview close scroll** (will fail on unfixed code): Close preview → assert scrollTo called with recoContainerY
 2. **Bug 2 — Remount state** (will fail on unfixed code): Add tool → unmount → remount → assert "Added ✓" displayed
 3. **Bug 3 — Crisis navigation** (will fail on unfixed code): Open rationale → tap crisis link → assert navigation callback invoked
+4. **Bug 4 — Duplicate hidden for session launcher** (will fail on unfixed code): Render menu for session-launcher card → assert "Duplicate tool" not in items
 
 **Expected Counterexamples**:
 - Bug 1: ScrollView scrollTo is never called after preview close; scroll offset remains 0
 - Bug 2: `addedToWalletIds` is empty Set on remount; UI shows "Add to wallet" instead of "Added ✓"
 - Bug 3: `onCrisisResourcesPress` prop is not invoked; only `setRationaleVisible(false)` fires
+- Bug 4: "Duplicate tool" item is present in the menu items list for the session-launcher card
 
 ### Fix Checking
 
@@ -311,6 +364,8 @@ END FOR
 - Test `LibraryToolPreview` dismisses rationale sheet before calling crisis callback
 - Test `SessionLauncherContent` scroll effect fires when preview closes and recommendations exist
 - Test `SessionLauncherContent` reads added-to-wallet state from store (not local state)
+- Test `CardKebabMenu` does NOT include "Duplicate tool" when card id is `session-launcher`
+- Test `CardKebabMenu` includes "Duplicate tool" for all other card origins/IDs
 
 ### Property-Based Tests
 

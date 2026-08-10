@@ -1,5 +1,5 @@
 /**
- * Mental Health Wallet — Production Analytics Worker
+ * Mental Wallet — Production Analytics Worker
  *
  * Routes:
  *   POST /events     — Ingest batch payload from the app (no auth, CORS enabled)
@@ -60,6 +60,9 @@ interface AnalyticsEventPayload {
   session_id: string;
   event_type: string;
   timestamp: string;
+  platform?: string;
+  os_version?: string;
+  app_version?: string;
   properties?: Record<string, unknown>;
 }
 
@@ -112,7 +115,7 @@ async function handlePostEvents(request: Request, env: Env): Promise<Response> {
   // Insert events into D1
   const receivedAt = new Date().toISOString();
   const stmt = env.DB.prepare(
-    'INSERT INTO events (id, anonymous_user_id, session_id, event_type, timestamp, properties, received_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    'INSERT INTO events (id, anonymous_user_id, session_id, event_type, timestamp, properties, platform, os_version, app_version, received_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
   );
 
   // D1 batch supports up to 100 statements per batch call
@@ -124,7 +127,10 @@ async function handlePostEvents(request: Request, env: Env): Promise<Response> {
     const statements = chunk.map((event) => {
       const id = crypto.randomUUID();
       const properties = event.properties ? JSON.stringify(event.properties) : null;
-      return stmt.bind(id, event.anonymous_user_id, event.session_id, event.event_type, event.timestamp, properties, receivedAt);
+      const platform = event.platform || null;
+      const osVersion = event.os_version || null;
+      const appVersion = event.app_version || null;
+      return stmt.bind(id, event.anonymous_user_id, event.session_id, event.event_type, event.timestamp, properties, platform, osVersion, appVersion, receivedAt);
     });
     await env.DB.batch(statements);
   }
@@ -208,6 +214,7 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
     toolCompletedResult,
     outcomeResult,
     retentionResult,
+    platformResult,
   ] = await Promise.all([
     env.DB.prepare('SELECT COUNT(*) as total FROM events').first<{ total: number }>(),
     env.DB.prepare('SELECT COUNT(DISTINCT anonymous_user_id) as count FROM events').first<{ count: number }>(),
@@ -218,6 +225,7 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
     env.DB.prepare("SELECT COUNT(*) as count FROM events WHERE event_type = 'tool_completed'").first<{ count: number }>(),
     env.DB.prepare("SELECT json_extract(properties, '$.response') as response, COUNT(*) as count FROM events WHERE event_type = 'outcome_response' GROUP BY response").all(),
     env.DB.prepare("SELECT json_extract(properties, '$.days_since_install') as days, COUNT(DISTINCT anonymous_user_id) as users FROM events WHERE event_type = 'app_opened' GROUP BY days").all(),
+    env.DB.prepare("SELECT platform, COUNT(DISTINCT anonymous_user_id) as users FROM events WHERE platform IS NOT NULL GROUP BY platform").all(),
   ]);
 
   // Compute mode split
@@ -247,6 +255,11 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
     totalOutcomes += row.count;
   }
 
+  // Compute platform split
+  const platformRows = platformResult.results as Array<{ platform: string; users: number }>;
+  const iosUsers = platformRows.find(r => r.platform === 'ios')?.users || 0;
+  const androidUsers = platformRows.find(r => r.platform === 'android')?.users || 0;
+
   const kpis = {
     totalEvents: totalResult?.total || 0,
     uniqueUsers: usersResult?.count || 0,
@@ -266,6 +279,8 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
       ? ((outcomes.calmer + outcomes.clearer + outcomes.hopeful) / totalOutcomes) * 100
       : 0,
     retention,
+    iosUsers,
+    androidUsers,
   };
 
   return corsResponse(JSON.stringify(kpis), {
@@ -386,6 +401,45 @@ async function handleDetailOutcomes(request: Request, env: Env): Promise<Respons
   });
 }
 
+async function handleDetailPlatforms(request: Request, env: Env): Promise<Response> {
+  if (!isAuthorized(request, env)) return unauthorizedResponse();
+
+  const [platformResult, osVersionResult, appVersionResult] = await Promise.all([
+    env.DB.prepare(`
+      SELECT platform, COUNT(DISTINCT anonymous_user_id) as users, COUNT(*) as events
+      FROM events
+      WHERE platform IS NOT NULL
+      GROUP BY platform
+      ORDER BY users DESC
+    `).all(),
+    env.DB.prepare(`
+      SELECT platform, os_version, COUNT(DISTINCT anonymous_user_id) as users
+      FROM events
+      WHERE platform IS NOT NULL AND os_version IS NOT NULL
+      GROUP BY platform, os_version
+      ORDER BY users DESC
+      LIMIT 50
+    `).all(),
+    env.DB.prepare(`
+      SELECT app_version, COUNT(DISTINCT anonymous_user_id) as users, COUNT(*) as events
+      FROM events
+      WHERE app_version IS NOT NULL
+      GROUP BY app_version
+      ORDER BY app_version DESC
+      LIMIT 20
+    `).all(),
+  ]);
+
+  return corsResponse(JSON.stringify({
+    platforms: platformResult.results,
+    osVersions: osVersionResult.results,
+    appVersions: appVersionResult.results,
+  }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
 // --- Main Fetch Handler ---
 
 export default {
@@ -428,6 +482,9 @@ export default {
     }
     if (path === '/details/outcomes' && request.method === 'GET') {
       return handleDetailOutcomes(request, env);
+    }
+    if (path === '/details/platforms' && request.method === 'GET') {
+      return handleDetailPlatforms(request, env);
     }
 
     // Health check

@@ -133,7 +133,10 @@ export default function CardKebabMenu({
     menuItems.push({ label: 'Edit', icon: '✏️', action: handleEdit });
   }
 
-  menuItems.push({ label: 'Duplicate tool', icon: '📋', action: handleDuplicate });
+  // Session launcher cannot be duplicated (it's a singleton system card)
+  if (card.id !== 'session-launcher') {
+    menuItems.push({ label: 'Duplicate tool', icon: '📋', action: handleDuplicate });
+  }
   menuItems.push({ label: 'View usage history', icon: '📊', action: handleViewUsageHistory });
   if (onViewInsights) {
     menuItems.push({ label: 'Insights', icon: '💡', action: handleViewInsights });

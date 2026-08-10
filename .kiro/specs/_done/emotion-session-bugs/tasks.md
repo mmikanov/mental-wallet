@@ -69,6 +69,16 @@
 - [x] Run full test suite (npm test) and confirm all tests pass. Confirm crisis link from session preview navigates to CrisisResources. Confirm crisis link from Library Browser and Focused Card still works. Confirm rationale dismiss without crisis tap does not navigate.
 - _Requirements: 7.1, 8.1, 8.2, 9.1, 9.2, 9.3_
 
+## Task 13: Fix duplicate option shown on session launcher card
+
+- [x] 13.1: In `src/components/wallet/CardKebabMenu.tsx`, add guard `if (card.id !== 'session-launcher')` around the "Duplicate tool" menu item push. Verify existing CardKebabMenu tests still pass.
+- _Requirements: 10.1, 10.2, 11.1, 11.2, 12.1, 12.2_
+
+## Task 14: Checkpoint — Bug 4 complete
+
+- [x] Run CardKebabMenu tests (npm test -- --testPathPattern=CardKebabMenu) and confirm all pass. Confirm "Duplicate tool" is absent for session-launcher card. Confirm it remains present for all other card types.
+- _Requirements: 11.1, 11.2, 12.1, 12.2_
+
 ## Task Dependency Graph
 
 ```json
@@ -82,7 +92,9 @@
     { "id": 5, "tasks": ["8"] },
     { "id": 6, "tasks": ["9", "10"] },
     { "id": 7, "tasks": ["11"] },
-    { "id": 8, "tasks": ["12"] }
+    { "id": 8, "tasks": ["12"] },
+    { "id": 9, "tasks": ["13"] },
+    { "id": 10, "tasks": ["14"] }
   ]
 }
 ```
@@ -91,8 +103,10 @@
 
 - Tech stack: React Native, Expo SDK 54, TypeScript, Zustand 5, React Navigation 7, Jest with jest-expo, fast-check 3 for PBT
 - Path alias: `@/*` maps to `src/*`
-- All three bugs are in the session component tree (`src/components/session/`) and session store (`src/stores/sessionStore.ts`)
+- Bugs 1–3 are in the session component tree (`src/components/session/`) and session store (`src/stores/sessionStore.ts`)
+- Bug 4 is in the kebab menu component (`src/components/wallet/CardKebabMenu.tsx`)
 - Bugs are fixed sequentially — complete one full cycle before starting the next
 - Property-based tests use fast-check 3 and run via Jest (`npm test`)
 - Exploration tests are expected to FAIL on unfixed code (confirming the bug exists) then PASS after the fix
 - Preservation tests are expected to PASS on both unfixed and fixed code (confirming no regressions)
+- Bug 4 was a trivial one-line fix (ID check guard) so exploration/preservation tests were skipped in favor of verifying existing tests pass

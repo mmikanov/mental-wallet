@@ -14,7 +14,7 @@
 - [ ] Create `src/components/wallet/BadgeCelebration.tsx` (animated overlay for new badge)
 - [ ] Update BadgeRow on FocusedCardView to display actual earned badges for that card
 - [ ] Create `src/screens/AchievementsScreen.tsx` (all badges in a grid, accessible from wallet kebab)
-- [ ] Implement "Share this achievement" using expo-sharing with pre-filled post text + #MentalHealthWallet
+- [ ] Implement "Share this achievement" using expo-sharing with pre-filled post text + #MentalWallet
 - [ ] Add navigation route for AchievementsScreen
 - _Requirements: 1.4, 1.5, 1.6_
 

@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "39a175eb-3da5-4504-99db-9adba95a473a"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.mmikanovsky.mentalwalletanalytics",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    }
+  }
+}

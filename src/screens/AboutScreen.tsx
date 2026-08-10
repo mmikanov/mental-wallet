@@ -1,7 +1,7 @@
 /**
  * AboutScreen — App information, disclaimers, attributions, and version.
  *
- * Accessible from Settings → About Mental Health Wallet.
+ * Accessible from Settings → About Mental Wallet.
  */
 
 import React from 'react';

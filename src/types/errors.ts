@@ -1,5 +1,5 @@
 /**
- * Error types for Mental Health Wallet MVP.
+ * Error types for Mental Wallet MVP.
  * Covers all error categories defined in the design document.
  */
 

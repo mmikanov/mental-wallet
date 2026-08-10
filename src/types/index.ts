@@ -1,5 +1,5 @@
 /**
- * Core domain types for Mental Health Wallet MVP.
+ * Core domain types for Mental Wallet MVP.
  * Based on the Universal Card Model, Control Types, and data entities from the design document.
  */
 

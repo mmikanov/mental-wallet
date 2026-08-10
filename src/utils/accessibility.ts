@@ -1,5 +1,5 @@
 /**
- * Accessibility utilities for Mental Health Wallet.
+ * Accessibility utilities for Mental Wallet.
  *
  * Provides helper functions and constants for screen reader announcements,
  * accessibility labels, and state transition notifications.

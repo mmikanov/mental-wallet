@@ -86,8 +86,8 @@ eas submit --platform ios
 
 - First submission requires you to create the app in App Store Connect:
   - Go to App Store Connect → My Apps → "+" → New App
-  - Bundle ID: `com.mentalhealthwallet.app`
-  - Name: "Mental Health Wallet"
+  - Bundle ID: `com.mentalwallet.app`
+  - Name: "Mental Wallet"
 - EAS handles code signing automatically (managed credentials)
 - Builds are done in the cloud — no local Xcode build needed
 

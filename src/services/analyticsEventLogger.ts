@@ -11,6 +11,8 @@
 import type { AnalyticsEvent, AnalyticsEventType } from '@/types/analytics';
 import { getSessionState } from '@/services/analyticsSession';
 import { insertEvent, evictOldestIfFull } from '@/data/analyticsEventQueue';
+import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 // --- Constants ---
 
@@ -217,6 +219,9 @@ export async function logEvent(
       session_id: session.sessionId,
       event_type: eventType,
       timestamp,
+      platform: Platform.OS as 'ios' | 'android',
+      os_version: String(Platform.Version),
+      app_version: Constants.expoConfig?.version ?? 'unknown',
       ...(properties !== undefined ? { properties } : {}),
     } as AnalyticsEvent;
 

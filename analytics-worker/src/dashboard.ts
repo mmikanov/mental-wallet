@@ -9,7 +9,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Analytics Dashboard — Mental Health Wallet</title>
+  <title>Analytics Dashboard — Mental Wallet</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -141,7 +141,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
 </head>
 <body>
   <h1>Analytics Dashboard</h1>
-  <p class="subtitle">Mental Health Wallet — Production</p>
+  <p class="subtitle">Mental Wallet — Production</p>
 
   <div class="status-bar">
     <span class="dot"></span>
@@ -249,6 +249,11 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
             <div class="value">\${pct(kpis.outcomePositivity)}</div>
             \${renderOutcomeBar(kpis.outcomes, kpis.totalOutcomes)}
           </div>
+          <div class="card" onclick="showDetail('platforms')">
+            <h3>Platform Split</h3>
+            <div class="value">\${num(kpis.iosUsers)} / \${num(kpis.androidUsers)}</div>
+            <div class="detail">iOS / Android users — Click for details</div>
+          </div>
         </div>
 
         <div id="detail-panel"></div>
@@ -341,6 +346,32 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
           '<table><thead><tr><th>Response</th><th>Count</th><th>Percentage</th></tr></thead><tbody>' +
           outcomes.map(function(o) {
             return '<tr><td>' + (o.response || '-') + '</td><td>' + o.count + '</td><td>' + (total > 0 ? (o.count / total * 100).toFixed(1) + '%' : '-') + '</td></tr>';
+          }).join('') +
+          '</tbody></table></div>';
+      }
+
+      if (type === 'platforms') {
+        var platforms = (data && data.platforms) ? data.platforms : [];
+        var osVersions = (data && data.osVersions) ? data.osVersions : [];
+        var appVersions = (data && data.appVersions) ? data.appVersions : [];
+        html = '<div class="detail-panel">' +
+          '<h3>Platform & Version Breakdown <button class="close-btn" onclick="closeDetail()">Close</button></h3>' +
+          '<p style="margin-bottom:12px;font-weight:600;">Platforms</p>' +
+          '<table><thead><tr><th>Platform</th><th>Unique Users</th><th>Total Events</th></tr></thead><tbody>' +
+          platforms.map(function(p) {
+            return '<tr><td>' + (p.platform || 'unknown') + '</td><td>' + p.users + '</td><td>' + p.events + '</td></tr>';
+          }).join('') +
+          '</tbody></table>' +
+          '<p style="margin:16px 0 12px;font-weight:600;">OS Versions</p>' +
+          '<table><thead><tr><th>Platform</th><th>OS Version</th><th>Unique Users</th></tr></thead><tbody>' +
+          osVersions.map(function(o) {
+            return '<tr><td>' + (o.platform || '-') + '</td><td>' + (o.os_version || '-') + '</td><td>' + o.users + '</td></tr>';
+          }).join('') +
+          '</tbody></table>' +
+          '<p style="margin:16px 0 12px;font-weight:600;">App Versions</p>' +
+          '<table><thead><tr><th>App Version</th><th>Unique Users</th><th>Total Events</th></tr></thead><tbody>' +
+          appVersions.map(function(v) {
+            return '<tr><td>' + (v.app_version || '-') + '</td><td>' + v.users + '</td><td>' + v.events + '</td></tr>';
           }).join('') +
           '</tbody></table></div>';
       }

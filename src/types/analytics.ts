@@ -39,6 +39,9 @@ export interface AnalyticsEventBase {
   session_id: string;
   event_type: AnalyticsEventType;
   timestamp: string; // ISO 8601 with ms precision
+  platform: 'ios' | 'android'; // Device platform
+  os_version: string; // OS version (e.g. "17.5", "14")
+  app_version: string; // App version from expo-constants (e.g. "1.0.1")
 }
 
 // --- Discriminated Event Types ---
