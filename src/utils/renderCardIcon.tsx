@@ -15,7 +15,7 @@ import React from 'react';
 import { Text, StyleSheet } from 'react-native';
 import type { IconType } from '@/types/index';
 import ThirdPartyIcon from '@/components/wallet/ThirdPartyIcon';
-import { getAppLogoUri } from '@/data/appLogoRegistry';
+import { getAppLogoSource } from '@/data/appLogoRegistry';
 
 export interface RenderCardIconOptions {
   iconType: IconType;
@@ -51,10 +51,11 @@ export function renderCardIcon({
       );
     case 'third_party':
       // For external app cards, try local bundled logo first (by card ID)
-      const localUri = sourceId ? getAppLogoUri(sourceId) : null;
+      const localSource = sourceId ? getAppLogoSource(sourceId) : null;
       return (
         <ThirdPartyIcon
-          uri={localUri || iconValue}
+          uri={iconValue}
+          localSource={localSource}
           fallbackEmoji={fallbackEmoji || '📋'}
           size={size}
         />

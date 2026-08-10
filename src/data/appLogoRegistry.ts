@@ -3,16 +3,12 @@
  *
  * Logos are bundled locally to avoid dependency on external CDNs and ensure
  * they work offline. The renderCardIcon utility checks this registry first;
- * if a match is found, it uses the local file instead of downloading from the URL.
- *
- * The iconValue field still stores the real Apple CDN URL (visible in admin edit mode),
- * but at render time, the local bundle takes priority.
+ * if a match is found, it uses the local asset directly (as a require() number)
+ * instead of downloading from the URL.
  *
  * To update a logo: replace the corresponding .jpg in assets/app-logos/
  * and rebuild the app.
  */
-
-import { Image } from 'react-native';
 
 /**
  * Bundled app logo assets keyed by card ID.
@@ -29,14 +25,12 @@ const APP_LOGO_ASSETS: Record<string, number> = {
 };
 
 /**
- * Get the local URI for a bundled app logo by card ID.
- * Returns the resolved asset URI, or null if no bundled logo exists.
+ * Get the bundled asset source for an app logo by card ID.
+ * Returns the require() number that can be passed directly to Image source,
+ * or null if no bundled logo exists.
  */
-export function getAppLogoUri(cardId: string): string | null {
-  const asset = APP_LOGO_ASSETS[cardId];
-  if (!asset) return null;
-  const resolved = Image.resolveAssetSource(asset);
-  return resolved?.uri ?? null;
+export function getAppLogoSource(cardId: string): number | null {
+  return APP_LOGO_ASSETS[cardId] ?? null;
 }
 
 /**

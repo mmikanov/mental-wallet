@@ -17,6 +17,8 @@ export interface ThirdPartyIconProps {
   fallbackEmoji: string;
   size: number;
   timeoutMs?: number; // default 10000
+  /** Optional bundled asset source (from require()). If provided, renders directly without download. */
+  localSource?: number | null;
 }
 
 const DEFAULT_TIMEOUT_MS = 10000;
@@ -48,7 +50,20 @@ export default function ThirdPartyIcon({
   fallbackEmoji,
   size,
   timeoutMs = DEFAULT_TIMEOUT_MS,
+  localSource,
 }: ThirdPartyIconProps) {
+  // If a bundled local asset is available, render it directly — no download needed
+  if (localSource) {
+    return (
+      <Image
+        source={localSource}
+        style={{ width: size, height: size, borderRadius: size * 0.22 }}
+        resizeMode="cover"
+        accessibilityLabel="Third-party brand icon"
+      />
+    );
+  }
+
   const [showFallback, setShowFallback] = useState(false);
   const [localUri, setLocalUri] = useState<string | null>(resolvedCache.get(uri) || null);
   const [loaded, setLoaded] = useState(false);
