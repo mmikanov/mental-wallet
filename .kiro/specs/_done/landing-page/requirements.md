@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Wellness Wallet needs a public-facing marketing landing page to drive app store downloads, provide legal document hosting (privacy policy, terms of service), and establish credibility for app store reviewers. The site will be hosted at `mentalwallet.productsforgood.co` as a static HTML/CSS page with no build dependencies.
+Wellness Wallet needs a public-facing marketing landing page to drive app store downloads, provide legal document hosting (privacy policy, terms of service), and establish credibility for app store reviewers. The site will be hosted at `mentalhealthwallet.productsforgood.co` as a static HTML/CSS page with no build dependencies.
 
 ## Glossary
 

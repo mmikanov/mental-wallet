@@ -138,7 +138,7 @@ a:hover {
 .nav-cta {
   display: inline-block;
   padding: 0.5rem 1.25rem;
-  background-color: var(--color-primary);
+  background-color: var(--color-primary-dark);
   color: white;
   text-decoration: none;
   border-radius: var(--radius-sm);
@@ -148,7 +148,7 @@ a:hover {
 }
 
 .nav-cta:hover {
-  background-color: var(--color-primary-dark);
+  background-color: var(--color-text);
   color: white;
 }
 
@@ -204,8 +204,14 @@ a:hover {
 }
 
 .store-badge img {
-  height: 50px;
+  height: 44px;
   width: auto;
+}
+
+.store-badge:last-child img {
+  /* Google Play SVG has internal padding; scale up to match App Store visual height */
+  height: 66px;
+  margin: -11px 0;
 }
 
 /* --- Features --- */
@@ -232,6 +238,13 @@ a:hover {
   padding: var(--space-lg) var(--space-md);
   text-align: center;
   border: 1px solid var(--color-border);
+}
+
+.feature-icon-img {
+  display: block;
+  margin: 0 auto var(--space-sm);
+  height: 100px;
+  width: auto;
 }
 
 .feature-icon {
@@ -329,8 +342,8 @@ details[open] .faq-question::after {
 /* --- Footer --- */
 .footer {
   padding: var(--space-lg) 0;
-  background-color: var(--color-primary-dark);
-  color: rgba(255, 255, 255, 0.8);
+  background-color: #3d4f3a;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .footer-content {
@@ -355,7 +368,7 @@ details[open] .faq-question::after {
 }
 
 .footer-links a {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.9);
   text-decoration: none;
   font-size: 0.9rem;
 }
@@ -367,7 +380,7 @@ details[open] .faq-question::after {
 
 .footer-copyright {
   font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.75);
 }
 
 /* --- Responsive --- */

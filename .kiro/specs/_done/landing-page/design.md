@@ -2,23 +2,24 @@
 
 ## Overview
 
-A single-page static marketing site for Mental Wallet, hosted at `mentalwallet.productsforgood.co`. Built with plain HTML/CSS plus minimal vanilla JS for the FAQ accordion. No build tools, no frameworks — just files you can upload anywhere.
+A single-page static marketing site for Mental Wallet, hosted at `mentalhealthwallet.productsforgood.co`. Built with plain HTML/CSS plus minimal vanilla JS for the FAQ accordion. No build tools, no frameworks — just files you can upload anywhere.
 
 ## File Structure
 
 ```
 website/
 ├── index.html          # Main landing page
-├── privacy.html        # Privacy policy (copied from docs/legal/)
-├── terms.html          # Terms of service (copied from docs/legal/)
+├── privacy.html        # Privacy policy (with shared nav/footer)
+├── terms.html          # Terms of service (with shared nav/footer)
 ├── styles.css          # All styles
-├── script.js           # FAQ accordion only
+├── script.js           # FAQ accordion enhancement
+├── CNAME               # Custom domain for Cloudflare Pages
 ├── assets/
-│   ├── icon.png        # App icon (used in hero + favicon)
-│   ├── og-image.png    # Open Graph share image (1200×630px)
-│   ├── app-store-badge.svg    # Apple App Store download badge
-│   └── google-play-badge.png  # Google Play download badge
-└── favicon.ico         # Favicon (derived from icon)
+│   ├── icon.png        # App icon (240px, optimized for web)
+│   ├── og-image.jpg    # Open Graph share image (1200×630px)
+│   ├── app-store-badge.svg    # Official Apple App Store download badge
+│   ├── google-play-badge.svg  # Official Google Play download badge
+│   └── feature-*.png   # Custom illustrations for feature cards
 ```
 
 ## Page Sections (top to bottom)
@@ -60,9 +61,9 @@ website/
 | What is Mental Wallet? | A mobile app that puts your coping tools in one place. Think of it as a wallet for the techniques that help you feel better — breathing exercises, mood trackers, gratitude prompts, and more. |
 | Does it replace therapy? | No. Mental Wallet is a personal toolkit, not a therapeutic intervention. It's designed to complement professional support, not replace it. If you're in crisis, please contact the 988 Suicide & Crisis Lifeline or your local emergency services. |
 | Is my data private? | Yes. Everything stays on your device. We don't have accounts, don't sync to the cloud, and don't sell data. You own your information. |
-| Is it free? | Yes, Mental Wallet is free to download and use. |
+| Is it free? | Yes, Mental Wallet is currently free to download and use while in beta. Pricing may change in the future, but early users will always be appreciated. |
 | What platforms is it available on? | iOS and Android. |
-| Who makes this? | Mental Wallet is made by Products for Good Inc, a company focused on building tools that support people's wellbeing. |
+| Who makes this? | Mental Wallet is made by [Products for Good Inc](https://productsforgood.co), a company focused on building tools that create more good in the world. |
 
 ### 5. Final CTA
 - Repeated store badges
@@ -112,16 +113,23 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubun
 
 ## Deployment
 
-1. Create CNAME record in DreamHost: `mentalwallet` → GitHub Pages URL (e.g., `username.github.io`)
-2. Push `website/` folder contents to a GitHub repo (or branch/subfolder configured for Pages)
-3. Configure custom domain in GitHub Pages settings
-4. HTTPS is auto-provisioned by GitHub
+Hosted on **Cloudflare Pages** (direct upload).
+
+1. Go to Cloudflare Dashboard → Workers & Pages → project → New deployment
+2. Upload contents of `website/` folder
+3. Custom domain `mentalhealthwallet.productsforgood.co` configured via CNAME
+4. DNS managed by Cloudflare (nameservers: `lady.ns.cloudflare.com`, `newt.ns.cloudflare.com`)
+5. HTTPS auto-provisioned by Cloudflare
+
+## Contact Email
+
+All contact/support/privacy emails use: `mentalhealthwallet@productsforgood.co`
 
 ## Store Badge Links (placeholder)
 
 ```html
 <!-- Replace with actual URLs once published -->
-<a href="https://apps.apple.com/app/wellness-wallet/id<TBD>">App Store</a>
+<a href="https://apps.apple.com/app/mental-wallet/id000000000">App Store</a>
 <a href="https://play.google.com/store/apps/details?id=com.mentalwallet.app">Google Play</a>
 ```
 

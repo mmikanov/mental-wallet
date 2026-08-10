@@ -3,20 +3,21 @@
 ## iOS (App Store)
 
 - [ ] Create app in App Store Connect (My Apps → + → New App, Bundle ID: `com.mentalwallet.app`)
-- [ ] Host privacy policy at a public URL
-- [ ] Host terms of service at a public URL
+- [x] Host privacy policy at a public URL
+- [x] Host terms of service at a public URL
 - [ ] Take screenshots — iPhone 6.7" (Pro Max)
 - [ ] Take screenshots — iPhone 5.5" (iPhone 8 Plus)
-- [ ] Write app description
-- [ ] Write promotional text
-- [ ] Write subtitle
-- [ ] Choose keywords
+- [x] Write app description
+- [x] Write promotional text
+- [x] Write subtitle
+- [x] Choose keywords
 - [ ] Complete age rating questionnaire (likely 4+)
 - [ ] Set category: Health & Fitness → Mental Health
 - [ ] Set price: Free
 - [ ] Run production build: `eas build --platform ios --profile production`
 - [ ] Submit to App Store: `eas submit --platform ios`
 - [ ] Submit for review in App Store Connect
+- [ ] After app is created in App Store Connect, update `APP_STORE_URL` in `src/config/appInfo.ts` with real Apple ID (replace `id<TBD>` with `id<your-numeric-id>`)
 
 ## Android (Google Play)
 
@@ -24,12 +25,12 @@
 - [x] Fix adaptive icon reference in app.json (add `foregroundImage`)
 - [ ] Configure Android signing credentials: `eas credentials --platform android`
 - [ ] Create app in Google Play Console
-- [ ] Host privacy policy at a public URL (same as iOS)
+- [x] Host privacy policy at a public URL (same as iOS)
 - [ ] Take screenshots — phone (at least 2, recommended 4-8)
 - [ ] Take screenshots — tablet (optional but recommended)
 - [ ] Create feature graphic (1024×500px)
-- [ ] Write short description (80 chars max)
-- [ ] Write full description (4000 chars max)
+- [x] Write short description (80 chars max)
+- [x] Write full description (4000 chars max)
 - [ ] Complete content rating questionnaire
 - [ ] Complete data safety form (declare: anonymous analytics, local health data, notification tokens)
 - [ ] Declare target audience (18+, not directed at children)
@@ -55,22 +56,36 @@
 - The `backgroundColor` in `app.json` (`#788d75`) is used as the Android adaptive icon background layer and the splash screen background.
 - Both stores require 1024×1024px as the submission icon.
 
+## Marketing Website
+
+- [x] Build landing page (hero, features, FAQ, CTA, footer)
+- [x] Deploy to Cloudflare Pages
+- [x] Configure custom domain: `mentalhealthwallet.productsforgood.co`
+- [x] Set up Cloudflare DNS for `productsforgood.co`
+- [x] HTTPS active
+- [x] Privacy policy live at: https://mentalhealthwallet.productsforgood.co/privacy.html
+- [x] Terms of service live at: https://mentalhealthwallet.productsforgood.co/terms.html
+- [x] Contact email configured: `mentalhealthwallet@productsforgood.co`
+
 ## Shared / Pre-Submission
 
-- [ ] Host privacy policy HTML at a public URL (e.g., GitHub Pages, your domain)
-- [ ] Host terms of service HTML at a public URL
-- [ ] Prepare store listing copy (description, keywords, promotional text)
+- [x] Host privacy policy HTML at a public URL
+- [x] Host terms of service HTML at a public URL
+- [x] Prepare store listing copy (description, keywords, promotional text)
 - [ ] Create marketing screenshots for both platforms
 - [ ] Create feature graphic for Google Play (1024×500px)
 - [x] Verify app icon is 1024×1024px (required by both stores)
+- [ ] Finalize app display name (currently "Mental Wallet" — decision parked, testing with users)
 
 ## Notes
 
-- Privacy policy and terms already exist at `docs/legal/privacy.html` and `docs/legal/terms.html` — they just need public hosting.
+- ~~Privacy policy and terms need public hosting.~~ Done — hosted at `mentalhealthwallet.productsforgood.co`.
 - ~~`assets/adaptive-icon.png` exists but isn't referenced in `app.json` — quick fix.~~ Fixed — `foregroundImage` added to app.json.
 - EAS handles iOS code signing automatically (certificates + provisioning profiles) — no manual Xcode setup needed. Apple Developer account: ✅ already have one.
 - Apple review typically takes 24-48 hours. Google Play initial review can take up to 7 days.
 - ~~Health & mental health apps get extra scrutiny — make sure the disclaimer screen is visible early in the flow.~~ Done — disclaimer shows on first launch before wallet access.
-- ~~App name was "Mental Health Wallet"~~ — Renamed to **Mental Wallet** across all files, bundle IDs, legal docs, and native project.
+- ~~App name was "Mental Health Wallet"~~ — Renamed to **Mental Wallet** across all files, bundle IDs, legal docs, and native project. Final display name still being tested with users.
 - ~~Splash screen background was white~~ — Updated to `#788d75` (sage green matching the icon).
+- ~~Website needed to be built and hosted~~ — Live at https://mentalhealthwallet.productsforgood.co/
 - **Trademark:** Use "Mental Wallet™" (common law ™) in the App Store subtitle, store listing description, and website hero/footer. No filing required — just consistent use. Consider USPTO registration later if the brand gains traction.
+- **DNS:** Nameservers for `productsforgood.co` moved from DreamHost to Cloudflare (`lady.ns.cloudflare.com`, `newt.ns.cloudflare.com`). DreamHost remains the registrar.

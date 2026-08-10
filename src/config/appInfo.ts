@@ -7,15 +7,15 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 export const APP_NAME = 'Mental Wallet';
-export const APP_CONTACT_EMAIL = 'privacy@mentalwallet.app';
-export const APP_SUPPORT_EMAIL = 'support@mentalwallet.app';
-export const APP_FEEDBACK_EMAIL = 'feedback@mentalwallet.app';
+export const APP_CONTACT_EMAIL = 'mentalhealthwallet@productsforgood.co';
+export const APP_SUPPORT_EMAIL = 'mentalhealthwallet@productsforgood.co';
+export const APP_FEEDBACK_EMAIL = 'mentalhealthwallet@productsforgood.co';
 
 export const APP_STORE_URL = 'https://apps.apple.com/app/mental-wallet/id<TBD>';
 export const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.mentalwallet.app';
 
-export const PRIVACY_POLICY_URL = 'https://mentalwallet.app/privacy';
-export const TERMS_OF_SERVICE_URL = 'https://mentalwallet.app/terms';
+export const PRIVACY_POLICY_URL = 'https://mentalhealthwallet.productsforgood.co/privacy';
+export const TERMS_OF_SERVICE_URL = 'https://mentalhealthwallet.productsforgood.co/terms';
 
 export function getStoreUrl(): string {
   return Platform.OS === 'ios' ? APP_STORE_URL : PLAY_STORE_URL;

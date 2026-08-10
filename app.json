@@ -17,7 +17,15 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.mentalwallet.app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "LSApplicationQueriesSchemes": [
+          "headspace",
+          "calm",
+          "talkspace",
+          "betterhelp",
+          "wysa",
+          "insight-timer"
+        ]
       }
     },
     "android": {
