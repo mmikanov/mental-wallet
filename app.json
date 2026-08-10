@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Mental Wallet",
-    "slug": "mental-wallet",
+    "slug": "mental-health-wallet",
     "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
