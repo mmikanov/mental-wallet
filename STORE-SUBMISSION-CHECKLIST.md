@@ -6,7 +6,6 @@
 - [x] Host privacy policy at a public URL
 - [x] Host terms of service at a public URL
 - [x] Take screenshots — iPhone 6.5" (1284×2778px)
-- [ ] Take screenshots — iPhone 5.5" (iPhone 8 Plus)
 - [x] Write app description
 - [x] Write promotional text
 - [x] Write subtitle
