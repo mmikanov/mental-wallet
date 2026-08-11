@@ -2,18 +2,19 @@
 
 ## iOS (App Store)
 
-- [ ] Create app in App Store Connect (My Apps → + → New App, Bundle ID: `com.mentalwallet.app`)
+- [x] Create app in App Store Connect (My Apps → + → New App, Bundle ID: `com.mentalwallet.app`)
 - [x] Host privacy policy at a public URL
 - [x] Host terms of service at a public URL
-- [ ] Take screenshots — iPhone 6.7" (Pro Max)
+- [x] Take screenshots — iPhone 6.5" (1284×2778px)
 - [ ] Take screenshots — iPhone 5.5" (iPhone 8 Plus)
 - [x] Write app description
 - [x] Write promotional text
 - [x] Write subtitle
 - [x] Choose keywords
-- [ ] Complete age rating questionnaire (likely 4+)
-- [ ] Set category: Health & Fitness → Mental Health
-- [ ] Set price: Free
+- [x] Complete age rating questionnaire (4+)
+- [x] Set category: Health & Fitness
+- [x] Set price: Free
+- [x] Set Support URL and Copyright
 - [ ] Run production build: `eas build --platform ios --profile production`
 - [ ] Submit to App Store: `eas submit --platform ios`
 - [ ] Submit for review in App Store Connect
@@ -72,10 +73,10 @@
 - [x] Host privacy policy HTML at a public URL
 - [x] Host terms of service HTML at a public URL
 - [x] Prepare store listing copy (description, keywords, promotional text)
-- [ ] Create marketing screenshots for both platforms
+- [x] Create marketing screenshots for both platforms
 - [ ] Create feature graphic for Google Play (1024×500px)
 - [x] Verify app icon is 1024×1024px (required by both stores)
-- [ ] Finalize app display name (currently "Mental Wallet" — decision parked, testing with users)
+- [x] Finalize app display name — "Mental Health Wallet" (full brand), "Mental Wallet" (home screen)
 
 ## Notes
 
@@ -84,7 +85,7 @@
 - EAS handles iOS code signing automatically (certificates + provisioning profiles) — no manual Xcode setup needed. Apple Developer account: ✅ already have one.
 - Apple review typically takes 24-48 hours. Google Play initial review can take up to 7 days.
 - ~~Health & mental health apps get extra scrutiny — make sure the disclaimer screen is visible early in the flow.~~ Done — disclaimer shows on first launch before wallet access.
-- ~~App name was "Mental Health Wallet"~~ — Renamed to **Mental Wallet** across all files, bundle IDs, legal docs, and native project. Final display name still being tested with users.
+- ~~App name was "Mental Health Wallet"~~ — Brand is **Mental Health Wallet™** for all external/user-facing surfaces. Home screen display name is "Mental Wallet" (short). Code internals (bundle IDs, slugs, paths) remain `mental-wallet`.
 - ~~Splash screen background was white~~ — Updated to `#788d75` (sage green matching the icon).
 - ~~Website needed to be built and hosted~~ — Live at https://mentalhealthwallet.productsforgood.co/
 - **Trademark:** Use "Mental Health Wallet™" (common law ™) in the App Store subtitle, store listing description, and website hero/footer. No filing required — just consistent use. Consider USPTO registration later if the brand gains traction.
