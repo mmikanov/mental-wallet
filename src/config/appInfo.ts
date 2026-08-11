@@ -11,7 +11,7 @@ export const APP_CONTACT_EMAIL = 'mentalhealthwallet@productsforgood.co';
 export const APP_SUPPORT_EMAIL = 'mentalhealthwallet@productsforgood.co';
 export const APP_FEEDBACK_EMAIL = 'mentalhealthwallet@productsforgood.co';
 
-export const APP_STORE_URL = 'https://apps.apple.com/app/mental-wallet/id<TBD>';
+export const APP_STORE_URL = 'https://apps.apple.com/app/mental-health-wallet/id6800036822';
 export const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.mentalwallet.app';
 
 export const PRIVACY_POLICY_URL = 'https://mentalhealthwallet.productsforgood.co/privacy';
