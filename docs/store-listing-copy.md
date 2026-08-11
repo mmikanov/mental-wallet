@@ -1,6 +1,6 @@
 # Store Listing Copy
 
-> Note: App name is currently "Mental Wallet" (may change before submission).
+> App name: "Mental Health Wallet" (branded as Mental Health Wallet™)
 
 ---
 
@@ -20,7 +20,7 @@ Your personal toolkit for building coping habits. 20+ evidence-informed tools, c
 
 ### Description (4000 chars max)
 ```
-Mental Wallet puts your coping tools in one place — like a wallet for the techniques that help you feel better.
+Mental Health Wallet puts your coping tools in one place — like a wallet for the techniques that help you feel better.
 
 Browse a library of 20+ curated cards covering grounding, cognitive reframing, breathwork, body awareness, self-compassion, and daily check-ins. Each tool is based on established therapeutic approaches, with clear explanations of why it works.
 
@@ -32,7 +32,7 @@ WHAT YOU GET
 
 • Custom Card Builder — Design your own coping tools with flexible controls. Make them as simple or detailed as you want.
 
-• Connect Other Apps — Link cards to your favorite wellness, meditation, or breathing apps. Mental Wallet becomes the home base for your entire toolkit.
+• Connect Other Apps — Link cards to your favorite wellness, meditation, or breathing apps. Mental Health Wallet becomes the home base for your entire toolkit.
 
 • Personal Insights — See usage streaks, outcome patterns, and which tools actually help. Discover what works for you over time.
 
@@ -44,7 +44,7 @@ WHAT YOU GET
 
 WHO IT'S FOR
 
-Mental Wallet is for anyone who wants to:
+Mental Health Wallet is for anyone who wants to:
 - Build consistent coping habits
 - Organize techniques from therapy, books, or self-discovery
 - Understand which tools actually help them
@@ -54,7 +54,7 @@ It's not a replacement for therapy — it's a toolkit to complement it.
 
 IMPORTANT NOTES
 
-• Mental Wallet is not a substitute for professional mental health care
+• Mental Health Wallet is not a substitute for professional mental health care
 • If you are in crisis, please contact the 988 Suicide & Crisis Lifeline or your local emergency services
 • Crisis resources are accessible within the app at all times
 • Currently in beta — free to download and use
@@ -78,7 +78,7 @@ A card-based toolkit to build coping habits and discover what works for you.
 
 ### Full Description (4000 chars max)
 ```
-Mental Wallet puts your coping tools in one place — like a wallet for the techniques that help you feel better.
+Mental Health Wallet puts your coping tools in one place — like a wallet for the techniques that help you feel better.
 
 Browse a library of 20+ curated cards covering grounding, cognitive reframing, breathwork, body awareness, self-compassion, and daily check-ins. Each tool is based on established therapeutic approaches, with clear explanations of why it works.
 
@@ -90,7 +90,7 @@ WHAT YOU GET
 
 ✦ Custom Card Builder — Design your own coping tools with flexible controls. Make them as simple or detailed as you want.
 
-✦ Connect Other Apps — Link cards to your favorite wellness, meditation, or breathing apps. Mental Wallet becomes the home base for your entire toolkit.
+✦ Connect Other Apps — Link cards to your favorite wellness, meditation, or breathing apps. Mental Health Wallet becomes the home base for your entire toolkit.
 
 ✦ Personal Insights — See usage streaks, outcome patterns, and which tools actually help. Discover what works for you over time.
 
@@ -102,7 +102,7 @@ WHAT YOU GET
 
 WHO IT'S FOR
 
-Mental Wallet is for anyone who wants to:
+Mental Health Wallet is for anyone who wants to:
 • Build consistent coping habits
 • Organize techniques from therapy, books, or self-discovery
 • Understand which tools actually help them
@@ -112,7 +112,7 @@ It's not a replacement for therapy — it's a toolkit to complement it.
 
 IMPORTANT
 
-• Mental Wallet is not a substitute for professional mental health care
+• Mental Health Wallet is not a substitute for professional mental health care
 • If you are in crisis, please contact the 988 Suicide & Crisis Lifeline or your local emergency services
 • Crisis resources are accessible within the app at all times
 • Currently in beta — free to download and use

@@ -1,5 +1,5 @@
 /**
- * Mental Wallet — Production Analytics Worker
+ * Mental Health Wallet — Production Analytics Worker
  *
  * Routes:
  *   POST /events     — Ingest batch payload from the app (no auth, CORS enabled)

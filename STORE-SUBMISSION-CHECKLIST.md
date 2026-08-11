@@ -87,5 +87,5 @@
 - ~~App name was "Mental Health Wallet"~~ — Renamed to **Mental Wallet** across all files, bundle IDs, legal docs, and native project. Final display name still being tested with users.
 - ~~Splash screen background was white~~ — Updated to `#788d75` (sage green matching the icon).
 - ~~Website needed to be built and hosted~~ — Live at https://mentalhealthwallet.productsforgood.co/
-- **Trademark:** Use "Mental Wallet™" (common law ™) in the App Store subtitle, store listing description, and website hero/footer. No filing required — just consistent use. Consider USPTO registration later if the brand gains traction.
+- **Trademark:** Use "Mental Health Wallet™" (common law ™) in the App Store subtitle, store listing description, and website hero/footer. No filing required — just consistent use. Consider USPTO registration later if the brand gains traction.
 - **DNS:** Nameservers for `productsforgood.co` moved from DreamHost to Cloudflare (`lady.ns.cloudflare.com`, `newt.ns.cloudflare.com`). DreamHost remains the registrar.

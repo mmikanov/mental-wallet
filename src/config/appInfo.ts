@@ -6,7 +6,7 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
-export const APP_NAME = 'Mental Wallet';
+export const APP_NAME = 'Mental Health Wallet';
 export const APP_CONTACT_EMAIL = 'mentalhealthwallet@productsforgood.co';
 export const APP_SUPPORT_EMAIL = 'mentalhealthwallet@productsforgood.co';
 export const APP_FEEDBACK_EMAIL = 'mentalhealthwallet@productsforgood.co';
