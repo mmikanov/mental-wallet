@@ -145,12 +145,11 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   iconContainer: {
-    width: 28,
-    height: 28,
+    width: 24,
+    height: 24,
     marginRight: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'visible',
   },
   textStack: {
     flex: 1,

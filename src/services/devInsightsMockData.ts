@@ -414,7 +414,7 @@ function pickOutcomeCategory(personality: string): string {
   if (personality === 'positive') {
     // 70% positive, 20% same, 10% worse
     if (r < 0.3) return 'calmer';
-    if (r < 0.55) return 'clear';
+    if (r < 0.55) return 'clearer';
     if (r < 0.7) return 'hopeful';
     if (r < 0.9) return 'same';
     return 'worse';
@@ -423,7 +423,7 @@ function pickOutcomeCategory(personality: string): string {
   if (personality === 'negative') {
     // 25% positive, 35% same, 40% worse
     if (r < 0.1) return 'calmer';
-    if (r < 0.2) return 'clear';
+    if (r < 0.2) return 'clearer';
     if (r < 0.25) return 'hopeful';
     if (r < 0.6) return 'same';
     return 'worse';
@@ -431,7 +431,7 @@ function pickOutcomeCategory(personality: string): string {
 
   // Neutral: standard distribution (60% positive, 25% same, 15% worse)
   if (r < 0.25) return 'calmer';
-  if (r < 0.45) return 'clear';
+  if (r < 0.45) return 'clearer';
   if (r < 0.6) return 'hopeful';
   if (r < 0.85) return 'same';
   return 'worse';
