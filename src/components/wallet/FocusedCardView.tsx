@@ -20,6 +20,7 @@ import {
   ImageBackground,
   ScrollView,
   Dimensions,
+  Platform,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -351,13 +352,14 @@ export default function FocusedCardView({
 
   return (
     <>
-      {isExpanded ? (
+      <GestureDetector gesture={panGesture}>
         <Animated.View style={[styles.container, animatedStyle]}>
           <View style={styles.cardOuter}>
             <View
               style={[
                 styles.cardShell,
-                { height: FOCUSED_CARD_HEIGHT },
+                { minHeight: FOCUSED_CARD_HEIGHT },
+                isExpanded && Platform.OS === 'android' ? { height: FOCUSED_CARD_HEIGHT, minHeight: undefined } : undefined,
               ]}
             >
               <ScrollView
@@ -419,63 +421,7 @@ export default function FocusedCardView({
             </View>
           </View>
         </Animated.View>
-      ) : (
-        <GestureDetector gesture={panGesture}>
-          <Animated.View style={[styles.container, animatedStyle]}>
-            <View style={styles.cardOuter}>
-              <View
-                style={[
-                  styles.cardShell,
-                  { minHeight: FOCUSED_CARD_HEIGHT },
-                ]}
-              >
-                <ScrollView
-                  style={styles.cardShellInner}
-                  contentContainerStyle={[styles.cardShellInnerContent, backgroundStyle]}
-                  showsVerticalScrollIndicator={false}
-                >
-                {isKpiCard && (
-                  <BadgeExplanationBanner
-                    daysElapsedSnapshot={daysElapsedSnapshot.current}
-                    checkInCompleted={checkInCompleted}
-                  />
-                )}
-                {hasBackgroundImage ? (
-                  <ImageBackground
-                    source={{ uri: card.backgroundValue }}
-                    style={styles.imageBackground}
-                    imageStyle={styles.imageStyle}
-                    onError={() => setBgImageFailed(true)}
-                  >
-                    <View style={styles.imageOverlay}>{headerContent}</View>
-                  </ImageBackground>
-                ) : (
-                  headerContent
-                )}
-                <View style={styles.statsContainer}>
-                  <StatsRow
-                    totalUses={card.totalUses}
-                    currentStreak={card.currentStreak}
-                    lastUsedAt={card.lastUsedAt}
-                  />
-                </View>
-                <ReminderDisplayRow reminder={reminder} textColor={textColor} />
-                <View style={styles.actionsContainer}>
-                  <TouchableOpacity
-                    style={styles.expandArrow}
-                    onPress={onExpand}
-                    accessibilityRole="button"
-                    accessibilityLabel="Expand card to see full content"
-                  >
-                    <Text style={[styles.expandArrowText, { color: textColor }]}>▼</Text>
-                  </TouchableOpacity>
-                </View>
-                </ScrollView>
-              </View>
-            </View>
-          </Animated.View>
-        </GestureDetector>
-      )}
+      </GestureDetector>
       {rationale && (
         <RationaleSheet
           visible={rationaleSheetVisible}
