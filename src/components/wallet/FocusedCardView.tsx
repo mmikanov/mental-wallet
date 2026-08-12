@@ -288,8 +288,7 @@ export default function FocusedCardView({
   if (isExpanded && renderExpandedContent) {
     return (
       <>
-        <GestureDetector gesture={panGesture}>
-          <Animated.View style={[styles.container, animatedStyle]}>
+        <Animated.View style={[styles.container, animatedStyle]}>
             <View style={styles.cardOuter}>
               <View
                 style={[
@@ -334,7 +333,6 @@ export default function FocusedCardView({
               </View>
             </View>
           </Animated.View>
-        </GestureDetector>
         {rationale && (
           <RationaleSheet
             visible={rationaleSheetVisible}
