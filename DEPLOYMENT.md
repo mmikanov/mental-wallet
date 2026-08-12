@@ -59,6 +59,40 @@ Use the exact device name from the list. This compiles the native project and in
 
 ---
 
+## 1b. Run on Android Emulator
+
+### First time setup
+
+1. Install [Android Studio](https://developer.android.com/studio)
+2. Open Android Studio → **More Actions → Virtual Device Manager**
+3. Create a device: choose **Medium Phone** (closest to Galaxy S23 / standard 6.1" modern phone)
+4. Select a system image (API 34 or latest) and download it
+5. Launch the emulator
+
+### Build and run
+
+```bash
+# Build and launch on the running Android emulator
+npx expo run:android
+```
+
+The first run takes a while (Gradle build). Subsequent runs are faster.
+
+If the emulator is already running and the app is installed, just start Metro:
+
+```bash
+npx expo start --dev-client
+```
+
+Then press `a` to open on Android.
+
+**Troubleshooting:**
+- If `npx expo run:android` can't find the emulator — make sure the emulator is running first via Android Studio's Virtual Device Manager
+- If Gradle build fails — ensure `ANDROID_HOME` is set (usually `~/Library/Android/sdk`)
+- Add to your `~/.zshrc` if not set: `export ANDROID_HOME=~/Library/Android/sdk`
+
+---
+
 ## 2. Push to TestFlight (via App Store Connect)
 
 TestFlight lets you distribute beta builds to up to 10,000 testers.
