@@ -18,6 +18,7 @@ import {
   Pressable,
 } from 'react-native';
 import type { Card } from '@/types/index';
+import { renderCardIcon } from '@/utils/renderCardIcon';
 
 export interface ReorderModeProps {
   cards: Card[];
@@ -102,9 +103,15 @@ export default function ReorderMode({
           />
 
           {/* Card icon */}
-          <Text style={styles.icon}>
-            {item.iconType === 'emoji' ? item.iconValue : '📋'}
-          </Text>
+          <View style={styles.iconContainer}>
+            {renderCardIcon({
+              iconType: item.iconType,
+              iconValue: item.iconValue,
+              size: 20,
+              fallbackEmoji: item.iconValue || '📋',
+              sourceId: item.sourceLibraryId || item.id,
+            })}
+          </View>
 
           {/* Card title */}
           <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
@@ -268,6 +275,13 @@ const styles = StyleSheet.create({
   icon: {
     fontSize: 18,
     marginRight: 10,
+  },
+  iconContainer: {
+    width: 24,
+    height: 24,
+    marginRight: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
     flex: 1,

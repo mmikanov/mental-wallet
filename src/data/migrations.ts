@@ -31,6 +31,7 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
   await runCrisisResourcesCanadaMigration(db);
   await runOriginBadgeAppMigration(db);
   await runOutcomeResponsesMigration(db);
+  await runDurationRecordsMigration(db);
 }
 
 /**
@@ -779,4 +780,28 @@ CREATE TABLE IF NOT EXISTS outcome_responses (
 
 CREATE INDEX IF NOT EXISTS idx_outcome_responses_card ON outcome_responses(card_id);
 CREATE INDEX IF NOT EXISTS idx_outcome_responses_created_at ON outcome_responses(created_at);
+`;
+
+
+/**
+ * Creates the duration_records table for tracking tool usage duration.
+ * Records how long a user spent actively using a card (from expand to collapse/complete).
+ * Uses CREATE TABLE/INDEX IF NOT EXISTS for idempotency.
+ */
+export async function runDurationRecordsMigration(db: SQLiteDatabase): Promise<void> {
+  await db.execAsync(DURATION_RECORDS_SCHEMA_SQL);
+}
+
+const DURATION_RECORDS_SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS duration_records (
+  id TEXT PRIMARY KEY,
+  card_id TEXT NOT NULL,
+  started_at TEXT NOT NULL,
+  ended_at TEXT NOT NULL,
+  active_duration_sec INTEGER NOT NULL,
+  end_status TEXT NOT NULL CHECK(end_status IN ('completed', 'collapsed'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_duration_records_card ON duration_records(card_id);
+CREATE INDEX IF NOT EXISTS idx_duration_records_ended_at ON duration_records(ended_at);
 `;

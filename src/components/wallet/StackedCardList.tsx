@@ -108,6 +108,8 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   cardWrapper: {
-    // Each wrapper lets the shadow & card render on top of the one below
+    // Clip content so partially-covered cards don't bleed visually
+    overflow: 'hidden',
+    borderRadius: 16,
   },
 });

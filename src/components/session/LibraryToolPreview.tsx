@@ -159,6 +159,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     width: 48,
     height: 48,
+    overflow: 'visible',
   },
   title: {
     fontSize: 20,

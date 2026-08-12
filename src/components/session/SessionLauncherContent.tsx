@@ -241,6 +241,10 @@ export default function SessionLauncherContent({
 
   const handleClosePreview = useCallback(() => {
     setPreviewingCard(null);
+    // Scroll back to recommendations after preview close (Bug 7 fix)
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y: recoContainerY.current, animated: true });
+    }, 150);
   }, []);
 
   const handleAddToWallet = useCallback(

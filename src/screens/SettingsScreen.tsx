@@ -134,11 +134,11 @@ export default function SettingsScreen({ navigation }: Props) {
     setIsDeleting(true);
     try {
       await exportService.deleteAllData();
-      // Navigate to disclaimer screen (reset state)
+      // Navigate to onboarding (reset state)
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
-          routes: [{ name: 'Disclaimer' }],
+          routes: [{ name: 'Onboarding' }],
         })
       );
     } catch {
