@@ -52,6 +52,17 @@ export default function ThirdPartyIcon({
   timeoutMs = DEFAULT_TIMEOUT_MS,
   localSource,
 }: ThirdPartyIconProps) {
+  const [showFallback, setShowFallback] = useState(false);
+  const [localUri, setLocalUri] = useState<string | null>(resolvedCache.get(uri) || null);
+  const [loaded, setLoaded] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
   // If a bundled local asset is available, render it directly — no download needed
   if (localSource) {
     return (
@@ -63,17 +74,6 @@ export default function ThirdPartyIcon({
       />
     );
   }
-
-  const [showFallback, setShowFallback] = useState(false);
-  const [localUri, setLocalUri] = useState<string | null>(resolvedCache.get(uri) || null);
-  const [loaded, setLoaded] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const mountedRef = useRef(true);
-
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => { mountedRef.current = false; };
-  }, []);
 
   // Resolve the icon: check cache first, download if needed
   useEffect(() => {

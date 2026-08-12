@@ -6,8 +6,8 @@
  */
 
 import * as Clipboard from 'expo-clipboard';
-import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import { File, Paths } from 'expo-file-system';
 import { getDatabase } from '../data/database';
 import { seedData } from '../data/seeds';
 import { getTagsForCard, getContextTags, getTimeTags } from './emotionTagService';
@@ -334,7 +334,6 @@ export function createExportService(): ExportService {
     );
 
     let fileContent: string;
-    let fileName: string;
 
     if (format === 'json') {
       fileContent = JSON.stringify(
@@ -347,26 +346,26 @@ export function createExportService(): ExportService {
         null,
         2
       );
-      fileName = `mental-wallet-export-${Date.now()}.json`;
     } else {
       fileContent = formatAsCsv(cards, completions, controlValues);
-      fileName = `mental-wallet-export-${Date.now()}.csv`;
     }
 
-    const filePath = `${FileSystem.cacheDirectory}${fileName}`;
-    await FileSystem.writeAsStringAsync(filePath, fileContent, {
-      encoding: FileSystem.EncodingType.UTF8,
-    });
+    const fileName = format === 'json'
+      ? `mental-wallet-export-${Date.now()}.json`
+      : `mental-wallet-export-${Date.now()}.csv`;
+
+    const file = new File(Paths.cache, fileName);
+    file.text = fileContent;
 
     const isSharingAvailable = await Sharing.isAvailableAsync();
     if (isSharingAvailable) {
-      await Sharing.shareAsync(filePath, {
+      await Sharing.shareAsync(file.uri, {
         mimeType: format === 'json' ? 'application/json' : 'text/csv',
         dialogTitle: `Export ${APP_NAME} Data`,
       });
     }
 
-    return filePath;
+    return file.uri;
   }
 
   async function deleteAllData(): Promise<void> {
