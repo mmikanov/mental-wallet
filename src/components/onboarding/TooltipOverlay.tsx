@@ -8,7 +8,7 @@
  * Validates: Requirements 5.1, 5.4, 9.5
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -49,7 +49,7 @@ export default function TooltipOverlay({
   onSkip,
 }: TooltipOverlayProps) {
   const opacity = useSharedValue(0);
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const [containerSize, setContainerSize] = React.useState({ width: 0, height: 0 });
 
   const handleLayout = React.useCallback((event: { nativeEvent: { layout: { width: number; height: number } } }) => {
     const { width, height } = event.nativeEvent.layout;
