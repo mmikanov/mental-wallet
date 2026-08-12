@@ -357,12 +357,13 @@ export default function FocusedCardView({
             <View
               style={[
                 styles.cardShell,
+                { height: FOCUSED_CARD_HEIGHT },
               ]}
             >
               <ScrollView
                 style={styles.cardShellInner}
                 contentContainerStyle={[styles.cardShellInnerContent, backgroundStyle]}
-                showsVerticalScrollIndicator={true}
+                showsVerticalScrollIndicator={false}
                 nestedScrollEnabled={true}
               >
               {isKpiCard && (
@@ -521,6 +522,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   cardShellInnerContent: {
+    flexGrow: 1,
     paddingBottom: 16,
   },
   headerContent: {
