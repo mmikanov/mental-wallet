@@ -146,7 +146,7 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
   async acknowledgeDisclaimer() {
     const current = getPersistedFields(get());
     const updated: PersistedState = { ...current, disclaimerAcknowledged: true };
-    set({ ...updated, ...computeDerived(updated) });
+    queueMicrotask(() => set({ ...updated, ...computeDerived(updated) }));
     await persistState(updated);
     await writeLegacyDisclaimerFlag();
   },
@@ -158,7 +158,7 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
       onboardingScreensComplete: true,
       selectedIntent: intent,
     };
-    set({ ...updated, ...computeDerived(updated) });
+    queueMicrotask(() => set({ ...updated, ...computeDerived(updated) }));
     await persistState(updated);
   },
 
@@ -168,14 +168,14 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
       ...current,
       kpiSelectionComplete: true,
     };
-    set({ ...updated, ...computeDerived(updated) });
+    queueMicrotask(() => set({ ...updated, ...computeDerived(updated) }));
     await persistState(updated);
   },
 
   async completeTutorial() {
     const current = getPersistedFields(get());
     const updated: PersistedState = { ...current, tutorialComplete: true };
-    set({ ...updated, ...computeDerived(updated) });
+    queueMicrotask(() => set({ ...updated, ...computeDerived(updated) }));
     await persistState(updated);
   },
 
@@ -185,7 +185,7 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
       ...current,
       checklist: { ...current.checklist, [item]: true },
     };
-    set({ ...updated, ...computeDerived(updated) });
+    queueMicrotask(() => set({ ...updated, ...computeDerived(updated) }));
     await persistState(updated);
   },
 
@@ -193,14 +193,14 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
     const current = getPersistedFields(get());
     // Set session count to 3 to permanently hide the checklist
     const updated: PersistedState = { ...current, checklistSessionCount: 3 };
-    set({ ...updated, ...computeDerived(updated) });
+    queueMicrotask(() => set({ ...updated, ...computeDerived(updated) }));
     await persistState(updated);
   },
 
   async dismissBanner() {
     const current = getPersistedFields(get());
     const updated: PersistedState = { ...current, bannerDismissed: true };
-    set({ ...updated, ...computeDerived(updated) });
+    queueMicrotask(() => set({ ...updated, ...computeDerived(updated) }));
     await persistState(updated);
   },
 
@@ -210,7 +210,7 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
       ...current,
       checklistSessionCount: current.checklistSessionCount + 1,
     };
-    set({ ...updated, ...computeDerived(updated) });
+    queueMicrotask(() => set({ ...updated, ...computeDerived(updated) }));
     await persistState(updated);
   },
 
