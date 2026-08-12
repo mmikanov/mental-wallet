@@ -340,18 +340,15 @@ export default function WalletScreen() {
   const containerRef = useRef<View>(null);
 
   const handleStackedCardListLayout = useCallback(() => {
-    if (stackedCardListRef.current && containerRef.current) {
-      // Measure both relative to window, then compute relative offset
-      containerRef.current.measureInWindow((cx, cy, _cw, _ch) => {
-        stackedCardListRef.current!.measureInWindow((x, y, _width, _height) => {
-          if (_width > 0) {
-            // Each card peeks 60px, frontmost card is 205px tall.
-            // The frontmost card (cards[0]) starts after all other cards' peek areas.
+    if (stackedCardListRef.current) {
+      // Use measure() relative to the containerRef (a regular View inside the SafeAreaView)
+      stackedCardListRef.current.measure((_x, _y, _width, _height, pageX, pageY) => {
+        if (_width > 0 && containerRef.current) {
+          containerRef.current.measure((_cx, _cy, _cw, _ch, cPageX, cPageY) => {
             const PEEK = 60;
             const CARD_HEIGHT = 205;
-            // Compute position relative to the SafeAreaView container (where the overlay lives)
-            const relativeY = y - cy;
-            const relativeX = x - cx;
+            const relativeX = (pageX || 0) - (cPageX || 0);
+            const relativeY = (pageY || 0) - (cPageY || 0);
             const frontmostTop = relativeY + (stackCards.length - 1) * PEEK;
             setFrontmostCardLayout({
               x: relativeX,
@@ -359,8 +356,8 @@ export default function WalletScreen() {
               width: _width,
               height: CARD_HEIGHT,
             });
-          }
-        });
+          });
+        }
       });
     }
   }, [cards.length]);
@@ -723,7 +720,8 @@ export default function WalletScreen() {
   const hasCards = stackCards.length > 0;
 
   return (
-    <SafeAreaView ref={containerRef} style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View ref={containerRef} style={{ flex: 1 }}>
       <WalletHeader
         onArchivePress={handleArchivePress}
         onSettingsPress={handleSettingsPress}
@@ -878,6 +876,7 @@ export default function WalletScreen() {
         onTargetPress={handleTooltipTargetPress}
         onSkip={tutorial.skip}
       />
+      </View>
     </SafeAreaView>
   );
 }
