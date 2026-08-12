@@ -45,6 +45,18 @@ Then open the app in the simulator — it will auto-connect to the dev server.
 - If Metro shows errors — try `npx expo start --dev-client --clear` to clear the cache
 - If the build fails — try `cd ios && pod install && cd ..` then rebuild
 
+### Run on iPad Simulator
+
+```bash
+# List available iPad simulators
+xcrun simctl list devices available | grep iPad
+
+# Build and launch on a specific iPad simulator
+npx expo run:ios --device "iPad Pro 13-inch (M4)"
+```
+
+Use the exact device name from the list. This compiles the native project and installs it — `npx expo start` alone won't work without a development build already installed on the target device.
+
 ---
 
 ## 2. Push to TestFlight (via App Store Connect)
