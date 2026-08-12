@@ -507,6 +507,7 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   cardShell: {
+    flex: 1,
     borderRadius: 16,
     backgroundColor: '#FFFFFF',
     shadowColor: '#000',
