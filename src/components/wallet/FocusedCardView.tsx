@@ -600,7 +600,6 @@ const styles = StyleSheet.create({
   customExpandedContent: {
     flex: 1,
   },
-  },
   compactHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
