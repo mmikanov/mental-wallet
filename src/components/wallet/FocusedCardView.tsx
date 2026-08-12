@@ -293,9 +293,7 @@ export default function FocusedCardView({
               <View
                 style={[
                   styles.cardShell,
-                  Platform.OS === 'android'
-                    ? { height: FOCUSED_CARD_HEIGHT }
-                    : { minHeight: FOCUSED_CARD_HEIGHT },
+                  { minHeight: FOCUSED_CARD_HEIGHT },
                   backgroundStyle,
                 ]}
               >
@@ -599,6 +597,7 @@ const styles = StyleSheet.create({
   },
   customExpandedContent: {
     flex: 1,
+    overflow: 'hidden',
   },
   compactHeader: {
     flexDirection: 'row',

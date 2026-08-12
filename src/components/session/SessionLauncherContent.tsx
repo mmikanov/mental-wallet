@@ -12,7 +12,11 @@
  */
 
 import React, { useCallback, useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView as RNScrollView, Platform } from 'react-native';
+import { ScrollView as GHScrollView } from 'react-native-gesture-handler';
+
+// Use gesture-handler ScrollView on Android to allow scrolling inside GestureDetector parents
+const ScrollView = Platform.OS === 'android' ? GHScrollView : RNScrollView;
 import * as Crypto from 'expo-crypto';
 import { useSessionStore } from '@/stores/sessionStore';
 import { createCardService } from '@/services/cardService';
