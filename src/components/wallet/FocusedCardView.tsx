@@ -18,6 +18,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ImageBackground,
+  ScrollView,
   Dimensions,
   Platform,
 } from 'react-native';
@@ -361,11 +362,56 @@ export default function FocusedCardView({
                 isExpanded && Platform.OS === 'android' ? { height: FOCUSED_CARD_HEIGHT, minHeight: undefined } : undefined,
               ]}
             >
+              {/* Use gesture-handler ScrollView when expanded on Android for proper scroll coordination */}
+              {isExpanded && Platform.OS === 'android' ? (
               <GHScrollView
                 style={styles.cardShellInner}
                 contentContainerStyle={[styles.cardShellInnerContent, backgroundStyle]}
                 showsVerticalScrollIndicator={false}
                 nestedScrollEnabled={true}
+              >
+              {isKpiCard && (
+                <BadgeExplanationBanner
+                  daysElapsedSnapshot={daysElapsedSnapshot.current}
+                  checkInCompleted={checkInCompleted}
+                />
+              )}
+              {hasBackgroundImage ? (
+                <ImageBackground
+                  source={{ uri: card.backgroundValue }}
+                  style={styles.imageBackground}
+                  imageStyle={styles.imageStyle}
+                  onError={() => setBgImageFailed(true)}
+                >
+                  <View style={styles.imageOverlay}>{headerContent}</View>
+                </ImageBackground>
+              ) : (
+                headerContent
+              )}
+
+              {/* Stats Row inside the card */}
+              <View style={styles.statsContainer}>
+                <StatsRow
+                  totalUses={card.totalUses}
+                  currentStreak={card.currentStreak}
+                  lastUsedAt={card.lastUsedAt}
+                />
+              </View>
+
+              {/* Reminder display between stats and expand arrow */}
+              <ReminderDisplayRow reminder={reminder} textColor={textColor} />
+
+              {/* Actions inside the card */}
+              <View style={styles.expandedContainer}>
+                <ExpandedContent card={card} />
+                {renderFooter?.()}
+              </View>
+              </GHScrollView>
+              ) : (
+              <ScrollView
+                style={styles.cardShellInner}
+                contentContainerStyle={[styles.cardShellInnerContent, backgroundStyle]}
+                showsVerticalScrollIndicator={false}
               >
               {isKpiCard && (
                 <BadgeExplanationBanner
@@ -416,7 +462,8 @@ export default function FocusedCardView({
                   </TouchableOpacity>
                 </View>
               )}
-              </GHScrollView>
+              </ScrollView>
+              )}
             </View>
           </View>
         </Animated.View>
