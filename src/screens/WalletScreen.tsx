@@ -337,22 +337,30 @@ export default function WalletScreen() {
       queueMicrotask(() => expandCard());
     }
   }, [tutorial, cards, focusCard, expandCard]);
+  const containerRef = useRef<View>(null);
+
   const handleStackedCardListLayout = useCallback(() => {
-    if (stackedCardListRef.current) {
-      stackedCardListRef.current.measureInWindow((x, y, _width, _height) => {
-        if (_width > 0) {
-          // Each card peeks 60px, frontmost card is 200px tall.
-          // The frontmost card (cards[0]) starts after all other cards' peek areas.
-          const PEEK = 60;
-          const CARD_HEIGHT = 205;
-          const frontmostTop = y + (stackCards.length - 1) * PEEK;
-          setFrontmostCardLayout({
-            x,
-            y: frontmostTop + 10,
-            width: _width,
-            height: CARD_HEIGHT,
-          });
-        }
+    if (stackedCardListRef.current && containerRef.current) {
+      // Measure both relative to window, then compute relative offset
+      containerRef.current.measureInWindow((cx, cy, _cw, _ch) => {
+        stackedCardListRef.current!.measureInWindow((x, y, _width, _height) => {
+          if (_width > 0) {
+            // Each card peeks 60px, frontmost card is 205px tall.
+            // The frontmost card (cards[0]) starts after all other cards' peek areas.
+            const PEEK = 60;
+            const CARD_HEIGHT = 205;
+            // Compute position relative to the SafeAreaView container (where the overlay lives)
+            const relativeY = y - cy;
+            const relativeX = x - cx;
+            const frontmostTop = relativeY + (stackCards.length - 1) * PEEK;
+            setFrontmostCardLayout({
+              x: relativeX,
+              y: frontmostTop + 10,
+              width: _width,
+              height: CARD_HEIGHT,
+            });
+          }
+        });
       });
     }
   }, [cards.length]);
@@ -715,7 +723,7 @@ export default function WalletScreen() {
   const hasCards = stackCards.length > 0;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView ref={containerRef} style={styles.container} edges={['top']}>
       <WalletHeader
         onArchivePress={handleArchivePress}
         onSettingsPress={handleSettingsPress}

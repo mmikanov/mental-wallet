@@ -8,7 +8,7 @@
  * Validates: Requirements 5.1, 5.4, 9.5
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -16,8 +16,6 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const SPOTLIGHT_PADDING = 8;
 const BACKDROP_OPACITY = 0.5;
@@ -51,6 +49,14 @@ export default function TooltipOverlay({
   onSkip,
 }: TooltipOverlayProps) {
   const opacity = useSharedValue(0);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+
+  const handleLayout = React.useCallback((event: { nativeEvent: { layout: { width: number; height: number } } }) => {
+    const { width, height } = event.nativeEvent.layout;
+    if (width > 0 && height > 0) {
+      setContainerSize({ width, height });
+    }
+  }, []);
 
   React.useEffect(() => {
     opacity.value = withTiming(visible ? 1 : 0, {
@@ -66,6 +72,9 @@ export default function TooltipOverlay({
 
   if (!targetLayout) return null;
 
+  const CONTAINER_WIDTH = containerSize.width || Dimensions.get('window').width;
+  const CONTAINER_HEIGHT = containerSize.height || Dimensions.get('window').height;
+
   // Spotlight bounds with padding
   const spotLeft = targetLayout.x - SPOTLIGHT_PADDING;
   const spotTop = targetLayout.y - SPOTLIGHT_PADDING;
@@ -79,11 +88,11 @@ export default function TooltipOverlay({
     position === 'below' ? spotBottom + ARROW_SIZE + 4 : undefined;
   const tooltipBottom =
     position === 'above'
-      ? SCREEN_HEIGHT - spotTop + ARROW_SIZE + 4
+      ? CONTAINER_HEIGHT - spotTop + ARROW_SIZE + 4
       : undefined;
 
   return (
-    <Animated.View style={[styles.container, animatedStyle]} pointerEvents="box-none">
+    <Animated.View style={[styles.container, animatedStyle]} pointerEvents="box-none" onLayout={handleLayout}>
       {/* Top bar */}
       <View
         style={[styles.backdrop, { top: 0, left: 0, right: 0, height: spotTop }]}
