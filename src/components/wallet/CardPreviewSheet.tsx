@@ -173,6 +173,7 @@ export default function CardPreviewSheet({
           Platform.OS === 'android' && styles.androidOverlay,
         ]}
       >
+        <View style={Platform.OS === 'android' ? styles.androidSheet : { flex: 1 }}>
         {/* Dismiss handle */}
         <View style={styles.handleContainer}>
           <View style={styles.handle} />
@@ -285,6 +286,7 @@ export default function CardPreviewSheet({
           }}
         />
       )}
+      </View>
     </Modal>
   );
 }
@@ -297,6 +299,14 @@ const styles = StyleSheet.create({
   androidOverlay: {
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
+  },
+  androidSheet: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    marginTop: 60,
+    overflow: 'hidden',
   },
   handleContainer: {
     alignItems: 'center',

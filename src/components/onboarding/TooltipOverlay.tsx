@@ -152,14 +152,16 @@ export default function TooltipOverlay({
           },
         ]}
       >
-        {/* Arrow */}
+        {/* Arrow — uses a clipping wrapper for cross-platform triangle rendering */}
         <View
           style={[
-            styles.arrow,
-            position === 'below' ? styles.arrowUp : styles.arrowDown,
+            styles.arrowClip,
+            position === 'below' ? styles.arrowClipUp : styles.arrowClipDown,
             { left: Math.max(16, spotLeft + spotWidth / 2 - 16 - ARROW_SIZE) },
           ]}
-        />
+        >
+          <View style={styles.arrowInner} />
+        </View>
 
         <Text
           style={styles.tooltipText}
@@ -209,28 +211,25 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 6,
   },
-  arrow: {
+  arrowClip: {
+    position: 'absolute',
+    width: ARROW_SIZE * 2,
+    height: ARROW_SIZE,
+    overflow: 'hidden',
+  },
+  arrowClipUp: {
+    top: -ARROW_SIZE,
+  },
+  arrowClipDown: {
+    bottom: -ARROW_SIZE,
+  },
+  arrowInner: {
     position: 'absolute',
     width: ARROW_SIZE * 2,
     height: ARROW_SIZE * 2,
     backgroundColor: '#FFFFFF',
     transform: [{ rotate: '45deg' }],
-  },
-  arrowUp: {
-    top: -ARROW_SIZE,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 4,
-  },
-  arrowDown: {
-    bottom: -ARROW_SIZE,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 4,
+    top: ARROW_SIZE / 2,
   },
   tooltipText: {
     fontSize: 15,

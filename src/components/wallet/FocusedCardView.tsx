@@ -182,7 +182,11 @@ export default function FocusedCardView({
   }));
 
   // Swipe down gesture to dismiss
+  // activeOffsetY: only activate after 20px downward drag (lets ScrollView handle small/upward drags)
+  // failOffsetY: fail immediately on upward drag so ScrollView can scroll content
   const panGesture = Gesture.Pan()
+    .activeOffsetY(20)
+    .failOffsetY(-10)
     .onUpdate((event) => {
       if (event.translationY > 0) {
         translateY.value = event.translationY;
