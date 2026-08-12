@@ -18,7 +18,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ImageBackground,
-  ScrollView,
   Dimensions,
   Platform,
 } from 'react-native';
@@ -28,7 +27,7 @@ import Animated, {
   withSpring,
   runOnJS,
 } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, ScrollView as GHScrollView } from 'react-native-gesture-handler';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { Card } from '@/types/index';
@@ -362,7 +361,7 @@ export default function FocusedCardView({
                 isExpanded && Platform.OS === 'android' ? { height: FOCUSED_CARD_HEIGHT, minHeight: undefined } : undefined,
               ]}
             >
-              <ScrollView
+              <GHScrollView
                 style={styles.cardShellInner}
                 contentContainerStyle={[styles.cardShellInnerContent, backgroundStyle]}
                 showsVerticalScrollIndicator={false}
@@ -417,7 +416,7 @@ export default function FocusedCardView({
                   </TouchableOpacity>
                 </View>
               )}
-              </ScrollView>
+              </GHScrollView>
             </View>
           </View>
         </Animated.View>
