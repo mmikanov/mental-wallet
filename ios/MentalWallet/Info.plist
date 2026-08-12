@@ -33,7 +33,7 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>exp+mental-wallet</string>
+          <string>exp+mental-health-wallet</string>
         </array>
       </dict>
     </array>
@@ -41,6 +41,15 @@
     <string>1</string>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
+    <key>LSApplicationQueriesSchemes</key>
+    <array>
+      <string>headspace</string>
+      <string>calm</string>
+      <string>talkspace</string>
+      <string>betterhelp</string>
+      <string>wysa</string>
+      <string>insight-timer</string>
+    </array>
     <key>LSMinimumSystemVersion</key>
     <string>12.0</string>
     <key>LSRequiresIPhoneOS</key>

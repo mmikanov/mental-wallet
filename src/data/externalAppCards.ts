@@ -33,7 +33,7 @@ export const EXTERNAL_APP_CARDS: CuratedCardDefinition[] = [
         config: {
           label: 'Open in Headspace',
           targetUrl: 'headspace://home',
-          fallbackUrl: 'https://www.headspace.com',
+          fallbackUrl: 'https://apps.apple.com/app/headspace-meditation-sleep/id493145008',
           isAffiliate: true,
         },
         isRequired: false,
@@ -88,7 +88,7 @@ export const EXTERNAL_APP_CARDS: CuratedCardDefinition[] = [
         config: {
           label: 'Open in Calm',
           targetUrl: 'calm://open',
-          fallbackUrl: 'https://www.calm.com',
+          fallbackUrl: 'https://apps.apple.com/app/calm/id571800810',
           isAffiliate: false,
         },
         isRequired: false,
@@ -141,7 +141,7 @@ export const EXTERNAL_APP_CARDS: CuratedCardDefinition[] = [
         config: {
           label: 'Open Talkspace',
           targetUrl: 'talkspace://home',
-          fallbackUrl: 'https://www.talkspace.com',
+          fallbackUrl: 'https://apps.apple.com/app/talkspace-therapy/id661829386',
           isAffiliate: false,
         },
         isRequired: false,
@@ -195,7 +195,7 @@ export const EXTERNAL_APP_CARDS: CuratedCardDefinition[] = [
         config: {
           label: 'Open BetterHelp',
           targetUrl: 'betterhelp://home',
-          fallbackUrl: 'https://www.betterhelp.com',
+          fallbackUrl: 'https://apps.apple.com/app/betterhelp-therapy/id955689462',
           isAffiliate: false,
         },
         isRequired: false,
@@ -249,7 +249,7 @@ export const EXTERNAL_APP_CARDS: CuratedCardDefinition[] = [
         config: {
           label: 'Open Wysa',
           targetUrl: 'wysa://open',
-          fallbackUrl: 'https://www.wysa.com',
+          fallbackUrl: 'https://apps.apple.com/app/wysa-anxiety-therapy-chatbot/id1166585565',
           isAffiliate: false,
         },
         isRequired: false,
@@ -356,8 +356,8 @@ export const EXTERNAL_APP_CARDS: CuratedCardDefinition[] = [
         position: 0,
         config: {
           label: 'Open Insight Timer',
-          targetUrl: 'insight-timer://open',
-          fallbackUrl: 'https://insighttimer.com',
+          targetUrl: 'https://apps.apple.com/app/insight-timer-meditate-sleep/id337472899',
+          fallbackUrl: 'https://apps.apple.com/app/insight-timer-meditate-sleep/id337472899',
           isAffiliate: false,
         },
         isRequired: false,

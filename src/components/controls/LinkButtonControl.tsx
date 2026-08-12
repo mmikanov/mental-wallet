@@ -26,10 +26,22 @@ interface LinkButtonControlProps {
 
 /**
  * Attempts to open a URL via the system handler.
+ * For custom URL schemes (non-http/https), skips canOpenURL check and tries
+ * openURL directly — this works on iOS without LSApplicationQueriesSchemes
+ * whitelisting, allowing user-defined deep links to any app.
  * Returns true if successful, false otherwise.
  */
 export async function tryOpenUrl(url: string): Promise<boolean> {
   try {
+    const isCustomScheme = !url.startsWith('http://') && !url.startsWith('https://');
+
+    if (isCustomScheme) {
+      // Skip canOpenURL for custom schemes — openURL works without whitelisting
+      await Linking.openURL(url);
+      return true;
+    }
+
+    // For http/https URLs, check first (avoids opening Safari unnecessarily)
     const canOpen = await Linking.canOpenURL(url);
     if (canOpen) {
       await Linking.openURL(url);
