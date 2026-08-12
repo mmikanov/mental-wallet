@@ -365,8 +365,10 @@ export default function WalletScreen() {
   // Approximate action button layout when card is focused (the expand arrow)
   useEffect(() => {
     if (focusedCardId && !isExpanded) {
-      // The expand arrow (▼) sits just below the stats row
-      queueMicrotask(() => setActionButtonLayout({ x: screenWidth / 2 - 30, y: 500, width: 60, height: 40 }));
+      // The expand arrow (▼) sits at the bottom of the focused card area
+      // Approximate position: header (~56px) + card padding (8px) + card content (~380px)
+      const approxArrowY = 440;
+      queueMicrotask(() => setActionButtonLayout({ x: screenWidth / 2 - 30, y: approxArrowY, width: 60, height: 40 }));
     } else {
       queueMicrotask(() => setActionButtonLayout(null));
     }

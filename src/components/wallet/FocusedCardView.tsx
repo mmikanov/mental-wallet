@@ -351,7 +351,7 @@ export default function FocusedCardView({
 
   return (
     <>
-      <GestureDetector gesture={panGesture}>
+  const cardContent = (
         <Animated.View style={[styles.container, animatedStyle]}>
           <View style={styles.cardOuter}>
             {/* Card Shell */}
@@ -365,6 +365,7 @@ export default function FocusedCardView({
                 style={styles.cardShellInner}
                 contentContainerStyle={[styles.cardShellInnerContent, backgroundStyle]}
                 showsVerticalScrollIndicator={false}
+                nestedScrollEnabled={true}
               >
               {isKpiCard && (
                 <BadgeExplanationBanner
@@ -419,7 +420,17 @@ export default function FocusedCardView({
             </View>
           </View>
         </Animated.View>
-      </GestureDetector>
+  );
+
+  return (
+    <>
+      {isExpanded ? (
+        cardContent
+      ) : (
+        <GestureDetector gesture={panGesture}>
+          {cardContent}
+        </GestureDetector>
+      )}
       {rationale && (
         <RationaleSheet
           visible={rationaleSheetVisible}
