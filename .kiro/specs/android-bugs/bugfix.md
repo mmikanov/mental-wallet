@@ -84,5 +84,23 @@ This document collects visual and behavioral bugs found during Android emulator 
 
 ---
 
+### Bug 5: Collapsed Stack Cards Lack Depth Effect on Android
+
+### Current Behavior (Defect)
+
+9.1 WHEN a card is focused and the remaining cards are shown as collapsed strips at the bottom on Android THEN all collapsed card strips appear at the same width, creating a flat appearance
+
+9.2 ON iOS the collapsed cards show a perspective/depth effect where each card is slightly narrower than the one above, creating a stacked appearance
+
+### Expected Behavior (Correct)
+
+10.1 WHEN cards are shown in the collapsed stack at the bottom on Android THEN they SHALL display the same depth/perspective effect as iOS (each card slightly scaled down or narrower for depth)
+
+### Status
+
+**Pending**
+
+---
+
 <!-- Add additional bugs below as they are discovered during Android testing -->
 
