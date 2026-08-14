@@ -174,4 +174,24 @@ Likely a consequence of Bug 4 (failed navigation to onboarding after data reset)
 
 ---
 
+### Bug 9: KPI Badge Not Shown When User Has Never Done a Check-In
+
+### Current Behavior (Defect)
+
+17.1 WHEN the user has installed the app more than 1 day ago but has never done a KPI check-in THEN the DaysSinceBadge on the KPI FAB does not display any number
+
+17.2 WHEN `loadLastCheckIn` queries `kpi_records` and finds no rows THEN `lastCheckInDate` is set to `null`, and `computeDaysElapsed(null)` returns `null`, causing `DaysSinceBadge` to render nothing
+
+### Expected Behavior (Correct)
+
+18.1 WHEN the user has never done a KPI check-in but the KPI card exists in their wallet THEN the badge SHALL show the number of days since the KPI card was created (added during onboarding) as the reference point
+
+18.2 WHEN the user completes their first KPI check-in THEN the badge SHALL switch to using `lastCheckInDate` as the reference point (standard behavior)
+
+### Status
+
+**Pending**
+
+---
+
 <!-- Add additional cross-platform bugs below as they are discovered -->

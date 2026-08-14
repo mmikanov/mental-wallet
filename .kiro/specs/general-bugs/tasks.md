@@ -48,3 +48,14 @@
 - [ ] Check recommendation service output for BetterHelp iconType
 - [ ] Verify asset loading for betterhelp.jpg specifically
 - _Status: Open_
+
+## Task 9: Fix KPI Badge Not Shown When Never Used (Bug 9)
+
+- [ ] 9.1: Add `kpiCardCreatedAt: string | null` field to `KpiState` interface in `src/stores/kpiStore.ts`
+- [ ] 9.2: In `loadLastCheckIn`, query the KPI card's `created_at` from the `cards` table (`WHERE source_library_id = 'lib-personal-kpi'`) and store it in `kpiCardCreatedAt`
+- [ ] 9.3: Expose `kpiCardCreatedAt` from the store in the `KpiFab` component (WalletScreen.tsx)
+- [ ] 9.4: In `KpiFab`, compute `const referenceDate = lastCheckInDate ?? kpiCardCreatedAt` and pass to `computeDaysElapsed`
+- [ ] 9.5: Verify badge shows correct days when user has never checked in (days since card creation)
+- [ ] 9.6: Verify badge switches to lastCheckInDate after first check-in
+- [ ] 9.7: Run existing kpiBadgeUtils tests — confirm no regressions
+- _Status: Open_

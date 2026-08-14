@@ -66,6 +66,26 @@ Cross-platform bugs found during testing on both iOS and Android. Fixes are appl
 
 **Fix**: Resolved by fixing Bug 4 (correct navigation route).
 
+### Bug 9: KPI Badge Not Shown When Never Used (Open)
+
+**Root Cause**: `computeDaysElapsed(lastCheckInDateUtc)` returns `null` when `lastCheckInDateUtc` is `null` (no records in `kpi_records` table). `DaysSinceBadge` renders nothing when `daysElapsed` is `null`. There is no fallback to a reference date (like card creation date) for the "never used" case.
+
+**Fix Design**:
+
+1. Add a `kpiCardCreatedAt` field to `kpiStore` (loaded alongside `loadLastCheckIn`)
+2. In `KpiFab`, when `lastCheckInDate` is null but `kpiCardCreatedAt` exists, compute `daysElapsed` using the card's `createdAt` date as the reference
+3. `computeDaysElapsed` stays unchanged (pure function, doesn't need modification) — the caller passes the appropriate date
+
+**Recommended approach**: Use a separate field for clarity. The `KpiFab` component computes:
+```typescript
+const referenceDate = lastCheckInDate ?? kpiCardCreatedAt;
+const daysElapsed = computeDaysElapsed(referenceDate, new Date());
+```
+
+**Files to modify**:
+- `src/stores/kpiStore.ts` — add `kpiCardCreatedAt` field and load it in `loadLastCheckIn`
+- `src/screens/WalletScreen.tsx` (KpiFab) — use fallback reference date when `lastCheckInDate` is null
+
 ### BetterHelp Icon Missing in Suggestions (Open)
 
 **Root Cause**: Unknown. Other third-party app icons display correctly. BetterHelp-specific issue — card definition, logo registry, and asset file all look correct. Needs runtime debugging.
