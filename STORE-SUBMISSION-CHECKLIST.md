@@ -17,6 +17,14 @@
 - [x] Run production build: `eas build --platform ios --profile production`
 - [x] Submit to App Store: `eas submit --platform ios`
 - [x] Submit for review in App Store Connect
+- [x] **Respond to Guideline 2.1 rejection** — provide required information in App Review Notes:
+  - [x] Screen recording on physical device (launch → onboarding → wallet → use tool → emotion session)
+  - [x] List tested devices and OS versions
+  - [x] App description, target audience, problem it solves
+  - [x] Setup instructions (no login required)
+  - [x] External services list (Cloudflare Worker for analytics only)
+  - [x] Regional differences (none — consistent across all regions)
+  - [x] Regulated industry documentation (N/A — personal self-help tool, not medical)
 - [x] After app is created in App Store Connect, update `APP_STORE_URL` in `src/config/appInfo.ts` with real Apple ID (Apple ID: 6800036822)
 
 ## Android (Google Play)
