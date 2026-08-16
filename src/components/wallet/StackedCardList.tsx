@@ -82,6 +82,7 @@ export default function StackedCardList({
                 marginTop: index === 0 ? 0 : OVERLAP_MARGIN,
                 zIndex: index, // higher index = rendered later = on top visually
               },
+
             ]}
           >
             <CardEdge

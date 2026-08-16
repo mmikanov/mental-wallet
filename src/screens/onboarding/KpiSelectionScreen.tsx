@@ -185,6 +185,8 @@ export default function KpiSelectionScreen() {
           What does feeling better look like for you?
         </Text>
 
+        <Text style={styles.subheading}>Choose one focus for your daily check-in</Text>
+
         <View style={styles.optionsContainer}>
           {KPI_OPTIONS.map((option, index) => {
             const isSelected = selectedIndex === index;
@@ -307,7 +309,12 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
     color: '#1A1A2E',
-    marginBottom: 24,
+    marginBottom: 8,
+  },
+  subheading: {
+    fontSize: 15,
+    color: '#6B7280',
+    marginBottom: 20,
   },
   optionsContainer: {
     gap: 12,

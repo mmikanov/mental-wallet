@@ -1,6 +1,7 @@
 /**
  * PrivacyExplanationScreen — Detailed privacy explanation accessible from
- * the "Learn more" link on the PrivacyNotice onboarding screen.
+ * the "Learn more" link on the PrivacyNotice onboarding screen AND from
+ * the Settings screen ("Help improve the app" → Learn more).
  *
  * Lists:
  * - Event types collected
@@ -10,7 +11,8 @@
  * - How to reset
  * - Link to full Privacy Policy
  *
- * Back navigation returns to the privacy notice at the same position.
+ * Back navigation returns to the previous screen (works in both onboarding
+ * and root stack contexts).
  *
  * Validates: Requirements 8.4, 10.4
  */
@@ -20,28 +22,21 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import * as WebBrowser from 'expo-web-browser';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { OnboardingStackParamList } from '@/navigation/OnboardingNavigator';
 import { PRIVACY_POLICY_URL } from '@/config/appInfo';
 
-type PrivacyExplanationNavProp = NativeStackNavigationProp<
-  OnboardingStackParamList,
-  'PrivacyExplanation'
->;
-
 const EVENT_TYPES = [
-  'app_opened',
-  'onboarding_step_viewed',
-  'onboarding_completed',
-  'start_mode_selected',
-  'emotion_selected',
-  'session_started',
-  'tool_created',
-  'tool_opened',
-  'tool_completed',
-  'outcome_response',
-  'external_resource_opened',
-  'session_ended',
+  'App opened',
+  'Onboarding step viewed',
+  'Onboarding completed',
+  'Start mode selected (wallet-first or emotion-first)',
+  '"Start from how I feel" flow started',
+  'Emotion selected in "Start from how I feel"',
+  '"Start from how I feel" flow ended',
+  'Tool created by you',
+  'Tool opened',
+  'Tool completed',
+  'How you felt after using a tool',
+  'External app or resource opened',
 ] as const;
 
 const BASE_DATA_FIELDS = [
@@ -63,7 +58,7 @@ const NOT_COLLECTED = [
 ] as const;
 
 export default function PrivacyExplanationScreen() {
-  const navigation = useNavigation<PrivacyExplanationNavProp>();
+  const navigation = useNavigation();
 
   const handleViewPrivacyPolicy = () => {
     WebBrowser.openBrowserAsync(PRIVACY_POLICY_URL);
@@ -75,7 +70,7 @@ export default function PrivacyExplanationScreen() {
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          accessibilityLabel="Go back to privacy notice"
+          accessibilityLabel="Go back"
           accessibilityRole="button"
           style={styles.backButton}
         >

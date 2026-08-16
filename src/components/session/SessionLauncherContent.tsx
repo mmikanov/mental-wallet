@@ -359,6 +359,8 @@ export default function SessionLauncherContent({
         style={styles.scrollArea}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        automaticallyAdjustKeyboardInsets={true}
+        keyboardShouldPersistTaps="handled"
       >
         {/* Emotion Picker */}
         <EmotionPicker
@@ -485,8 +487,9 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   dismissText: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: 15,
+    color: '#4B5563',
+    fontWeight: '500',
   },
   scrollArea: {
     flex: 1,

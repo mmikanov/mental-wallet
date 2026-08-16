@@ -218,6 +218,7 @@ function getFallbackRecommendations(walletCardIds: string[]): ToolRecommendation
     cardId: card.id,
     title: card.title,
     description: card.description,
+    iconType: card.iconType,
     iconValue: card.iconValue,
     source: 'library' as const,
     contextRelevanceScore: 0,

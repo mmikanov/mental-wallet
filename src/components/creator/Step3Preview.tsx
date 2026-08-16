@@ -163,6 +163,7 @@ export default function Step3Preview({
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.previewLabel}>Preview</Text>
         {/* Card Preview Shell */}
         {isImageBackground ? (
           <ImageBackground
@@ -239,6 +240,14 @@ export default function Step3Preview({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  previewLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 12,
   },
   scrollArea: {
     flex: 1,

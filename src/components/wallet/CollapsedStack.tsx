@@ -75,13 +75,16 @@ export default function CollapsedStack({
               ? card.backgroundValue?.split(',')[0] || '#E5E5EA'
               : '#E5E5EA';
 
+        // Progressive inset: deeper cards (higher index) are narrower for depth effect
+        const depthInset = (edgeCards.length - index) * 4;
+
         return (
           <View
             key={card.id}
             style={[
               styles.edge,
               { backgroundColor: bgColor },
-              { zIndex: edgeCards.length - index },
+              { zIndex: edgeCards.length - index, marginHorizontal: depthInset },
             ]}
           />
         );
@@ -116,7 +119,6 @@ const styles = StyleSheet.create({
     height: EDGE_HEIGHT,
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
-    marginHorizontal: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -1 },
     shadowOpacity: 0.1,

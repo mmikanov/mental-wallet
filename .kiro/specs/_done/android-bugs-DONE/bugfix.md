@@ -42,7 +42,7 @@ This document collects visual and behavioral bugs found during Android emulator 
 
 ### Status
 
-**Pending**
+**Fixed** — arrowClip approach with overflow:hidden + rotated inner square renders correctly as a triangle on Android (New Architecture).
 
 ---
 
@@ -62,7 +62,7 @@ This document collects visual and behavioral bugs found during Android emulator 
 
 ### Status
 
-**Pending**
+**Fixed** — Uses `GHScrollView` (from react-native-gesture-handler) with `nestedScrollEnabled={true}` on Android when expanded. This allows proper scroll coordination between the gesture detector and the scroll view.
 
 ---
 
@@ -80,7 +80,7 @@ This document collects visual and behavioral bugs found during Android emulator 
 
 ### Status
 
-**Pending**
+**Fixed** — `CardPreviewSheet` conditionally applies `androidOverlay` style (semi-transparent backdrop with `rgba(0,0,0,0.5)`) on Android via `Platform.OS === 'android'` check.
 
 ---
 
@@ -98,7 +98,7 @@ This document collects visual and behavioral bugs found during Android emulator 
 
 ### Status
 
-**Pending**
+**Fixed** — Added progressive `marginHorizontal` to edge cards (`(edgeCards.length - index) * 4`), making deeper cards narrower for a stacked depth effect.
 
 ---
 

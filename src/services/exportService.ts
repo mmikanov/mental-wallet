@@ -355,7 +355,7 @@ export function createExportService(): ExportService {
       : `mental-wallet-export-${Date.now()}.csv`;
 
     const file = new File(Paths.cache, fileName);
-    file.text = fileContent;
+    file.write(fileContent);
 
     const isSharingAvailable = await Sharing.isAvailableAsync();
     if (isSharingAvailable) {

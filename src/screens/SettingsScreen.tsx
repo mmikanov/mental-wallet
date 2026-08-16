@@ -20,7 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { createExportService } from '../services/exportService';
-import { getIncludeArchivedTools, setIncludeArchivedTools, getOutcomePromptEnabled, setOutcomePromptEnabled } from '@/services/settingsService';
+import { getIncludeArchivedTools, setIncludeArchivedTools, getOutcomePromptEnabled, setOutcomePromptEnabled, getDiscreetNotifications, setDiscreetNotifications } from '@/services/settingsService';
 import { CommonActions } from '@react-navigation/native';
 import StartExperienceSetting from '@/components/settings/StartExperienceSetting';
 import { getDatabase, closeDatabase } from '@/data/database';
@@ -43,6 +43,7 @@ export default function SettingsScreen({ navigation }: Props) {
   const [currentFlushInterval, setCurrentFlushInterval] = useState(getFlushIntervalMs());
   const [includeArchivedTools, setIncludeArchivedToolsState] = useState(false);
   const [outcomePromptEnabled, setOutcomePromptEnabledState] = useState(true);
+  const [discreetNotifications, setDiscreetNotificationsState] = useState(false);
 
   // Triple-tap on header title to open dev event viewer (dev builds only)
   const tapCountRef = useRef(0);
@@ -78,6 +79,10 @@ export default function SettingsScreen({ navigation }: Props) {
     getOutcomePromptEnabled().then(setOutcomePromptEnabledState);
   }, []);
 
+  useEffect(() => {
+    getDiscreetNotifications().then(setDiscreetNotificationsState);
+  }, []);
+
   const handleToggleIncludeArchived = useCallback(async (value: boolean) => {
     setIncludeArchivedToolsState(value);
     await setIncludeArchivedTools(value);
@@ -86,6 +91,11 @@ export default function SettingsScreen({ navigation }: Props) {
   const handleToggleOutcomePrompt = useCallback(async (value: boolean) => {
     setOutcomePromptEnabledState(value);
     await setOutcomePromptEnabled(value);
+  }, []);
+
+  const handleToggleDiscreetNotifications = useCallback(async (value: boolean) => {
+    setDiscreetNotificationsState(value);
+    await setDiscreetNotifications(value);
   }, []);
 
   const exportService = createExportService();
@@ -305,6 +315,22 @@ export default function SettingsScreen({ navigation }: Props) {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
+        {/* Safety Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Safety</Text>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={handleCrisisResources}
+            accessibilityLabel="Crisis resources"
+            accessibilityRole="button"
+          >
+            <Text style={styles.menuItemIcon}>🆘</Text>
+            <Text style={styles.menuItemText}>Crisis Resources</Text>
+            <Text style={styles.menuItemChevron}>›</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Start Experience Section */}
         <StartExperienceSetting />
 
@@ -372,6 +398,23 @@ export default function SettingsScreen({ navigation }: Props) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Privacy & Data</Text>
 
+          <View style={styles.menuItem}>
+            <View style={styles.toggleContent}>
+              <Text style={styles.menuItemText}>
+                Discreet notifications
+              </Text>
+              <Text style={styles.toggleSubtitle}>
+                Hide tool names from notification text
+              </Text>
+            </View>
+            <Switch
+              value={discreetNotifications}
+              onValueChange={handleToggleDiscreetNotifications}
+              accessibilityLabel="Discreet notifications"
+              accessibilityRole="switch"
+            />
+          </View>
+
           <TouchableOpacity
             style={styles.menuItem}
             onPress={() => WebBrowser.openBrowserAsync(PRIVACY_POLICY_URL)}
@@ -400,7 +443,15 @@ export default function SettingsScreen({ navigation }: Props) {
                 Help improve the app
               </Text>
               <Text style={styles.toggleSubtitle}>
-                Share anonymous usage data (event counts and timing only — no personal information, messages, or identifiers)
+                Share anonymous usage data (event counts and timing only — no personal information, messages, or identifiers).{' '}
+                <Text
+                  style={styles.learnMoreLink}
+                  onPress={() => navigation.navigate('PrivacyExplanation')}
+                  accessibilityLabel="Learn more about data collection"
+                  accessibilityRole="link"
+                >
+                  Learn more
+                </Text>
               </Text>
             </View>
             <Switch
@@ -463,22 +514,6 @@ export default function SettingsScreen({ navigation }: Props) {
             {isDeleting && (
               <ActivityIndicator size="small" color="#E53935" style={styles.menuItemSpinner} />
             )}
-          </TouchableOpacity>
-        </View>
-
-        {/* Safety Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Safety</Text>
-
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={handleCrisisResources}
-            accessibilityLabel="Crisis resources"
-            accessibilityRole="button"
-          >
-            <Text style={styles.menuItemIcon}>🆘</Text>
-            <Text style={styles.menuItemText}>Crisis Resources</Text>
-            <Text style={styles.menuItemChevron}>›</Text>
           </TouchableOpacity>
         </View>
 
@@ -731,6 +766,10 @@ const styles = StyleSheet.create({
     color: '#888888',
     marginTop: 4,
     lineHeight: 18,
+  },
+  learnMoreLink: {
+    color: '#4A90D9',
+    fontWeight: '500',
   },
   destructiveText: {
     color: '#E53935',

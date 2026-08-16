@@ -7,14 +7,16 @@ interface BadgeExplanationBannerProps {
   daysElapsedSnapshot: number | null;
   /** Whether the user has just completed a check-in (hides the banner) */
   checkInCompleted: boolean;
+  /** Whether the user has ever recorded a KPI check-in */
+  hasEverCheckedIn?: boolean;
 }
 
-export function BadgeExplanationBanner({ daysElapsedSnapshot, checkInCompleted }: BadgeExplanationBannerProps) {
+export function BadgeExplanationBanner({ daysElapsedSnapshot, checkInCompleted, hasEverCheckedIn = true }: BadgeExplanationBannerProps) {
   if (daysElapsedSnapshot === null || daysElapsedSnapshot === 0 || checkInCompleted) {
     return null;
   }
 
-  const message = formatExplanationMessage(daysElapsedSnapshot);
+  const message = formatExplanationMessage(daysElapsedSnapshot, hasEverCheckedIn);
   if (!message) return null;
 
   return (

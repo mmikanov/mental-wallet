@@ -249,9 +249,9 @@ export function createKpiService(): KpiService {
           type: 'mood_slider',
           position: 0,
           config: JSON.stringify({
-            label: kpiLabel,
-            minLabel: 'Not great',
-            maxLabel: 'Really good',
+            label: `How are you doing with: ${kpiLabel.toLowerCase()}?`,
+            minLabel: 'Struggling',
+            maxLabel: 'Thriving',
           }),
           isRequired: 1,
         },
@@ -354,7 +354,7 @@ export function createKpiService(): KpiService {
 
         // Parse config JSON, update label, stringify back
         const config = JSON.parse(controlRow.config);
-        config.label = newLabel;
+        config.label = `How are you doing with: ${newLabel.toLowerCase()}?`;
         const updatedConfig = JSON.stringify(config);
 
         // Update control config
