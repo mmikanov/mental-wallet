@@ -16,7 +16,7 @@
  */
 
 import React, { useEffect, useMemo, useCallback, useState, useRef } from 'react';
-import { View, StyleSheet, Alert, LayoutAnimation, Platform, UIManager, Dimensions, TouchableOpacity, Text, AppState } from 'react-native';
+import { View, StyleSheet, Alert, LayoutAnimation, Platform, Dimensions, TouchableOpacity, Text, AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
@@ -68,11 +68,6 @@ const DEFAULT_CATEGORY_COLORS: Record<string, string> = {
   'self-compassion-reminders': '#D4A5C9',
   'lightweight-connection': '#E6C84C',
 };
-
-// Enable LayoutAnimation on Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 /** Info tooltip for the KPI card — shows ⓘ inline, opens popover with explanation + settings link */
 // Component removed — tooltip logic handled inline in WalletScreen

@@ -159,19 +159,17 @@ export function RationaleSheet({
                 </View>
               ))}
 
-              {/* Crisis resources callout for distress-related cards */}
-              {isDistressRelated && (
-                <TouchableOpacity
-                  style={styles.crisisCallout}
-                  onPress={onCrisisResourcesPress}
-                  accessibilityRole="link"
-                  accessibilityLabel="Crisis support resources"
-                >
-                  <Text style={styles.crisisCalloutText}>
-                    In crisis? Get support →
-                  </Text>
-                </TouchableOpacity>
-              )}
+              {/* Crisis resources callout — always shown (any user may be vulnerable) */}
+              <TouchableOpacity
+                style={styles.crisisCallout}
+                onPress={onCrisisResourcesPress}
+                accessibilityRole="link"
+                accessibilityLabel="Crisis support resources"
+              >
+                <Text style={styles.crisisCalloutText}>
+                  In crisis? Get support →
+                </Text>
+              </TouchableOpacity>
             </View>
 
             {/* Disclaimer (only for not_specifically_studied) */}

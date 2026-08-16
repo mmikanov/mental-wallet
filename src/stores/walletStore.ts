@@ -89,12 +89,15 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
     const service = getCardService();
     await service.reorder(newOrder);
     const { cards } = get();
-    // Reorder cards array to match newOrder
+    // Reorder cards array to match newOrder, preserving cards not in the reorder list (e.g., KPI card)
+    const reorderSet = new Set(newOrder);
     const cardMap = new Map(cards.map((c) => [c.id, c]));
     const reorderedCards = newOrder
       .map((id) => cardMap.get(id))
       .filter((c): c is Card => c !== undefined);
-    set({ cards: reorderedCards, cardOrder: newOrder, isReorderMode: false });
+    // Append any cards that weren't part of the reorder (hidden from reorder UI)
+    const preservedCards = cards.filter((c) => !reorderSet.has(c.id));
+    set({ cards: [...reorderedCards, ...preservedCards], cardOrder: newOrder, isReorderMode: false });
   },
 
   cancelReorder() {

@@ -84,9 +84,14 @@ export function getAccessibilityLabel(daysElapsed: number | null): string {
  * Daily Check-in card. Returns null when no message should be displayed.
  *
  * Uses singular "day" for 1, plural "days" for 2+.
+ * When hasEverCheckedIn is false, shows a first-time prompt instead.
  */
-export function formatExplanationMessage(daysElapsed: number | null): string | null {
+export function formatExplanationMessage(daysElapsed: number | null, hasEverCheckedIn: boolean = true): string | null {
   if (daysElapsed === null || daysElapsed === 0) return null;
+  if (!hasEverCheckedIn) {
+    const dayWord = daysElapsed === 1 ? 'day' : 'days';
+    return `${daysElapsed} ${dayWord} since you added the app — how are you feeling today?`;
+  }
   const dayWord = daysElapsed === 1 ? 'day' : 'days';
   return `It's been ${daysElapsed} ${dayWord} since your last check-in`;
 }

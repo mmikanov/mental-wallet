@@ -157,8 +157,9 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     marginBottom: 8,
-    width: 48,
-    height: 48,
+    minWidth: 48,
+    minHeight: 48,
+    alignItems: 'flex-start',
     overflow: 'visible',
   },
   title: {

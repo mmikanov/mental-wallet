@@ -12,6 +12,7 @@ import { createNotificationService } from './notificationService';
 import { AppError, ErrorCode } from '../types/errors';
 import type { Reminder, ReminderConfig, ReminderFrequency, NotificationConfig } from '../types/index';
 import type { ReminderService } from '../types/services';
+import { getDiscreetNotifications } from './settingsService';
 
 /**
  * Maps a DB row to a Reminder domain object.
@@ -32,11 +33,13 @@ function mapRowToReminder(row: Record<string, unknown>): Reminder {
 /**
  * Given a reminder config, generates the notification configs needed
  * (one per scheduled day for weekly, one for daily).
+ * When discreet is true, the body uses generic text without the tool name.
  */
 function buildNotificationConfigs(
   cardTitle: string,
   cardId: string,
-  config: ReminderConfig
+  config: ReminderConfig,
+  discreet: boolean = false
 ): NotificationConfig[] {
   const [hourStr, minuteStr] = config.time.split(':');
   const hour = parseInt(hourStr, 10);
@@ -44,7 +47,7 @@ function buildNotificationConfigs(
 
   const baseContent = {
     title: 'Time for your practice',
-    body: `Time for your ${cardTitle} practice`,
+    body: discreet ? 'Time for your practice' : `Time for your ${cardTitle} practice`,
     data: { type: 'card_reminder' as const, cardId },
   };
 
@@ -89,8 +92,11 @@ export function createReminderService(): ReminderService {
       );
       const cardTitle = cardRow?.title || 'your tool';
 
+      // Check discreet notifications setting
+      const discreet = await getDiscreetNotifications();
+
       // Schedule notifications
-      const notificationConfigs = buildNotificationConfigs(cardTitle, cardId, config);
+      const notificationConfigs = buildNotificationConfigs(cardTitle, cardId, config, discreet);
       const notificationIds: string[] = [];
 
       for (const notifConfig of notificationConfigs) {
@@ -185,8 +191,11 @@ export function createReminderService(): ReminderService {
       );
       const cardTitle = cardRow?.title || 'your tool';
 
+      // Check discreet notifications setting
+      const discreet = await getDiscreetNotifications();
+
       // Schedule new notifications
-      const notificationConfigs = buildNotificationConfigs(cardTitle, reminder.cardId, config);
+      const notificationConfigs = buildNotificationConfigs(cardTitle, reminder.cardId, config, discreet);
       const notificationIds: string[] = [];
 
       for (const notifConfig of notificationConfigs) {
@@ -269,7 +278,10 @@ export function createReminderService(): ReminderService {
         frequency: reminder.frequency,
       };
 
-      const notificationConfigs = buildNotificationConfigs(cardTitle, reminder.cardId, config);
+      // Check discreet notifications setting
+      const discreet = await getDiscreetNotifications();
+
+      const notificationConfigs = buildNotificationConfigs(cardTitle, reminder.cardId, config, discreet);
       const notificationIds: string[] = [];
 
       for (const notifConfig of notificationConfigs) {

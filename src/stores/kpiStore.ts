@@ -20,6 +20,7 @@ export interface KpiState {
   personalKpi: string | null;
   isLoading: boolean;
   lastCheckInDate: string | null;
+  hasEverCheckedIn: boolean;
   lastCheckInLoaded: boolean;
 
   // Actions
@@ -55,6 +56,7 @@ export const useKpiStore = create<KpiState>((set, get) => ({
   personalKpi: null,
   isLoading: false,
   lastCheckInDate: null,
+  hasEverCheckedIn: false,
   lastCheckInLoaded: false,
 
   async loadKpi() {
@@ -86,9 +88,17 @@ export const useKpiStore = create<KpiState>((set, get) => ({
       const row = await db.getFirstAsync<{ recorded_at: string }>(
         'SELECT recorded_at FROM kpi_records ORDER BY recorded_at DESC LIMIT 1'
       );
-      set({ lastCheckInDate: row?.recorded_at ?? null, lastCheckInLoaded: true });
+      if (row) {
+        set({ lastCheckInDate: row.recorded_at, hasEverCheckedIn: true, lastCheckInLoaded: true });
+      } else {
+        // No check-in records — fall back to KPI card creation date so badge shows days since setup
+        const cardRow = await db.getFirstAsync<{ created_at: string }>(
+          "SELECT created_at FROM cards WHERE source_library_id = 'lib-personal-kpi' LIMIT 1"
+        );
+        set({ lastCheckInDate: cardRow?.created_at ?? null, hasEverCheckedIn: false, lastCheckInLoaded: true });
+      }
     } catch {
-      set({ lastCheckInDate: null, lastCheckInLoaded: true });
+      set({ lastCheckInDate: null, hasEverCheckedIn: false, lastCheckInLoaded: true });
     }
   },
 
@@ -98,16 +108,24 @@ export const useKpiStore = create<KpiState>((set, get) => ({
       const row = await db.getFirstAsync<{ recorded_at: string }>(
         'SELECT recorded_at FROM kpi_records ORDER BY recorded_at DESC LIMIT 1'
       );
-      set({ lastCheckInDate: row?.recorded_at ?? null, lastCheckInLoaded: true });
+      if (row) {
+        set({ lastCheckInDate: row.recorded_at, hasEverCheckedIn: true, lastCheckInLoaded: true });
+      } else {
+        // No check-in records — fall back to KPI card creation date
+        const cardRow = await db.getFirstAsync<{ created_at: string }>(
+          "SELECT created_at FROM cards WHERE source_library_id = 'lib-personal-kpi' LIMIT 1"
+        );
+        set({ lastCheckInDate: cardRow?.created_at ?? null, hasEverCheckedIn: false, lastCheckInLoaded: true });
+      }
     } catch {
-      set({ lastCheckInDate: null, lastCheckInLoaded: true });
+      set({ lastCheckInDate: null, hasEverCheckedIn: false, lastCheckInLoaded: true });
     }
   },
 
   async recordKpi(value: number, note: string | null) {
     const service = getKpiService();
     const record = await service.recordKpi(value, note);
-    set({ lastCheckInDate: record.recordedAt });
+    set({ lastCheckInDate: record.recordedAt, hasEverCheckedIn: true });
   },
 
   async createFakeRecord(daysAgo: number) {
@@ -196,7 +214,7 @@ export const useKpiStore = create<KpiState>((set, get) => ({
         console.warn('KPI card not found in DB, skipping card sync');
       }
 
-      set({ lastCheckInDate: null, lastCheckInLoaded: true });
+      set({ lastCheckInDate: null, hasEverCheckedIn: false, lastCheckInLoaded: true });
 
       try {
         await useWalletStore.getState().loadCards();

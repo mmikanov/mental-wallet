@@ -132,7 +132,7 @@ export const EXTERNAL_APP_CARDS: CuratedCardDefinition[] = [
     iconValue: 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/52/58/45/52584563-38cb-1312-37af-000b295afea6/AppIcon-Production-0-0-1x_U007emarketing-0-8-0-85-220.png/512x512bb.jpg',
     backgroundType: 'color',
     backgroundValue: '#E8F4FF',
-    categoryId: 'lightweight-connection',
+    categoryId: 'self-compassion-reminders',
     allowBackgroundCustomization: false,
     controls: [
       {
@@ -186,7 +186,7 @@ export const EXTERNAL_APP_CARDS: CuratedCardDefinition[] = [
     iconValue: 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/97/79/c9/9779c996-26e5-a6f0-3bf3-9a6ddf9dc87f/BetterHelp-AppIcon-0-0-1x_U007emarketing-0-10-0-85-220.png/512x512bb.jpg',
     backgroundType: 'color',
     backgroundValue: '#E6F4EA',
-    categoryId: 'lightweight-connection',
+    categoryId: 'self-compassion-reminders',
     allowBackgroundCustomization: false,
     controls: [
       {

@@ -1,0 +1,485 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1. Add crisis link to all rationale sheets (#3)": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758654700
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759536498
+      }
+    ],
+    "1.1: In `src/components/rationale/RationaleSheet.tsx`, remove the `{isDistressRelated && (...)}` condition wrapping the crisis callout — always render it": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758654809
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758681128
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758755679
+      }
+    ],
+    "1.2: Verify crisis link appears on a non-distress card (e.g., \"Three Good Things\") on both platforms": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758654862
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758762407
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758860338
+      }
+    ],
+    "1.3: Verify tapping the link navigates to Crisis Resources screen": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758654900
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758763067
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758860740
+      }
+    ],
+    "2. Move crisis resources to top of Settings (#2)": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758655302
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759540031
+      }
+    ],
+    "2.1: In `src/screens/SettingsScreen.tsx`, move the Safety section JSX block (🆘 Crisis Resources) to immediately after the header/scroll start (above Start Experience)": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758655347
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758681849
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758756557
+      }
+    ],
+    "2.2: Verify it appears at the top of Settings without scrolling on both platforms": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758655398
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758764067
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758861670
+      }
+    ],
+    "3. Privacy Details accessible from Settings (#6)": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758655450
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759543169
+      }
+    ],
+    "3.1: Add `PrivacyExplanation: undefined` to `RootStackParamList` in `src/navigation/types.ts`": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758655547
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758866542
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759042744
+      }
+    ],
+    "3.2: Add `<Stack.Screen name=\"PrivacyExplanation\" component={PrivacyExplanationScreen} />` to `src/navigation/RootNavigator.tsx`": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758655595
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758867513
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759043803
+      }
+    ],
+    "3.3: In `src/screens/SettingsScreen.tsx`, add a tappable \"Learn more\" link in the \"Help improve the app\" toggle subtitle that navigates to `'PrivacyExplanation'`": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758655631
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758869359
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759044623
+      }
+    ],
+    "3.4: Update `PrivacyExplanationScreen.tsx` navigation type to support being accessed from root stack (may need `useNavigation<any>()` or a union type)": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758655676
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758871038
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759045759
+      }
+    ],
+    "3.5: Verify navigating to Privacy Details from Settings and back works on both platforms": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758655727
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759051293
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759157439
+      }
+    ],
+    "4. Mindful Walking — add walk length (#4)": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758655783
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759544377
+      }
+    ],
+    "4.1: In `src/data/curatedLibrary.ts`, find `lib-mindful-walking` and add a `choice_buttons` control at position 1 with options: \"~5 min\", \"~10 min\", \"15+ min\" (label: \"How long was your walk?\", isRequired: false)": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758655845
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758873884
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759046840
+      }
+    ],
+    "4.2: Move existing checkbox control from position 1 to position 2": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758656059
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758874835
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759047676
+      }
+    ],
+    "4.3: Verify the card renders correctly in the library preview and when added to wallet": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758656121
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759052190
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759156789
+      }
+    ],
+    "5. Keyboard avoidance for expanded cards (#1)": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758656155
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759545475
+      }
+    ],
+    "5.1: Add `KeyboardAvoidingView` import to `src/components/wallet/FocusedCardView.tsx`": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758656196
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759161710
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759326672
+      }
+    ],
+    "5.2: Wrap the expanded card content (when `isExpanded = true`) in `KeyboardAvoidingView` with behavior `'padding'` on iOS and `'height'` on Android": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758656283
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759163343
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759327480
+      }
+    ],
+    "5.3: Test with a card that has text_input controls near the bottom (e.g., \"Three Good Things\" with 3 fields)": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758656313
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759168944
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759328455
+      }
+    ],
+    "5.4: Verify keyboard doesn't cover the active input on both iOS and Android": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758656353
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759169994
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759329250
+      }
+    ],
+    "5.5: Verify the SessionLauncherContent (emotion session) also avoids keyboard when text inputs are focused": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758656400
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759165018
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759330054
+      }
+    ],
+    "5.6: If `KeyboardAvoidingView` conflicts with Android `GHScrollView`, consider using `react-native-keyboard-aware-scroll-view` as alternative": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758656446
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759170976
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759330993
+      }
+    ],
+    "6. Discreet reminders (#5)": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758656487
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759546171
+      }
+    ],
+    "6.1: Add `getDiscreetNotifications` / `setDiscreetNotifications` to `src/services/settingsService.ts` (reads/writes `discreet_notifications` key from settings table, default: false)": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758656533
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759335971
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759522278
+      }
+    ],
+    "6.2: In `src/services/reminderService.ts` `buildNotificationConfigs`, check the setting — when true, set body to `\"Time for your practice\"` (generic, no tool name)": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758656582
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759338011
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759523046
+      }
+    ],
+    "6.3: Add a \"Discreet notifications\" toggle in `src/screens/SettingsScreen.tsx` (under Privacy & Data section or near reminders). Subtitle: \"Hide tool names from notification text\"": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758656613
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759340038
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759523992
+      }
+    ],
+    "6.4: Verify notification text is generic when toggle is ON": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758656648
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759341251
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759524838
+      }
+    ],
+    "6.5: Verify notification text includes tool name when toggle is OFF (existing behavior)": [
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786758656703
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759342119
+      },
+      {
+        "executionId": "c157d773-9bd2-4ec8-af43-51838ead1357",
+        "chatSessionId": "sess_e9658f30-c7d6-4a86-8dee-52a62497b85b",
+        "timestamp": 1786759525652
+      }
+    ]
+  }
+}

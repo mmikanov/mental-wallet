@@ -24,7 +24,7 @@ This document collects cross-platform visual and behavioral bugs found during te
 
 ### Status
 
-**Pending**
+**Won't Fix** — overflow:hidden clips shadows; alternative approaches also degrade visual quality. Minor cosmetic issue, not worth the tradeoff.
 
 ---
 
@@ -42,7 +42,7 @@ This document collects cross-platform visual and behavioral bugs found during te
 
 ### Status
 
-**Pending**
+**Fixed** — renderCardIcon with sourceId now used in ReorderMode.tsx
 
 ---
 
@@ -62,7 +62,7 @@ This document collects cross-platform visual and behavioral bugs found during te
 
 ### Status
 
-**Pending**
+**Fixed** — added duration_records migration; also fixed pickOutcomeCategory typo
 
 ---
 
@@ -82,7 +82,7 @@ This document collects cross-platform visual and behavioral bugs found during te
 
 ### Status
 
-**Pending**
+**Fixed** — changed 'Disclaimer' to 'Onboarding' in navigation reset (also fixes Bug 8)
 
 ---
 
@@ -102,7 +102,7 @@ This document collects cross-platform visual and behavioral bugs found during te
 
 ### Status
 
-**Pending**
+**Fixed** — `file.text = content` (no-op property assignment) replaced with `file.write(content)` (correct API). Works on both platforms now.
 
 ---
 
@@ -124,7 +124,7 @@ This document collects cross-platform visual and behavioral bugs found during te
 
 ### Status
 
-**Pending**
+**Fixed** — ToolPreviewCard iconContainer expanded from 24x24 to 32x32 with overflow:visible. LibraryToolPreview already had overflow:visible.
 
 ---
 
@@ -146,7 +146,7 @@ This was previously addressed in the `emotion-session-bugs` spec (Bug 1) with a 
 
 ### Status
 
-**Pending**
+**Fixed** — added scrollTo in handleClosePreview with 150ms delay
 
 ---
 
@@ -170,7 +170,7 @@ Likely a consequence of Bug 4 (failed navigation to onboarding after data reset)
 
 ### Status
 
-**Pending**
+**Fixed** — resolved by Bug 4 fix (correct navigation to Onboarding re-triggers KPI setup)
 
 ---
 
@@ -190,8 +190,92 @@ Likely a consequence of Bug 4 (failed navigation to onboarding after data reset)
 
 ### Status
 
-**Pending**
+**Fixed** — loadLastCheckIn/refreshDaysElapsed fall back to KPI card created_at when no kpi_records exist. Banner text adapts: "X days since you added the app — how are you feeling today?" (never checked in) vs "It's been X days since your last check-in" (returning user). Uses `card.totalUses > 0` as reliable hasEverCheckedIn check.
 
 ---
+
+### Bug 10: KPI FAB Disappears After Rearranging Cards
+
+### Current Behavior (Defect)
+
+19.1 WHEN the user rearranges cards in the wallet (enters reorder mode, moves cards, taps "Done") THEN the KPI Daily Check-in FAB (sprout icon) disappears from the wallet screen
+
+### Expected Behavior (Correct)
+
+20.1 WHEN the user rearranges cards and exits reorder mode THEN the KPI FAB SHALL remain visible in its normal position (bottom-right corner)
+
+### Status
+
+**Fixed** — commitReorder now preserves cards not in the reorder list (KPI card was being dropped)
+
+---
+
+### Enhancement 11: Privacy Details Accessible from Settings
+
+### Current Behavior
+
+19.1 The Privacy Details screen (event types breakdown, what's collected, how to opt out) is only accessible during onboarding via the "Learn more" link on the privacy notice step
+
+### Expected Behavior
+
+20.1 The "Help improve the app" toggle description in Settings SHALL include a "Learn more" link that navigates to the Privacy Details screen
+
+### Implementation Notes
+
+- Add `PrivacyExplanation` as a route in `RootNavigator`
+- Add tappable "Learn more" link in the toggle's subtitle text in SettingsScreen
+- Reuse existing `PrivacyExplanationScreen` component (already handles back navigation)
+
+### Status
+
+**Fixed** — implemented in ux-enhancements-v1.0 spec (Task 3: Privacy Details from Settings)
+
+---
+
+### Bonus: Removed LayoutAnimation Warning on New Architecture
+
+### Current Behavior (Defect)
+
+21.1 WHEN the app starts on Android THEN a console warning appears: "setLayoutAnimationEnabledExperimental is currently a no-op in the New Architecture"
+
+### Fix Applied
+
+Removed the `UIManager.setLayoutAnimationEnabledExperimental(true)` call from WalletScreen.tsx — unnecessary with New Architecture (Expo SDK 54 / RN 0.81). LayoutAnimation works natively without it.
+
+### Status
+
+**Fixed**
+
+---
+
+
+---
+
+### Bug 12: Third-Party App Icon Shows Raw URL Text When Card Is First in Suggestion List
+
+### Current Behavior (Defect)
+
+22.1 WHEN BetterHelp (or another third_party icon card) is the FIRST item in the "Suggested tools to try" list during an emotion session THEN the icon area displays "htt" (raw URL text) instead of the bundled app logo
+
+22.2 WHEN the same BetterHelp card appears further down the list (not first) THEN the bundled logo renders correctly
+
+22.3 THE issue appears to be position-dependent — only the first item in the suggestion list fails to resolve the local asset, suggesting a race condition or rendering order issue in the icon component
+
+### Expected Behavior (Correct)
+
+23.1 WHEN a third_party icon card appears in any position of the suggestion list THEN the bundled app logo SHALL display correctly, regardless of list position
+
+23.2 THE icon rendering SHALL not show raw URL text under any circumstances — if the image fails to load, the emoji fallback (not the URL) should be displayed
+
+### Investigation Notes
+
+- `renderCardIcon` delegates to `ThirdPartyIcon` for `third_party` type
+- `ThirdPartyIcon` likely has a fallback mechanism that shows the `uri` prop as text before the local image resolves
+- When the component is first in a FlatList/map, it may mount before the asset reference is resolved
+- The `getAppLogoSource` registry lookup should be synchronous (bundled `require()`), so the issue may be in `ThirdPartyIcon`'s state/loading logic
+
+### Status
+
+**Fixed** — `getFallbackRecommendations` was missing `iconType` in returned objects. When undefined, ToolPreviewCard defaulted to 'emoji', rendering the URL as text. Added `iconType: card.iconType` to the fallback map.
 
 <!-- Add additional cross-platform bugs below as they are discovered -->

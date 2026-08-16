@@ -59,17 +59,64 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
       position: 0,
       config: {
         title: "Instructions",
-        body: "5 things you can SEE\n4 things you can TOUCH\n3 things you can HEAR\n2 things you can SMELL\n1 thing you can TASTE",
+        body: "Look around you and identify the following. Take your time with each one — notice the details.",
         fontSize: "medium",
       },
       isRequired: false,
     },
     {
-      type: "text_input",
+      type: "text_area",
       position: 1,
       config: {
+        label: "5 things you can SEE",
+        placeholder: "What do you notice around you?",
+      },
+      isRequired: false,
+    },
+    {
+      type: "text_area",
+      position: 2,
+      config: {
+        label: "4 things you can TOUCH",
+        placeholder: "What textures or surfaces are nearby?",
+      },
+      isRequired: false,
+    },
+    {
+      type: "text_area",
+      position: 3,
+      config: {
+        label: "3 things you can HEAR",
+        placeholder: "What sounds do you notice?",
+      },
+      isRequired: false,
+    },
+    {
+      type: "text_input",
+      position: 4,
+      config: {
+        label: "2 things you can SMELL",
+        placeholder: "Any scents in the air?",
+        maxLength: 200,
+      },
+      isRequired: false,
+    },
+    {
+      type: "text_input",
+      position: 5,
+      config: {
+        label: "1 thing you can TASTE",
+        placeholder: "What taste do you notice?",
+        maxLength: 200,
+      },
+      isRequired: false,
+    },
+    {
+      type: "text_input",
+      position: 6,
+      config: {
         label: "Reflection",
-        placeholder: "How do you feel now?",
+        placeholder: "Anything you noticed during the exercise?",
         maxLength: 200,
       },
       isRequired: false,
@@ -264,7 +311,7 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
   {
     id: 'lib-thought-feeling-action',
     title: 'Thought – Feeling – Action',
-    description: 'Map the CBT triad to understand how thoughts drive emotions and behavior.',
+    description: 'When you notice a strong reaction, use this to understand what triggered it and how it shaped your response.',
     iconType: 'emoji',
     iconValue: '🧠',
     backgroundType: 'color',
@@ -273,18 +320,28 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
     allowBackgroundCustomization: true,
     controls: [
       {
-        type: 'text_input',
+        type: 'static_text',
         position: 0,
         config: {
+          title: 'How to use this',
+          body: 'Think of a recent moment when you felt a strong emotion. Break it down into three parts: what you were thinking, what you felt, and what you did (or wanted to do).',
+          fontSize: 'medium',
+        },
+        isRequired: false,
+      },
+      {
+        type: 'text_input',
+        position: 1,
+        config: {
           label: 'Thought',
-          placeholder: 'What thought triggered this?',
+          placeholder: 'What was the thought?',
           maxLength: 200,
         },
         isRequired: true,
       },
       {
         type: 'text_input',
-        position: 1,
+        position: 2,
         config: {
           label: 'Feeling',
           placeholder: 'What emotion came up?',
@@ -294,7 +351,7 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
       },
       {
         type: 'text_input',
-        position: 2,
+        position: 3,
         config: {
           label: 'Action',
           placeholder: 'What did you do (or want to do)?',
@@ -816,10 +873,15 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: false,
       },
       {
-        type: 'checkbox',
+        type: 'choice_buttons',
         position: 1,
         config: {
-          label: 'Completed mindful walk',
+          label: 'How long was your walk?',
+          options: [
+            { text: '~5 min' },
+            { text: '~10 min' },
+            { text: '15+ min' },
+          ],
         },
         isRequired: false,
       },
@@ -924,11 +986,22 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
     allowBackgroundCustomization: true,
     controls: [
       {
-        type: 'choice_buttons',
+        type: 'static_text',
         position: 0,
+        config: {
+          title: 'How to use this',
+          body: 'Pick one sense to focus on right now. Find something comforting that engages that sense, then spend a few minutes fully noticing the experience.',
+          fontSize: 'medium',
+        },
+        isRequired: false,
+      },
+      {
+        type: 'choice_buttons',
+        position: 1,
         config: {
           label: 'Which sense to engage?',
           options: [
+            { text: 'Sight (nature, art, colors)', icon: '👁️' },
             { text: 'Touch (soft blanket, fidget)', icon: '🧸' },
             { text: 'Smell (candle, essential oil)', icon: '🌸' },
             { text: 'Sound (music, nature)', icon: '🎵' },
@@ -939,11 +1012,21 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
       },
       {
         type: 'text_input',
-        position: 1,
+        position: 2,
         config: {
           label: 'What did you choose?',
           placeholder: 'e.g. lavender candle, rain sounds...',
           maxLength: 150,
+        },
+        isRequired: false,
+      },
+      {
+        type: 'text_input',
+        position: 3,
+        config: {
+          label: 'How did it feel?',
+          placeholder: 'What did you notice?',
+          maxLength: 200,
         },
         isRequired: false,
       },

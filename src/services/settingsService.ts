@@ -160,6 +160,36 @@ export async function setIncludeArchivedTools(include: boolean): Promise<void> {
 }
 
 /**
+ * Reads the "discreet notifications" setting.
+ * When true, reminder notifications use generic text without tool names.
+ * Defaults to false (show tool name in notifications) if not set.
+ */
+export async function getDiscreetNotifications(): Promise<boolean> {
+  try {
+    const db = await getDatabase();
+    const row = await db.getFirstAsync<{ value: string }>(
+      'SELECT value FROM settings WHERE key = ?',
+      ['discreet_notifications']
+    );
+    return row?.value === 'true';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Persists the "discreet notifications" setting.
+ * When true, reminder notifications hide the tool name.
+ */
+export async function setDiscreetNotifications(discreet: boolean): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync(
+    'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+    ['discreet_notifications', discreet ? 'true' : 'false']
+  );
+}
+
+/**
  * Reads the outcome prompt enabled setting.
  * Defaults to true (prompts enabled) if not set.
  */

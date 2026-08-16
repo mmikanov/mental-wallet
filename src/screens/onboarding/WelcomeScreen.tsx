@@ -169,10 +169,10 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   disclaimer: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#6B7280',
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 21,
   },
   actions: {
     paddingTop: 32,

@@ -19,6 +19,7 @@ import {
   TouchableOpacity,
   ImageBackground,
   ScrollView,
+  KeyboardAvoidingView,
   Dimensions,
   Platform,
 } from 'react-native';
@@ -110,6 +111,7 @@ export default function FocusedCardView({
   // KPI badge explanation banner state
   const isKpiCard = card.sourceLibraryId === KPI_CARD_SOURCE_ID;
   const lastCheckInDate = useKpiStore((s) => s.lastCheckInDate);
+  const hasEverCheckedIn = card.totalUses > 0;
 
   // Snapshot: capture daysElapsed on mount/card change, don't update while card is open
   const daysElapsedSnapshot = useRef<number | null>(null);
@@ -327,9 +329,12 @@ export default function FocusedCardView({
                   </TouchableOpacity>
                 </View>
                 {/* Full-height custom expanded content */}
-                <View style={styles.customExpandedContent}>
+                <KeyboardAvoidingView
+                  style={styles.customExpandedContent}
+                  behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                >
                   {renderExpandedContent()}
-                </View>
+                </KeyboardAvoidingView>
               </View>
             </View>
           </Animated.View>
@@ -362,16 +367,19 @@ export default function FocusedCardView({
             >
               {/* Use gesture-handler ScrollView when expanded on Android for proper scroll coordination */}
               {isExpanded && Platform.OS === 'android' ? (
+              <KeyboardAvoidingView style={styles.keyboardAvoidingContainer} behavior="height">
               <GHScrollView
                 style={styles.cardShellInner}
                 contentContainerStyle={[styles.cardShellInnerContent, backgroundStyle]}
                 showsVerticalScrollIndicator={false}
                 nestedScrollEnabled={true}
+                keyboardShouldPersistTaps="handled"
               >
               {isKpiCard && (
                 <BadgeExplanationBanner
                   daysElapsedSnapshot={daysElapsedSnapshot.current}
                   checkInCompleted={checkInCompleted}
+                  hasEverCheckedIn={hasEverCheckedIn}
                 />
               )}
               {hasBackgroundImage ? (
@@ -405,16 +413,20 @@ export default function FocusedCardView({
                 {renderFooter?.()}
               </View>
               </GHScrollView>
+              </KeyboardAvoidingView>
               ) : (
               <ScrollView
                 style={styles.cardShellInner}
                 contentContainerStyle={[styles.cardShellInnerContent, backgroundStyle]}
                 showsVerticalScrollIndicator={false}
+                automaticallyAdjustKeyboardInsets={isExpanded}
+                keyboardShouldPersistTaps="handled"
               >
               {isKpiCard && (
                 <BadgeExplanationBanner
                   daysElapsedSnapshot={daysElapsedSnapshot.current}
                   checkInCompleted={checkInCompleted}
+                  hasEverCheckedIn={hasEverCheckedIn}
                 />
               )}
               {hasBackgroundImage ? (
@@ -597,6 +609,11 @@ const styles = StyleSheet.create({
   },
   customExpandedContent: {
     flex: 1,
+    overflow: 'hidden',
+  },
+  keyboardAvoidingContainer: {
+    flex: 1,
+    borderRadius: 16,
     overflow: 'hidden',
   },
   compactHeader: {
