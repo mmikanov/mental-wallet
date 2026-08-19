@@ -1,6 +1,7 @@
 import * as StoreReview from 'expo-store-review';
 import { Share, Platform, Alert, Linking } from 'react-native';
 import { APP_NAME, APP_SUPPORT_EMAIL, APP_FEEDBACK_EMAIL, getStoreUrl, getAppVersion } from '@/config/appInfo';
+import { logEvent } from '@/services/analyticsEventLogger';
 
 export async function requestAppReview(): Promise<void> {
   const isAvailable = await StoreReview.isAvailableAsync();
@@ -20,6 +21,7 @@ export async function shareApp(): Promise<void> {
   const url = getStoreUrl();
   const message = `I've been using ${APP_NAME} to build better coping habits. Check it out: ${url}`;
   await Share.share({ message, url });
+  void logEvent('share_tapped');
 }
 
 export async function contactSupport(): Promise<void> {

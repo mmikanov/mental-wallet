@@ -10,6 +10,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Analytics Dashboard — Mental Health Wallet</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='2' y='6' width='28' height='22' rx='4' fill='%2316213e'/><rect x='8' y='18' width='4' height='6' rx='1' fill='%234caf50'/><rect x='14' y='14' width='4' height='10' rx='1' fill='%232196f3'/><rect x='20' y='10' width='4' height='14' rx='1' fill='%23ff9800'/></svg>" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -137,6 +138,39 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     .detail-panel th, .detail-panel td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #f0f0f0; }
     .detail-panel th { color: #6c757d; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; }
     .loading-detail { text-align: center; padding: 20px; color: #6c757d; font-size: 0.9rem; }
+    .phase-filter {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+      padding: 12px 16px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      flex-wrap: wrap;
+    }
+    .phase-filter label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #6c757d;
+    }
+    .phase-filter .phase-btn {
+      padding: 6px 14px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: #f8f9fa;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: #444;
+      transition: all 0.15s;
+    }
+    .phase-filter .phase-btn:hover { background: #e8f0fe; border-color: #4285f4; }
+    .phase-filter .phase-btn.active { background: #4285f4; color: #fff; border-color: #4285f4; }
+    .phase-filter .phase-btn.disabled { opacity: 0.4; cursor: not-allowed; }
+    .phase-filter .phase-dates { font-size: 0.75rem; color: #999; margin-left: 8px; }
   </style>
 </head>
 <body>
@@ -149,6 +183,15 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     <span id="last-updated" style="margin-left: auto;"></span>
   </div>
 
+  <div class="phase-filter" id="phase-filter">
+    <label>Phase:</label>
+    <button class="phase-btn active" data-phase="all" onclick="setPhase('all')">All Time</button>
+    <button class="phase-btn disabled" data-phase="pre-release" onclick="setPhase('pre-release')">Pre-Release</button>
+    <button class="phase-btn disabled" data-phase="warm" onclick="setPhase('warm')">Warm Launch</button>
+    <button class="phase-btn disabled" data-phase="cold" onclick="setPhase('cold')">Cold Acquisition</button>
+    <span class="phase-dates" id="phase-dates"></span>
+  </div>
+
   <div id="dashboard-content">
     <div class="empty-state"><p>Loading...</p></div>
   </div>
@@ -159,10 +202,73 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
 
   <script>
     const SECRET = '__DASHBOARD_SECRET__';
+    let milestones = { release: null, warmEnd: null, coldStart: null };
+    let currentPhase = 'all';
+
+    async function fetchMilestones() {
+      try {
+        const res = await fetch('/milestones?secret=' + encodeURIComponent(SECRET));
+        if (!res.ok) return;
+        milestones = await res.json();
+        updatePhaseButtons();
+      } catch (e) {
+        console.error('Failed to fetch milestones:', e);
+      }
+    }
+
+    function updatePhaseButtons() {
+      const btns = document.querySelectorAll('.phase-btn[data-phase]');
+      btns.forEach(function(btn) {
+        var phase = btn.getAttribute('data-phase');
+        if (phase === 'all') { btn.classList.remove('disabled'); return; }
+        if (phase === 'pre-release' && milestones.release) btn.classList.remove('disabled');
+        if (phase === 'warm' && milestones.release) btn.classList.remove('disabled');
+        if (phase === 'cold' && milestones.coldStart) btn.classList.remove('disabled');
+      });
+      updatePhaseDates();
+    }
+
+    function updatePhaseDates() {
+      var el = document.getElementById('phase-dates');
+      if (!el) return;
+      var parts = [];
+      if (milestones.release) parts.push('Release: ' + milestones.release.slice(0, 10));
+      if (milestones.warmEnd) parts.push('Warm ends: ' + milestones.warmEnd.slice(0, 10));
+      if (milestones.coldStart) parts.push('Cold starts: ' + milestones.coldStart.slice(0, 10));
+      var datesText = parts.length > 0 ? parts.join(' | ') : 'No milestone dates set (configure in wrangler.toml)';
+      var excludedText = '';
+      if (milestones.excludedUserIds && milestones.excludedUserIds.length > 0) {
+        excludedText = '<br><span style="color:#e53935;">Excluded from KPIs:</span> ' + milestones.excludedUserIds.join(', ');
+      }
+      el.innerHTML = datesText + excludedText;
+    }
+
+    function setPhase(phase) {
+      var btn = document.querySelector('.phase-btn[data-phase="' + phase + '"]');
+      if (btn && btn.classList.contains('disabled')) return;
+      currentPhase = phase;
+      document.querySelectorAll('.phase-btn').forEach(function(b) { b.classList.remove('active'); });
+      if (btn) btn.classList.add('active');
+      refresh();
+    }
+
+    function getPhaseParams() {
+      var params = '';
+      if (currentPhase === 'pre-release' && milestones.release) {
+        params = '&to=' + encodeURIComponent(milestones.release);
+      } else if (currentPhase === 'warm') {
+        if (milestones.release) params += '&from=' + encodeURIComponent(milestones.release);
+        if (milestones.warmEnd) params += '&to=' + encodeURIComponent(milestones.warmEnd);
+        else if (milestones.coldStart) params += '&to=' + encodeURIComponent(milestones.coldStart);
+      } else if (currentPhase === 'cold') {
+        if (milestones.coldStart) params += '&from=' + encodeURIComponent(milestones.coldStart);
+      }
+      return params;
+    }
 
     async function fetchKPIs() {
       try {
-        const res = await fetch('/kpis?secret=' + encodeURIComponent(SECRET));
+        const res = await fetch('/kpis?secret=' + encodeURIComponent(SECRET) + getPhaseParams());
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return await res.json();
       } catch (e) {
@@ -253,6 +359,44 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
             <h3>Platform Split</h3>
             <div class="value">\${num(kpis.iosUsers)} / \${num(kpis.androidUsers)}</div>
             <div class="detail">iOS / Android users — Click for details</div>
+          </div>
+        </div>
+
+        <div class="section-title">Launch Success Metrics</div>
+        <div class="grid">
+          <div class="card" style="border-left: 4px solid \${kpis.launch.activationRate >= 70 ? '#4caf50' : kpis.launch.activationRate >= 50 ? '#ff9800' : '#e53935'}">
+            <h3>Activation Rate</h3>
+            <div class="value">\${pct(kpis.launch.activationRate)}</div>
+            <div class="detail">\${kpis.launch.activatedUsers} of \${kpis.launch.totalUsers} users completed a tool within 48h</div>
+            <div class="detail" style="margin-top:4px;font-size:0.75rem;color:\${kpis.launch.activationRate >= 70 ? '#4caf50' : '#6c757d'}">Target: 70%+</div>
+          </div>
+          <div class="card" style="border-left: 4px solid \${kpis.launch.weeklyEngagement >= 3 ? '#4caf50' : kpis.launch.weeklyEngagement >= 2 ? '#ff9800' : '#e53935'}">
+            <h3>Weekly Engagement</h3>
+            <div class="value">\${kpis.launch.weeklyEngagement.toFixed(1)}</div>
+            <div class="detail">Avg card completions/user/week (last 14 days, \${kpis.launch.activeUsers14d} active users)</div>
+            <div class="detail" style="margin-top:4px;font-size:0.75rem;color:\${kpis.launch.weeklyEngagement >= 3 ? '#4caf50' : '#6c757d'}">Target: 3+/week</div>
+          </div>
+          <div class="card" style="border-left: 4px solid \${kpis.launch.retentionD7Pct >= 40 ? '#4caf50' : kpis.launch.retentionD7Pct >= 25 ? '#ff9800' : '#e53935'}">
+            <h3>D7 Retention</h3>
+            <div class="value">\${pct(kpis.launch.retentionD7Pct)}</div>
+            <div class="detail">Users returning within 7 days of install</div>
+            <div class="detail" style="margin-top:4px;font-size:0.75rem;color:\${kpis.launch.retentionD7Pct >= 40 ? '#4caf50' : '#6c757d'}">Target: 40%+</div>
+          </div>
+          <div class="card" style="border-left: 4px solid \${kpis.launch.retentionD30Pct >= 25 ? '#4caf50' : kpis.launch.retentionD30Pct >= 15 ? '#ff9800' : '#e53935'}">
+            <h3>D30 Retention</h3>
+            <div class="value">\${pct(kpis.launch.retentionD30Pct)}</div>
+            <div class="detail">Users returning within 30 days of install</div>
+            <div class="detail" style="margin-top:4px;font-size:0.75rem;color:\${kpis.launch.retentionD30Pct >= 25 ? '#4caf50' : '#6c757d'}">Target: 25%+</div>
+          </div>
+          <div class="card">
+            <h3>Share Taps</h3>
+            <div class="value">\${num(kpis.launch.shareTaps)}</div>
+            <div class="detail">Times users opened the share sheet</div>
+          </div>
+          <div class="card">
+            <h3>Wallet Growth</h3>
+            <div class="value">\${num(kpis.launch.usersWhoAddedTools)}</div>
+            <div class="detail">Returning users who added new cards</div>
           </div>
         </div>
 
@@ -403,6 +547,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     }
 
     refresh();
+    fetchMilestones();
     setInterval(refresh, 30000);
   </script>
 </body>

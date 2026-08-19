@@ -24,6 +24,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
@@ -274,15 +275,35 @@ export default function DevEventViewerScreen({ navigation }: Props) {
       <View style={styles.infoSection}>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>User ID</Text>
-          <Text style={styles.infoValue} numberOfLines={1}>
-            {anonymousUserId ?? 'Not resolved'}
-          </Text>
+          <TouchableOpacity
+            onPress={() => {
+              if (anonymousUserId) {
+                Clipboard.setStringAsync(anonymousUserId);
+                Alert.alert('Copied', 'User ID copied to clipboard');
+              }
+            }}
+            style={styles.infoValueTouchable}
+          >
+            <Text style={styles.infoValue} selectable>
+              {anonymousUserId ?? 'Not resolved'}
+            </Text>
+          </TouchableOpacity>
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Session ID</Text>
-          <Text style={styles.infoValue} numberOfLines={1}>
-            {sessionState.sessionId}
-          </Text>
+          <TouchableOpacity
+            onPress={() => {
+              if (sessionState.sessionId) {
+                Clipboard.setStringAsync(sessionState.sessionId);
+                Alert.alert('Copied', 'Session ID copied to clipboard');
+              }
+            }}
+            style={styles.infoValueTouchable}
+          >
+            <Text style={styles.infoValue} selectable>
+              {sessionState.sessionId}
+            </Text>
+          </TouchableOpacity>
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Opt-in</Text>
@@ -525,7 +546,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#E8E8E8',
     fontFamily: 'monospace',
-    maxWidth: '65%',
+    flexShrink: 1,
+  },
+  infoValueTouchable: {
+    flexShrink: 1,
+    maxWidth: '70%',
   },
   queueSection: {
     backgroundColor: '#16213E',

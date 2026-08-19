@@ -78,44 +78,44 @@ A card-based toolkit to build coping habits and discover what works for you.
 
 ### Full Description (4000 chars max)
 ```
-Mental Health Wallet puts your coping tools in one place — like a wallet for the techniques that help you feel better.
+    Mental Health Wallet puts your coping tools in one place — like a wallet for the techniques that help you feel better.
 
-Browse a library of 20+ curated cards covering grounding, cognitive reframing, breathwork, body awareness, self-compassion, and daily check-ins. Each tool is based on established therapeutic approaches, with clear explanations of why it works.
+    Browse a library of 20+ curated cards covering grounding, cognitive reframing, breathwork, body awareness, self-compassion, and daily check-ins. Each tool is based on established therapeutic approaches, with clear explanations of why it works.
 
-Build your own cards too. Combine sliders, text inputs, choice buttons, and outcome trackers to create custom tools that match how you think and what you need.
+    Build your own cards too. Combine sliders, text inputs, choice buttons, and outcome trackers to create custom tools that match how you think and what you need.
 
-WHAT YOU GET
+    WHAT YOU GET
 
-✦ Curated Library — Grounding exercises, reframing prompts, breathing techniques, gratitude practices, and more. Each card explains the approach behind it.
+    ✦ Curated Library — Grounding exercises, reframing prompts, breathing techniques, gratitude practices, and more. Each card explains the approach behind it.
 
-✦ Custom Card Builder — Design your own coping tools with flexible controls. Make them as simple or detailed as you want.
+    ✦ Custom Card Builder — Design your own coping tools with flexible controls. Make them as simple or detailed as you want.
 
-✦ Connect Other Apps — Link cards to your favorite wellness, meditation, or breathing apps. Mental Health Wallet becomes the home base for your entire toolkit.
+    ✦ Connect Other Apps — Link cards to your favorite wellness, meditation, or breathing apps. Mental Health Wallet becomes the home base for your entire toolkit.
 
-✦ Personal Insights — See usage streaks, outcome patterns, and which tools actually help. Discover what works for you over time.
+    ✦ Personal Insights — See usage streaks, outcome patterns, and which tools actually help. Discover what works for you over time.
 
-✦ Reminders — Set per-tool reminders so your practice becomes a habit, not an afterthought.
+    ✦ Reminders — Set per-tool reminders so your practice becomes a habit, not an afterthought.
 
-✦ Card Wallet — Organize your tools in a swipeable stack. Focus on one, expand it, use it, done.
+    ✦ Card Wallet — Organize your tools in a swipeable stack. Focus on one, expand it, use it, done.
 
-✦ Privacy First — No accounts, no cloud sync, no data collection. Everything stays on your phone.
+    ✦ Privacy First — No accounts, no cloud sync, no data collection. Everything stays on your phone.
 
-WHO IT'S FOR
+    WHO IT'S FOR
 
-Mental Health Wallet is for anyone who wants to:
-• Build consistent coping habits
-• Organize techniques from therapy, books, or self-discovery
-• Understand which tools actually help them
-• Have go-to tools ready when stress hits
+    Mental Health Wallet is for anyone who wants to:
+    • Build consistent coping habits
+    • Organize techniques from therapy, books, or self-discovery
+    • Understand which tools actually help them
+    • Have go-to tools ready when stress hits
 
-It's not a replacement for therapy — it's a toolkit to complement it.
+    It's not a replacement for therapy — it's a toolkit to complement it.
 
-IMPORTANT
+    IMPORTANT
 
-• Mental Health Wallet is not a substitute for professional mental health care
-• If you are in crisis, please contact the 988 Suicide & Crisis Lifeline or your local emergency services
-• Crisis resources are accessible within the app at all times
-• Currently in beta — free to download and use
+    • Mental Health Wallet is not a substitute for professional mental health care
+    • If you are in crisis, please contact the 988 Suicide & Crisis Lifeline or your local emergency services
+    • Crisis resources are accessible within the app at all times
+    • Currently in beta — free to download and use
 ```
 
 ---

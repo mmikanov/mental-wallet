@@ -19,7 +19,7 @@ import type { TransmitterConfig } from '@/types/analytics';
  * actual Worker URL, e.g. 'https://mental-wallet-analytics.<your-subdomain>.workers.dev'
  */
 export const ANALYTICS_BASE_URL: string = __DEV__
-  ? 'http://localhost:3001'
+  ? 'http://localhost:8787'
   : 'https://mental-wallet-analytics.mentalwallet.workers.dev';
 
 /**
@@ -69,7 +69,7 @@ export function getTransmitterConfig(): TransmitterConfig {
     batchSize: 50,
     flushThreshold: __DEV__ ? 999 : 10, // In dev, don't auto-flush on threshold (only on timer)
     flushIntervalMs,
-    retryBaseMs: 120_000,
-    retryCapMs: 900_000, // 15 minutes
+    retryBaseMs: __DEV__ ? 5_000 : 120_000, // In dev, retry quickly after failure
+    retryCapMs: __DEV__ ? 30_000 : 900_000, // In dev, cap at 30s; production 15 min
   };
 }

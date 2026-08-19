@@ -10,3 +10,11 @@ database_id = "8996f51a-c715-4007-b470-c711678f741d"
 
 # Environment variables (set via `wrangler secret put`)
 # DASHBOARD_SECRET — required to access GET /dashboard and GET /events
+
+# Launch phase milestone dates (ISO 8601 format, UTC)
+# Update these as you hit each milestone. Dashboard uses them to filter data by phase.
+[vars]
+MILESTONE_RELEASE = ""
+MILESTONE_WARM_END = ""
+MILESTONE_COLD_START = ""
+EXCLUDED_USER_IDS = ""

@@ -29,23 +29,33 @@
 
 ## Android (Google Play)
 
-- [ ] Sign up for Google Play Developer account ($25 one-time)
+- [x] Sign up for Google Play Developer account ($25 one-time)
 - [x] Fix adaptive icon reference in app.json (add `foregroundImage`)
-- [ ] Configure Android signing credentials: `eas credentials --platform android`
-- [ ] Create app in Google Play Console
+- [x] Configure Android signing credentials: `eas credentials --platform android`
+- [x] Create app in Google Play Console (package: `com.mentalwallet.app`)
 - [x] Host privacy policy at a public URL (same as iOS)
-- [ ] Take screenshots — phone (at least 2, recommended 4-8)
+- [x] Take screenshots — phone (at least 2, recommended 4-8)
 - [ ] Take screenshots — tablet (optional but recommended)
 - [x] Create feature graphic (1024×500px)
 - [x] Write short description (80 chars max)
 - [x] Write full description (4000 chars max)
-- [ ] Complete content rating questionnaire
-- [ ] Complete data safety form (declare: anonymous analytics, local health data, notification tokens)
-- [ ] Declare target audience (18+, not directed at children)
-- [ ] Set category: Health & Fitness
-- [ ] Set price: Free
-- [ ] Run production build: `eas build --platform android --profile production`
-- [ ] Submit to Google Play: `eas submit --platform android`
+- [x] Upload app icon (512×512 PNG) — `assets/icon-512.png`
+- [x] Complete content rating questionnaire (IARC)
+- [x] Complete data safety form (declare: anonymous analytics, local health data, encrypted in transit, not ephemeral, no ad ID)
+- [x] Declare target audience (18+, not directed at children)
+- [x] Set category: Health & Fitness
+- [x] Set tags: Meditation
+- [x] Set price: Free
+- [x] Set privacy policy URL: `https://mentalhealthwallet.productsforgood.co/privacy.html`
+- [x] Set data deletion URL: `https://mentalhealthwallet.productsforgood.co/privacy.html`
+- [x] App access: all functionality available without special access
+- [x] Ads declaration: app does NOT contain ads
+- [x] AI asset declaration: yes (logo created with AI)
+- [x] Health features: Stress management, relaxation, mental acuity
+- [x] Run production build: `eas build --platform android --profile production`
+- [x] Upload AAB to Play Console (Production → Create new release)
+- [x] Select countries/regions for distribution
+- [x] Submit for review in Play Console
 
 ## App Icon
 
