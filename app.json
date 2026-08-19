@@ -25,7 +25,11 @@
           "betterhelp",
           "wysa",
           "insight-timer",
-          "insighttimer"
+          "insighttimer",
+          "spotify",
+          "youtube",
+          "vimeo",
+          "soundcloud"
         ]
       }
     },
