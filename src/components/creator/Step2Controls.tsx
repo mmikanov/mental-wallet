@@ -216,8 +216,8 @@ export default function Step2Controls({
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={120}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 120 : 0}
     >
       <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
         {controls.length === 0 ? (

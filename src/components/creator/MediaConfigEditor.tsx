@@ -36,7 +36,15 @@ export default function MediaConfigEditor({
   );
 
   // Display media state
-  const [sourceMode, setSourceMode] = useState<'file' | 'url'>('file');
+  const [sourceMode, setSourceMode] = useState<'file' | 'url'>(() => {
+    if (initialVariant === 'display_media' && initialConfig) {
+      const mediaSource = (initialConfig as DisplayMediaConfig).mediaSourceType;
+      if (mediaSource === 'platform_url' || mediaSource === 'direct_url') {
+        return 'url';
+      }
+    }
+    return 'file';
+  });
   const [urlInput, setUrlInput] = useState(
     initialVariant === 'display_media' && initialConfig
       ? (initialConfig as DisplayMediaConfig).source
@@ -144,6 +152,18 @@ export default function MediaConfigEditor({
         setUrlError(classification.error || 'Invalid URL');
       } else {
         setFileType(classification.fileType);
+        // Emit config immediately with the new URL value so the parent
+        // has the latest data even if the user doesn't blur the field
+        // before tapping "Next"
+        const config: DisplayMediaConfig = {
+          label,
+          mediaSourceType: classification.sourceType,
+          mediaFileType: classification.fileType || 'image',
+          source: text,
+          platform: classification.platform,
+          cachedPath: null,
+        };
+        onConfigChange('display_media', config);
       }
     }
   };
@@ -295,7 +315,7 @@ export default function MediaConfigEditor({
               {urlError && <Text style={styles.errorText}>{urlError}</Text>}
               {isUrlPlatform && (
                 <View style={styles.internetWarning}>
-                  <Text style={styles.internetWarningText}>⚠️ Requires internet for playback</Text>
+                  <Text style={styles.internetWarningText}>ℹ️ Plays inline — requires internet</Text>
                 </View>
               )}
             </View>

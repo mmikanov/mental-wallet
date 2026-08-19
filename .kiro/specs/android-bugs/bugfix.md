@@ -104,3 +104,29 @@ This document collects visual and behavioral bugs found during Android emulator 
 
 <!-- Add additional bugs below as they are discovered during Android testing -->
 
+### Bug 6: Step 2 Bottom Buttons Disappear During Control Edit and Reposition Incorrectly After
+
+### Current Behavior (Defect)
+
+11.1 WHEN a control is expanded for editing in Step 2 on Android THEN the "Add block" and "Next" buttons at the bottom of the screen disappear entirely, leaving the user with no visible navigation actions
+
+11.2 WHEN the control editing is completed (collapsed) on Android THEN the "Add block" and "Next" buttons reappear but are positioned higher than expected, with wasted empty space below them (not pinned to the bottom of the screen as they were before editing)
+
+### Expected Behavior (Correct)
+
+12.1 WHEN a control is expanded for editing in Step 2 on Android THEN the "Add block" and "Next" buttons SHALL remain visible at the bottom of the screen (the content area should scroll to accommodate the expanded editor, not hide the buttons)
+
+12.2 WHEN the control editing is completed (collapsed) on Android THEN the "Add block" and "Next" buttons SHALL return to their original position pinned to the bottom of the screen with no extra empty space below them
+
+### Unchanged Behavior (Regression Prevention)
+
+13.1 ON iOS, the buttons SHALL CONTINUE TO remain visible and correctly positioned during and after control editing
+
+13.2 The buttons SHALL CONTINUE TO appear correctly at the bottom on initial load (before any control is edited) on both platforms
+
+### Status
+
+**Fixed** — Disabled `KeyboardAvoidingView` `behavior` on Android (set to `undefined`) since the component already manually hides the bottom bar via `isKeyboardVisible` state. The `behavior='height'` on Android was not properly restoring the view height after keyboard dismiss, causing the buttons to float in the middle. iOS retains `behavior='padding'` which works correctly with the dual strategy.
+
+---
+

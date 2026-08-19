@@ -16,11 +16,13 @@ import { downloadAndCache } from '@/services/mediaService';
 interface DisplayMediaControlProps {
   control: Control;
   readOnly?: boolean;
+  lazy?: boolean;
 }
 
 export default function DisplayMediaControl({
   control,
   readOnly = false,
+  lazy = false,
 }: DisplayMediaControlProps) {
   const config = control.config as DisplayMediaConfig;
   const [localUri, setLocalUri] = useState<string | null>(config.cachedPath || null);
@@ -57,6 +59,7 @@ export default function DisplayMediaControl({
         url={config.source}
         platform={config.platform}
         label={config.label}
+        lazy={lazy}
         accessibilityLabel={`Streaming media: ${config.label}`}
       />
     );

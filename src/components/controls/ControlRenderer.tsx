@@ -15,6 +15,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import type { Control } from '@/types/index';
+import type { DisplayMediaConfig } from '@/types/index';
 import StaticTextControl from './StaticTextControl';
 import TextInputControl from './TextInputControl';
 import TextAreaControl from './TextAreaControl';
@@ -44,6 +45,17 @@ export default function ControlRenderer({
   readOnly = false,
 }: ControlRendererProps) {
   const sortedControls = [...controls].sort((a, b) => a.position - b.position);
+
+  // Count platform URL Display Media controls for lazy-loading decision
+  const platformUrlControls = sortedControls.filter(
+    (c) =>
+      c.type === 'display_media' &&
+      (c.config as DisplayMediaConfig).mediaSourceType === 'platform_url'
+  );
+  const shouldLazyLoad = platformUrlControls.length >= 3;
+
+  // Track which platform URL control index we're at during iteration
+  let platformUrlIndex = 0;
 
   return (
     <View style={styles.container}>
@@ -171,13 +183,19 @@ export default function ControlRenderer({
             );
 
           case 'display_media':
-            return (
-              <DisplayMediaControl
-                key={control.id}
-                control={control}
-                readOnly={readOnly}
-              />
-            );
+            {
+              const isPlatformUrl = (control.config as DisplayMediaConfig).mediaSourceType === 'platform_url';
+              const lazy = isPlatformUrl && shouldLazyLoad && platformUrlIndex > 0;
+              if (isPlatformUrl) platformUrlIndex++;
+              return (
+                <DisplayMediaControl
+                  key={control.id}
+                  control={control}
+                  readOnly={readOnly}
+                  lazy={lazy}
+                />
+              );
+            }
 
           case 'upload_media':
             return (
