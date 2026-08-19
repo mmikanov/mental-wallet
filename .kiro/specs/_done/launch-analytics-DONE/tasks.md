@@ -78,11 +78,11 @@
 
 ## Task 10: Verify and deploy
 
-- [ ] Run `npx tsc --noEmit` in analytics-worker (must pass)
-- [ ] Verify app type-check passes without new errors
-- [ ] Deploy worker: `cd analytics-worker && wrangler deploy`
-- [ ] Verify dashboard loads with new launch metrics section
-- [ ] Verify phase buttons are disabled (no dates configured yet)
+- [x] Run `npx tsc --noEmit` in analytics-worker (must pass)
+- [x] Verify app type-check passes without new errors
+- [x] Deploy worker: `cd analytics-worker && wrangler deploy`
+- [x] Verify dashboard loads with new launch metrics section
+- [x] Verify phase buttons are disabled (no dates configured yet)
 - [ ] Set milestone dates when app goes live
 - _Requirements: All_
 
