@@ -91,20 +91,96 @@ eas submit --platform ios
 
 ---
 
-## Version Management
+## Push to Google Play
 
-Before each new submission, increment the version in `app.json`:
+### Prerequisites
+
+- Google Play Developer account ($25 one-time fee)
+- App created in Google Play Console (package: `com.mentalwallet.app`)
+- Android signing credentials configured via EAS (`eas credentials --platform android`)
+- Store listing assets: feature graphic (1024×500px), phone screenshots (2-8), app icon (512×512px)
+- Privacy policy hosted at a public URL (same as iOS)
+
+### Build and submit
+
+```bash
+# Build for Android (production profile — creates an .aab / Android App Bundle)
+eas build --platform android --profile production
+
+# Wait for the cloud build to complete (5-15 minutes)
+
+# Submit to Google Play Console
+eas submit --platform android
+```
+
+**Note:** `eas submit --platform android` requires a Google Play service account key. Since `submit.production` in `eas.json` is empty, EAS will prompt for credentials interactively the first time. To automate future submissions, add a service account key path:
 
 ```json
-{
-  "expo": {
-    "version": "1.0.1",  // Visible to users
-    ...
+"submit": {
+  "production": {
+    "android": {
+      "serviceAccountKeyPath": "./path/to/service-account.json",
+      "track": "production"
+    }
   }
 }
 ```
 
-EAS auto-increments the build number, so you only need to bump `version` for user-facing releases.
+Alternatively, download the `.aab` from the EAS build page and upload it manually in Play Console (Production → Create new release).
+
+### Google Play Console setup
+
+1. Go to [Google Play Console](https://play.google.com/console) → Your App
+2. **App content** section — complete all declarations:
+   - Privacy policy URL
+   - Data safety form (what data is collected/shared)
+   - Health apps declaration (Stress management, relaxation, mental acuity)
+   - AI-generated content declaration (logo created with AI)
+   - Target audience and content rating (IARC questionnaire)
+3. **Main store listing:**
+   - Short description (80 chars max)
+   - Full description
+   - Feature graphic (1024×500px)
+   - Phone screenshots (at least 2, recommended 4-8)
+   - App icon (512×512px)
+4. **Production → Create new release:**
+   - Upload the AAB (or let `eas submit` push it)
+   - Add release notes
+   - Select countries/regions for distribution
+   - Submit for review
+
+### App Review
+
+- Google Play initial review can take **up to 7 days** (longer than Apple)
+- Subsequent updates usually review faster
+- Common issues for health apps:
+  - Incomplete Data safety form
+  - Missing or inaccessible privacy policy
+  - Health claims without appropriate disclaimers (we have the disclaimer screen ✓)
+
+---
+
+## Version Management
+
+There are two version values:
+
+- **Marketing version** (`CFBundleShortVersionString` on iOS, `versionName` on Android) — the user-facing version like `1.0.2`. Must increase for each App Store / Play Store submission.
+- **Build number** (`CFBundleVersion` on iOS, `versionCode` on Android) — an internal counter. EAS auto-increments this (`autoIncrement: true` in the production profile), so you don't manage it manually.
+
+### ⚠️ Important: this project currently uses the bare workflow
+
+Because committed `ios/` and `android/` directories exist, **EAS Build uses the native project values and ignores most `app.json` fields** (including `version`). Bumping `app.json` alone is NOT enough — the App Store rejected a build for this exact reason (submitted `1.0.1` instead of the intended bump).
+
+**To bump the marketing version, update ALL of these to the same value:**
+
+| File | Field |
+|------|-------|
+| `app.json` | `version` |
+| `ios/MentalWallet/Info.plist` | `CFBundleShortVersionString` |
+| `ios/MentalWallet.xcodeproj/project.pbxproj` | `MARKETING_VERSION` (both Debug and Release configs) |
+| `android/app/build.gradle` | `versionName` |
+
+> Once the [prebuild migration](../../.kiro/specs/prebuild-migration/requirements.md) is done, `app.json` alone will be the source of truth and this manual sync goes away.
 
 ---
 
