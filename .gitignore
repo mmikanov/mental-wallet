@@ -42,3 +42,5 @@ src/data/licenses.json
 
 # Wrangler local secrets
 .dev.vars
+# Google Play service account key (for eas submit --platform android)
+credentials/

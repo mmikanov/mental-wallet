@@ -113,20 +113,29 @@ eas build --platform android --profile production
 eas submit --platform android
 ```
 
-**Note:** `eas submit --platform android` requires a Google Play service account key. Since `submit.production` in `eas.json` is empty, EAS will prompt for credentials interactively the first time. To automate future submissions, add a service account key path:
+**Service account is already configured** — `eas submit --platform android` runs non-interactively (no prompt for a JSON path). The setup:
+
+- The Google Play service account key lives at `credentials/play-service-account.json` (gitignored — never committed).
+- `eas.json` references it under `submit.production.android`:
 
 ```json
 "submit": {
   "production": {
     "android": {
-      "serviceAccountKeyPath": "./path/to/service-account.json",
+      "serviceAccountKeyPath": "./credentials/play-service-account.json",
       "track": "production"
     }
   }
 }
 ```
 
-Alternatively, download the `.aab` from the EAS build page and upload it manually in Play Console (Production → Create new release).
+- Service account email: `eas-submit@mental-health-wallet.iam.gserviceaccount.com` (granted release permissions in Play Console → Users and permissions).
+
+> ⚠️ `track: "production"` pushes straight to the production track (public after review). To land in a testing track first, change it to `"internal"` or `"beta"` and promote manually in Play Console.
+
+**If you set up a new machine:** the key file is NOT in git. Re-download it from Google Cloud Console (it can only be downloaded at creation, so you may need to create a new key for the `eas-submit` service account) and place it at `credentials/play-service-account.json`.
+
+**Manual alternative:** download the `.aab` from the EAS build page and upload it in Play Console (Production → Create new release).
 
 ### Google Play Console setup
 
