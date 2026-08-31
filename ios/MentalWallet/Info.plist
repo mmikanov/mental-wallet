@@ -19,7 +19,7 @@
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.1</string>
+    <string>1.0.2</string>
     <key>CFBundleSignature</key>
     <string>????</string>
     <key>CFBundleURLTypes</key>
@@ -49,6 +49,11 @@
       <string>betterhelp</string>
       <string>wysa</string>
       <string>insight-timer</string>
+      <string>insighttimer</string>
+      <string>spotify</string>
+      <string>youtube</string>
+      <string>vimeo</string>
+      <string>soundcloud</string>
     </array>
     <key>LSMinimumSystemVersion</key>
     <string>12.0</string>
