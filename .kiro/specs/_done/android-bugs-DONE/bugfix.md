@@ -130,3 +130,109 @@ This document collects visual and behavioral bugs found during Android emulator 
 
 ---
 
+### Bug 7: Content Hidden Behind Android 3-Button Navigation Bar
+
+### Current Behavior (Defect)
+
+14.1 WHEN the wallet, library browser, or insights screen renders on a physical Android device with the 3-button navigation bar THEN the bottom of the content is covered by the nav bar
+
+14.2 The screens used `SafeAreaView edges={['top']}`, applying safe-area inset only at the top and leaving content under the bottom system nav bar
+
+### Expected Behavior (Correct)
+
+15.1 WHEN these screens render on any Android navigation mode THEN content SHALL be inset above the navigation bar
+
+### Status
+
+**Fixed** — Changed `edges={['top']}` to `edges={['top', 'bottom']}` on WalletScreen, WalletInsightsScreen, and LibraryBrowserScreen. Only showed on physical devices / 3-button nav (emulator gesture nav has a smaller inset).
+
+---
+
+### Bug 8: "Rate Mental Health Wallet" Setting Does Nothing on Android
+
+### Current Behavior (Defect)
+
+16.1 WHEN the user taps "Rate Mental Health Wallet" in Settings on Android THEN nothing happens — no dialog, no store page
+
+16.2 `requestAppReview()` calls `StoreReview.requestReview()` when `isAvailableAsync()` is true. On Android the Play In-App Review API silently no-ops (debug/sideloaded build, already-reviewed, or quota-throttled), and the store-URL fallback is never reached because `requestReview()` does not throw
+
+### Expected Behavior (Correct)
+
+17.1 WHEN the user taps "Rate" on Android THEN the app SHALL open the Play Store listing page as a reliable, visible action (rather than depending on the in-app review dialog that frequently suppresses itself)
+
+17.2 WHEN on iOS THEN the native in-app review prompt SHALL CONTINUE TO be used (it is reliable there)
+
+### Status
+
+**Fixed** — `requestAppReview()` now opens the Play Store URL directly on Android; iOS keeps the native `StoreReview.requestReview()` with a store-URL fallback.
+
+---
+
+### Bug 9: Guided Check-in Options Don't Scroll on Android
+
+### Current Behavior (Defect)
+
+18.1 WHEN the user goes through the guided "figure out how I feel" check-in flow on Android THEN the list of options in each question cannot be scrolled, so options below the fold (e.g. "Very high energy") are unreachable
+
+18.2 `CheckinQuestionScreen` uses a plain `react-native` ScrollView; the flow renders inside the gesture-handler-backed expanded session launcher card, and on Android the native gesture parent claims the touch, blocking the plain ScrollView
+
+### Expected Behavior (Correct)
+
+19.1 WHEN the user scrolls the options list in a check-in question on Android THEN the list SHALL scroll and reveal all options
+
+### Unchanged Behavior (Regression Prevention)
+
+20.1 ON iOS, the options list SHALL CONTINUE TO scroll as before
+
+### Status
+
+**Fixed** — `CheckinQuestionScreen` now uses react-native-gesture-handler's ScrollView on Android (with nestedScrollEnabled), matching the SessionLauncherContent pattern.
+
+---
+
+### Bug 10: Library Tool Preview Doesn't Scroll in Emotion Session on Android
+
+### Current Behavior (Defect)
+
+21.1 WHEN the user previews a suggested tool inside an emotion session on Android THEN the tool content (e.g. "How To" steps) cannot be scrolled and is cut off; only the fixed "Add to my wallet" footer stays visible
+
+21.2 `LibraryToolPreview` uses a plain `react-native` ScrollView, blocked by the Android gesture parent — same mechanism as Bug 9
+
+### Expected Behavior (Correct)
+
+22.1 WHEN the user scrolls the tool preview on Android THEN the full tool content SHALL be scrollable
+
+### Unchanged Behavior (Regression Prevention)
+
+23.1 ON iOS, the tool preview SHALL CONTINUE TO scroll as before
+
+### Status
+
+**Fixed** — `LibraryToolPreview` now uses react-native-gesture-handler's ScrollView on Android (with nestedScrollEnabled).
+
+---
+
+### Bug 11: Outcome Options Overflow the Frame on Narrow Physical Devices
+
+### Current Behavior (Defect)
+
+24.1 WHEN the "How do you feel after this?" prompt renders on a narrow physical Android phone THEN the 5 options (Calmer/Clearer/Hopeful/Same/Worse) overflow the right edge and the last option is clipped
+
+24.2 Each option button has a fixed `minWidth: 56` in a non-wrapping, non-scrolling `flexDirection: 'row'`, so the ~296px minimum content width overflows narrower devices. It looks fine on wider emulators
+
+### Expected Behavior (Correct)
+
+25.1 WHEN the outcome prompt renders on any device width THEN all 5 options SHALL fit within the frame without clipping
+
+### Unchanged Behavior (Regression Prevention)
+
+26.1 The options SHALL CONTINUE TO meet the 44pt minimum touch target height
+
+26.2 The options SHALL CONTINUE TO show emoji + label and register selection
+
+### Status
+
+**Fixed** — Outcome buttons now use `flex: 1` (removed fixed `minWidth: 56`), so the 5 options share available width and fit on narrow devices. Kept `minHeight: 44`; labels use `numberOfLines={1}`.
+
+---
+

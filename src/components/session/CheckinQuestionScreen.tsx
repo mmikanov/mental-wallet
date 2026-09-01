@@ -12,7 +12,13 @@
  */
 
 import React, { useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform, ScrollView as RNScrollView } from 'react-native';
+import { ScrollView as GHScrollView } from 'react-native-gesture-handler';
+
+// Use gesture-handler ScrollView on Android so the list scrolls inside the
+// GestureDetector-backed expanded session launcher card (a plain RN ScrollView
+// is blocked by the native gesture parent on Android).
+const ScrollView = Platform.OS === 'android' ? GHScrollView : RNScrollView;
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -67,6 +73,8 @@ export default function CheckinQuestionScreen({
         style={styles.optionsScroll}
         contentContainerStyle={styles.optionsList}
         showsVerticalScrollIndicator={false}
+        nestedScrollEnabled={true}
+        keyboardShouldPersistTaps="handled"
       >
         {options.map((option) => (
           <OptionButton

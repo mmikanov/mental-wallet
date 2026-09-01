@@ -3,8 +3,13 @@
  * without needing to add it to their wallet first.
  */
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView as RNScrollView, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { ScrollView as GHScrollView } from 'react-native-gesture-handler';
 import type { CuratedCardDefinition } from '@/data/curatedLibrary';
+
+// Use gesture-handler ScrollView on Android so the preview scrolls inside the
+// GestureDetector-backed expanded session launcher card.
+const ScrollView = Platform.OS === 'android' ? GHScrollView : RNScrollView;
 import type { Control } from '@/types/index';
 import ControlRenderer from '@/components/controls/ControlRenderer';
 import { RationaleEntryPoint } from '@/components/rationale/RationaleEntryPoint';
@@ -61,7 +66,12 @@ export default function LibraryToolPreview({
       </View>
 
       {/* Card content */}
-      <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scrollArea}
+        contentContainerStyle={styles.scrollContent}
+        nestedScrollEnabled={true}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Card shell */}
         <View style={[styles.cardShell, { backgroundColor: card.backgroundValue || '#F5F5F5' }]}>
           <View style={styles.iconContainer}>

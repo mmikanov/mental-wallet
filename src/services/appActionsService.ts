@@ -4,17 +4,28 @@ import { APP_NAME, APP_SUPPORT_EMAIL, APP_FEEDBACK_EMAIL, getStoreUrl, getAppVer
 import { logEvent } from '@/services/analyticsEventLogger';
 
 export async function requestAppReview(): Promise<void> {
-  const isAvailable = await StoreReview.isAvailableAsync();
-  if (isAvailable) {
-    await StoreReview.requestReview();
-  } else {
-    const storeUrl = StoreReview.storeUrl();
-    if (storeUrl) {
-      await Linking.openURL(storeUrl);
-    } else {
-      await Linking.openURL(getStoreUrl());
-    }
+  // On Android, the Play In-App Review dialog frequently suppresses itself
+  // (debug/sideloaded builds, already-reviewed, or Google quota throttling) and
+  // returns without error, so requestReview() can silently no-op. Open the Play
+  // Store listing directly for a reliable, visible action.
+  if (Platform.OS === 'android') {
+    await Linking.openURL(getStoreUrl());
+    return;
   }
+
+  // On iOS the native in-app review prompt is reliable.
+  try {
+    const isAvailable = await StoreReview.isAvailableAsync();
+    if (isAvailable) {
+      await StoreReview.requestReview();
+      return;
+    }
+  } catch {
+    // Fall through to opening the store URL
+  }
+
+  const storeUrl = StoreReview.storeUrl() || getStoreUrl();
+  await Linking.openURL(storeUrl);
 }
 
 export async function shareApp(): Promise<void> {

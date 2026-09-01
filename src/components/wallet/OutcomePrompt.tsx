@@ -87,6 +87,7 @@ export default function OutcomePrompt({ cardId, onDismiss }: OutcomePromptProps)
           >
             <Text style={styles.optionEmoji}>{option.emoji}</Text>
             <Text
+              numberOfLines={1}
               style={[
                 styles.optionLabel,
                 selected === option.value && styles.optionLabelSelected,
@@ -120,14 +121,14 @@ const styles = StyleSheet.create({
   },
   optionsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
   },
   optionButton: {
+    flex: 1,
     alignItems: 'center',
     paddingVertical: 8,
-    paddingHorizontal: 6,
+    paddingHorizontal: 2,
     borderRadius: 8,
-    minWidth: 56,
     minHeight: 44,
     justifyContent: 'center',
   },
