@@ -169,6 +169,27 @@ eas submit --platform android
 
 ---
 
+## Deploy Both Platforms at Once
+
+To build and submit iOS and Android together:
+
+```bash
+# Build both platforms in the cloud (~5-15 min each, build numbers auto-increment)
+eas build --platform all --profile production
+
+# Submit each to its store
+eas submit --platform ios
+eas submit --platform android
+```
+
+Notes:
+- **Bump the marketing version first** (see Version Management below) — all 4 files must match, or the store rejects a duplicate version.
+- **Android** submits non-interactively (service account is configured in `eas.json`) and goes straight to the **production** track. Change `submit.production.android.track` to `"internal"` if you want a testing track first.
+- **iOS** still requires you to select the processed build in App Store Connect and tap **Submit for Review**.
+- Apple review: ~24-48h. Google Play review: up to ~7 days.
+
+---
+
 ## Version Management
 
 There are two version values:
