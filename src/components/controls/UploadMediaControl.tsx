@@ -9,7 +9,8 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import type { Control, MediaFileType, UploadMediaConfig } from '@/types/index';
-import { validateFile, getMaxFileSize } from '@/services/mediaService';
+import { getMaxFileSize } from '@/services/mediaService';
+import { persistPickedImage, resolveImageUri } from '@/utils/persistentImageStore';
 
 interface UploadMediaControlProps {
   control: Control;
@@ -79,7 +80,14 @@ export default function UploadMediaControl({
         }
 
         setSelectedType(fileType);
-        onChange(asset.uri);
+        // Copy into persistent storage and store a relative path so the media
+        // survives cache purges and app-container UUID changes.
+        try {
+          const relativePath = await persistPickedImage(asset.uri);
+          onChange(relativePath);
+        } catch {
+          Alert.alert('Could not save media', 'Please try selecting the file again.');
+        }
       }
     },
     [readOnly, supportsImage, supportsVideo, onChange]
@@ -136,7 +144,7 @@ export default function UploadMediaControl({
       {value ? (
         <View style={styles.previewContainer}>
           {selectedType === 'image' || (!selectedType && value) ? (
-            <Image source={{ uri: value }} style={styles.imagePreview} />
+            <Image source={{ uri: resolveImageUri(value) }} style={styles.imagePreview} />
           ) : (
             <View style={styles.filePreview}>
               <Text style={styles.fileIcon}>

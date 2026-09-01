@@ -11,6 +11,7 @@ import React, { useCallback } from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import type { Control, ImageAttachmentConfig } from '@/types/index';
+import { persistPickedImage, resolveImageUri } from '@/utils/persistentImageStore';
 
 interface ImageAttachmentControlProps {
   control: Control;
@@ -77,7 +78,15 @@ export default function ImageAttachmentControl({
           return;
         }
 
-        onChange(asset.uri);
+        // Copy into persistent storage and store a relative path so the image
+        // survives cache purges and app-container UUID changes (see bug: images
+        // going blank the next day).
+        try {
+          const relativePath = await persistPickedImage(asset.uri);
+          onChange(relativePath);
+        } catch {
+          Alert.alert('Could not save image', 'Please try selecting the image again.');
+        }
       }
     },
     [readOnly, onChange]
@@ -106,7 +115,7 @@ export default function ImageAttachmentControl({
 
       {value ? (
         <View style={styles.previewContainer}>
-          <Image source={{ uri: value }} style={styles.preview} />
+          <Image source={{ uri: resolveImageUri(value) }} style={styles.preview} />
           {!readOnly && (
             <TouchableOpacity
               style={styles.removeButton}

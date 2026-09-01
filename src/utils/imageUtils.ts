@@ -32,12 +32,16 @@ function generateCacheFilename(uri: string, suffix: string): string {
  * Returns the app's image cache directory, creating it if needed.
  */
 async function getImageCacheDir(): Promise<string> {
-  const cacheDir = `${FileSystem.cacheDirectory}images/`;
-  const dirInfo = await FileSystem.getInfoAsync(cacheDir);
+  // Use documentDirectory (persistent), NOT cacheDirectory — iOS purges the
+  // Caches directory under storage pressure, which caused stored background
+  // images to go blank over time.
+  const docDir = (FileSystem as unknown as { documentDirectory: string }).documentDirectory ?? '';
+  const imagesDir = `${docDir}images/`;
+  const dirInfo = await FileSystem.getInfoAsync(imagesDir);
   if (!dirInfo.exists) {
-    await FileSystem.makeDirectoryAsync(cacheDir, { intermediates: true });
+    await FileSystem.makeDirectoryAsync(imagesDir, { intermediates: true });
   }
-  return cacheDir;
+  return imagesDir;
 }
 
 /**
