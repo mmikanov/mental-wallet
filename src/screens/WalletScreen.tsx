@@ -232,7 +232,10 @@ export default function WalletScreen() {
     }
   }, [personalKpi, loadCards]);
 
-  // Handle highlightSessionCard route param — highlight the session launcher card visually
+  // Handle highlightSessionCard route param — highlight the session launcher card visually.
+  // Only arms the highlight (once). The auto-clear timer lives in a separate effect so
+  // that re-runs of this effect (from volatile deps) can't cancel the "turn off" and
+  // leave the highlight stuck on.
   useEffect(() => {
     const shouldHighlight = route.params?.highlightSessionCard;
     if (shouldHighlight && cards.length > 0 && !highlightHandled.current && !tutorial.isActive && tutorialComplete) {
@@ -241,13 +244,17 @@ export default function WalletScreen() {
         highlightHandled.current = true;
         // Apply 1-second visual highlight (no focus/expand — card stays in stack)
         setIsHighlighting(true);
-        const timer = setTimeout(() => {
-          setIsHighlighting(false);
-        }, 1000);
-        return () => clearTimeout(timer);
       }
     }
   }, [route.params?.highlightSessionCard, cards, tutorial.isActive, tutorialComplete]);
+
+  // Auto-clear the highlight 1 second after it turns on. Self-contained so its
+  // teardown is not tied to the volatile deps of the arming effect above.
+  useEffect(() => {
+    if (!isHighlighting) return;
+    const timer = setTimeout(() => setIsHighlighting(false), 1000);
+    return () => clearTimeout(timer);
+  }, [isHighlighting]);
 
   // TODO: Defer Micro_Tutorial when "emotion" mode chosen during onboarding.
   // The Micro_Tutorial is not yet implemented (onboarding spec dependency).
@@ -750,7 +757,7 @@ export default function WalletScreen() {
           <View style={[styles.focusedLayout, { opacity: isDismissing ? 0.2 : 1 }]}>
             {/* Focused card area — takes up top portion */}
             <View style={styles.focusedCardArea}>
-              <View style={isHighlighting && !tutorial.isActive ? styles.highlightWrapper : undefined}>
+              <View style={isHighlighting && !tutorial.isActive && isSessionLauncherFocused ? styles.highlightWrapper : undefined}>
                 <FocusedCardView
                   card={personalizedFocusedCard || focusedCard}
                   categoryColor={categoryColors[focusedCard.categoryId] || '#9CA3AF'}
