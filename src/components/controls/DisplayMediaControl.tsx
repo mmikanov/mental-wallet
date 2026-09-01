@@ -12,6 +12,7 @@ import AudioPlayer from '@/components/media/AudioPlayer';
 import VideoPlayer from '@/components/media/VideoPlayer';
 import PlatformEmbed from '@/components/media/PlatformEmbed';
 import { downloadAndCache } from '@/services/mediaService';
+import { resolveImageUri } from '@/utils/persistentImageStore';
 
 interface DisplayMediaControlProps {
   control: Control;
@@ -43,7 +44,9 @@ export default function DisplayMediaControl({
           setIsLoading(false);
         });
     } else if (config.mediaSourceType === 'local_file') {
-      setLocalUri(config.source);
+      // Re-anchor relative paths (new persistent format) to the current
+      // documentDirectory; legacy absolute/file:// URIs pass through unchanged.
+      setLocalUri(resolveImageUri(config.source));
     }
   }, [config.mediaSourceType, config.source, control.cardId, control.id, localUri]);
 

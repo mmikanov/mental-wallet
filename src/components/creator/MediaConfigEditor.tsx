@@ -16,6 +16,7 @@ import type {
   UploadMediaConfig,
 } from '@/types/index';
 import { classifyUrl, validateFile, getFileTypeFromExtension } from '@/services/mediaService';
+import { persistPickedImage } from '@/utils/persistentImageStore';
 
 type MediaVariant = 'display_media' | 'upload_media';
 
@@ -188,7 +189,20 @@ export default function MediaConfigEditor({
       const asset = result.assets[0];
       const detectedType: MediaFileType = asset.type === 'video' ? 'video' : 'image';
       const name = asset.uri.split('/').pop() || 'file';
-      setLocalFilePath(asset.uri);
+
+      // Copy into persistent storage and store a relative path so the media
+      // survives cache purges and app-container UUID changes (picked files land
+      // in the purgeable cache/ImagePicker dir otherwise). If the copy fails for
+      // any reason, fall back to the original picker URI so the control is never
+      // dropped from the tool (degrade, don't break).
+      let storedPath = asset.uri;
+      try {
+        storedPath = await persistPickedImage(asset.uri);
+      } catch (e) {
+        console.warn('[MediaConfigEditor] persistPickedImage failed, using original uri', e);
+      }
+
+      setLocalFilePath(storedPath);
       setLocalFileName(name);
       setFileType(detectedType);
       // Emit updated config
@@ -196,7 +210,7 @@ export default function MediaConfigEditor({
         label,
         mediaSourceType: 'local_file',
         mediaFileType: detectedType,
-        source: asset.uri,
+        source: storedPath,
         platform: null,
         cachedPath: null,
       };

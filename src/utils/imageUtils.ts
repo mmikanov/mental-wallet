@@ -11,7 +11,7 @@
  * Validates: Requirements 17.1
  */
 
-import * as FileSystem from 'expo-file-system';
+import { File, Directory, Paths } from 'expo-file-system';
 
 const MAX_STORAGE_WIDTH = 1500;
 const THUMBNAIL_WIDTH = 200;
@@ -31,17 +31,15 @@ function generateCacheFilename(uri: string, suffix: string): string {
 /**
  * Returns the app's image cache directory, creating it if needed.
  */
-async function getImageCacheDir(): Promise<string> {
-  // Use documentDirectory (persistent), NOT cacheDirectory — iOS purges the
-  // Caches directory under storage pressure, which caused stored background
-  // images to go blank over time.
-  const docDir = (FileSystem as unknown as { documentDirectory: string }).documentDirectory ?? '';
-  const imagesDir = `${docDir}images/`;
-  const dirInfo = await FileSystem.getInfoAsync(imagesDir);
-  if (!dirInfo.exists) {
-    await FileSystem.makeDirectoryAsync(imagesDir, { intermediates: true });
+function getImageDir(): Directory {
+  // Use the document directory (persistent), NOT cache — iOS purges the Caches
+  // directory under storage pressure, which caused stored background images to
+  // go blank over time.
+  const dir = new Directory(Paths.document, 'images');
+  if (!dir.exists) {
+    dir.create({ intermediates: true, idempotent: true });
   }
-  return imagesDir;
+  return dir;
 }
 
 /**
@@ -54,18 +52,17 @@ async function getImageCacheDir(): Promise<string> {
  * @returns URI of the processed image in the cache directory
  */
 export async function resizeForStorage(uri: string): Promise<string> {
-  const cacheDir = await getImageCacheDir();
+  const dir = getImageDir();
   const filename = generateCacheFilename(uri, `w${MAX_STORAGE_WIDTH}`);
-  const destUri = `${cacheDir}${filename}`;
+  const dest = new File(dir, filename);
 
-  const destInfo = await FileSystem.getInfoAsync(destUri);
-  if (destInfo.exists) {
-    return destUri;
+  if (dest.exists) {
+    return dest.uri;
   }
 
-  // Copy to cache (actual resize would happen here with expo-image-manipulator)
-  await FileSystem.copyAsync({ from: uri, to: destUri });
-  return destUri;
+  // Copy to persistent storage (actual resize would happen here with expo-image-manipulator)
+  new File(uri).copy(dest);
+  return dest.uri;
 }
 
 /**
@@ -78,18 +75,17 @@ export async function resizeForStorage(uri: string): Promise<string> {
  * @returns URI of the thumbnail image in the cache directory
  */
 export async function generateThumbnail(uri: string): Promise<string> {
-  const cacheDir = await getImageCacheDir();
+  const dir = getImageDir();
   const filename = generateCacheFilename(uri, `thumb${THUMBNAIL_WIDTH}`);
-  const destUri = `${cacheDir}${filename}`;
+  const dest = new File(dir, filename);
 
-  const destInfo = await FileSystem.getInfoAsync(destUri);
-  if (destInfo.exists) {
-    return destUri;
+  if (dest.exists) {
+    return dest.uri;
   }
 
-  // Copy to cache (actual thumbnail generation would happen here)
-  await FileSystem.copyAsync({ from: uri, to: destUri });
-  return destUri;
+  // Copy to persistent storage (actual thumbnail generation would happen here)
+  new File(uri).copy(dest);
+  return dest.uri;
 }
 
 /**

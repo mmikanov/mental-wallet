@@ -81,12 +81,14 @@ export default function UploadMediaControl({
 
         setSelectedType(fileType);
         // Copy into persistent storage and store a relative path so the media
-        // survives cache purges and app-container UUID changes.
+        // survives cache purges and app-container UUID changes. If the copy
+        // fails, fall back to the original URI so the control still works.
         try {
           const relativePath = await persistPickedImage(asset.uri);
           onChange(relativePath);
-        } catch {
-          Alert.alert('Could not save media', 'Please try selecting the file again.');
+        } catch (e) {
+          console.warn('[UploadMediaControl] persistPickedImage failed, using original uri', e);
+          onChange(asset.uri);
         }
       }
     },

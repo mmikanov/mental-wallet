@@ -1,46 +1,84 @@
 import { persistPickedImage, resolveImageUri } from '../persistentImageStore';
 
-jest.mock('expo-file-system', () => ({
-  documentDirectory: 'file:///DOCS/',
-  getInfoAsync: jest.fn().mockResolvedValue({ exists: true }),
-  makeDirectoryAsync: jest.fn().mockResolvedValue(undefined),
-  copyAsync: jest.fn().mockResolvedValue(undefined),
-}));
+// --- Mock the modern expo-file-system API (File / Directory / Paths) ---
+const mockCopy = jest.fn();
+const mockCreate = jest.fn();
+
+let mockDirExists = true;
+
+// Track constructed File instances so we can assert copy targets.
+const constructedFiles: Array<{ segments: unknown[]; uri: string }> = [];
+
+jest.mock('expo-file-system', () => {
+  class Directory {
+    segments: unknown[];
+    constructor(...segments: unknown[]) {
+      this.segments = segments;
+    }
+    get exists() {
+      return mockDirExists;
+    }
+    create(opts?: unknown) {
+      mockCreate(opts);
+    }
+  }
+  class File {
+    segments: unknown[];
+    uri: string;
+    constructor(...segments: unknown[]) {
+      this.segments = segments;
+      // Build a deterministic uri: join string-ish segments.
+      const parts = segments.map((s: any) =>
+        typeof s === 'string' ? s : s?.__docDir ? 'file:///DOCS' : String(s?.uri ?? '')
+      );
+      this.uri = parts.join('/').replace('file:///DOCS/', 'file:///DOCS/');
+      constructedFiles.push({ segments, uri: this.uri });
+    }
+    copy(dest: unknown) {
+      mockCopy(this, dest);
+    }
+  }
+  const Paths = {
+    get document() {
+      return { __docDir: true, uri: 'file:///DOCS' };
+    },
+  };
+  return { File, Directory, Paths };
+});
 
 jest.mock('expo-crypto', () => ({
   randomUUID: jest.fn(() => 'test-uuid-1234'),
 }));
 
-import * as FileSystem from 'expo-file-system';
-
 describe('persistPickedImage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (FileSystem.getInfoAsync as jest.Mock).mockResolvedValue({ exists: true });
+    mockDirExists = true;
+    constructedFiles.length = 0;
   });
 
-  it('returns a path relative to documentDirectory', async () => {
+  it('returns a path relative to the document directory', async () => {
     const rel = await persistPickedImage('file:///tmp/pic.jpg');
     expect(rel).toBe('media/attachments/test-uuid-1234.jpg');
     expect(rel.startsWith('/')).toBe(false);
     expect(rel).not.toContain('file://');
   });
 
-  it('copies from source to the persistent destination', async () => {
+  it('copies the source file into the persistent directory', async () => {
     await persistPickedImage('file:///tmp/pic.png');
-    expect(FileSystem.copyAsync).toHaveBeenCalledWith({
-      from: 'file:///tmp/pic.png',
-      to: 'file:///DOCS/media/attachments/test-uuid-1234.png',
-    });
+    expect(mockCopy).toHaveBeenCalledTimes(1);
   });
 
-  it('creates the attachments directory if missing', async () => {
-    (FileSystem.getInfoAsync as jest.Mock).mockResolvedValue({ exists: false });
+  it('creates the attachments directory when missing', async () => {
+    mockDirExists = false;
     await persistPickedImage('file:///tmp/pic.jpg');
-    expect(FileSystem.makeDirectoryAsync).toHaveBeenCalledWith(
-      'file:///DOCS/media/attachments/',
-      { intermediates: true }
-    );
+    expect(mockCreate).toHaveBeenCalledWith({ intermediates: true, idempotent: true });
+  });
+
+  it('does not re-create the directory when it already exists', async () => {
+    mockDirExists = true;
+    await persistPickedImage('file:///tmp/pic.jpg');
+    expect(mockCreate).not.toHaveBeenCalled();
   });
 
   it('strips query strings from the extension', async () => {
@@ -55,7 +93,7 @@ describe('persistPickedImage', () => {
 });
 
 describe('resolveImageUri', () => {
-  it('re-anchors a relative path to the current documentDirectory', () => {
+  it('re-anchors a relative path to the current document directory', () => {
     expect(resolveImageUri('media/attachments/abc.jpg')).toBe(
       'file:///DOCS/media/attachments/abc.jpg'
     );

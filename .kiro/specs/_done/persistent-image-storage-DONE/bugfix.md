@@ -54,4 +54,15 @@ Persistence helpers that copy into the persistent `documentDirectory` exist in `
 
 ### Status
 
-**Fixed** — Added `src/utils/persistentImageStore.ts` (`persistPickedImage` copies picked files into `documentDirectory/media/attachments/` and returns a relative path; `resolveImageUri` re-anchors at render time, passing legacy/remote URIs through). Wired into `ImageAttachmentControl` and `UploadMediaControl`. Also moved `imageUtils` background image storage from `cacheDirectory` to `documentDirectory`. 12 new unit tests; existing completion/control tests still pass. Legacy already-broken URIs are unrecoverable but render blank without crashing.
+**Fixed & verified on device.**
+
+Implementation:
+- Added `src/utils/persistentImageStore.ts` — `persistPickedImage()` copies picked files into the persistent document directory (`media/attachments/`) and returns a RELATIVE path; `resolveImageUri()` re-anchors that relative path to the current document directory at render time and passes legacy/remote URIs (http/file/content/ph/absolute) through unchanged.
+- Wired into all three image paths: `ImageAttachmentControl` (image_attachment), `UploadMediaControl` (upload_media), and the creator's `MediaConfigEditor.handlePickFile` + `DisplayMediaControl` render (Display Media local_file — the path in the original report).
+- `imageUtils` background image storage moved off the purgeable cache dir.
+
+**Key discovery:** The original diagnosis (raw temp URI stored) was correct, but the deeper cause on Expo SDK 54 is that the LEGACY `expo-file-system` API (`FileSystem.copyAsync`, `FileSystem.documentDirectory`, `makeDirectoryAsync`) is deprecated and **throws at runtime** ("This method will throw in runtime"). All new/changed code uses the modern `File` / `Directory` / `Paths` API (matching the working `exportService`). The pre-existing dead-code helpers in `mediaService.ts` that used the legacy API would also have thrown if called.
+
+**Defensive behavior:** If the persistent copy ever fails, the controls fall back to the original picker URI (degrade, not drop) so a control is never silently removed from a tool.
+
+Verified on Android emulator: picked image lands in `files/media/attachments/`, survives a `cache/` purge, and still renders after reopening the tool. 13 unit tests pass. Legacy already-broken URIs remain unrecoverable but render blank without crashing.

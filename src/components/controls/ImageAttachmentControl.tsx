@@ -80,12 +80,14 @@ export default function ImageAttachmentControl({
 
         // Copy into persistent storage and store a relative path so the image
         // survives cache purges and app-container UUID changes (see bug: images
-        // going blank the next day).
+        // going blank the next day). If the copy fails, fall back to the original
+        // URI so the control still works (degrade, don't break).
         try {
           const relativePath = await persistPickedImage(asset.uri);
           onChange(relativePath);
-        } catch {
-          Alert.alert('Could not save image', 'Please try selecting the image again.');
+        } catch (e) {
+          console.warn('[ImageAttachmentControl] persistPickedImage failed, using original uri', e);
+          onChange(asset.uri);
         }
       }
     },
