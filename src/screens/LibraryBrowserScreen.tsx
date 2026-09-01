@@ -882,7 +882,7 @@ export default function LibraryBrowserScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={handleHeaderTitlePress}>

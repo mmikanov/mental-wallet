@@ -217,7 +217,7 @@ export default function WalletInsightsScreen({ navigation }: Props) {
   // --- Loading state ---
   if (isLoading && !refreshing) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -239,7 +239,7 @@ export default function WalletInsightsScreen({ navigation }: Props) {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity

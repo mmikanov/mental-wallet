@@ -81,6 +81,25 @@ Then press `a` to open on Android.
 - If Gradle build fails — ensure `ANDROID_HOME` is set (usually `~/Library/Android/sdk`)
 - Add to your `~/.zshrc` if not set: `export ANDROID_HOME=~/Library/Android/sdk`
 
+### Testing navigation modes (3-button vs gesture)
+
+Emulators usually default to **gesture navigation** (a thin pill at the bottom), which has a small safe-area inset. Many physical Android phones (e.g. Samsung) use the **3-button navigation bar** (back / home / recents), which has a *taller* bottom inset. Content that isn't wrapped in a bottom safe-area edge can render fine on the emulator but get covered by the nav bar on a real device.
+
+Switch the running emulator's navigation mode via ADB (no menu digging needed):
+
+```bash
+# Switch to 3-button navigation (matches many physical devices)
+adb shell cmd overlay enable com.android.internal.systemui.navbar.threebutton
+
+# Switch back to gesture navigation
+adb shell cmd overlay enable com.android.internal.systemui.navbar.gestural
+
+# If the overlay names differ on your image, list what's available:
+adb shell cmd overlay list | grep navbar
+```
+
+**Always test the wallet, library, and insights screens in 3-button mode** before shipping — that's the mode most likely to reveal bottom safe-area (`SafeAreaView edges`) issues.
+
 ---
 
 ## Reset App for Testing (Simulator)

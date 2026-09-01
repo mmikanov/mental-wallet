@@ -724,7 +724,7 @@ export default function WalletScreen() {
   const hasCards = stackCards.length > 0;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View ref={containerRef} style={{ flex: 1 }}>
       <WalletHeader
         onArchivePress={handleArchivePress}
