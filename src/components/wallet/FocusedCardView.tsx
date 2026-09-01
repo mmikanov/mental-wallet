@@ -361,6 +361,7 @@ export default function FocusedCardView({
             <View
               style={[
                 styles.cardShell,
+                backgroundStyle,
                 { minHeight: FOCUSED_CARD_HEIGHT },
                 isExpanded && Platform.OS === 'android' ? { height: FOCUSED_CARD_HEIGHT, minHeight: undefined } : undefined,
               ]}
@@ -415,10 +416,24 @@ export default function FocusedCardView({
               </GHScrollView>
               </KeyboardAvoidingView>
               ) : (
-              <ScrollView
+              (() => {
+                // Non-expanded (both platforms) and expanded-iOS share this branch.
+                // Use gesture-handler ScrollView on Android so the content scrolls
+                // under the swipe-to-dismiss GestureDetector (a plain RN ScrollView
+                // is blocked by the gesture parent on Android — this left the expand
+                // arrow unreachable). Only stretch content (flexGrow) when expanded;
+                // when collapsed, let content sit at natural height so the arrow sits
+                // directly under it and there's no wasted vertical space.
+                const ScrollComponent = Platform.OS === 'android' ? GHScrollView : ScrollView;
+                return (
+              <ScrollComponent
                 style={styles.cardShellInner}
-                contentContainerStyle={[styles.cardShellInnerContent, backgroundStyle]}
+                contentContainerStyle={[
+                  isExpanded ? styles.cardShellInnerContent : styles.cardShellInnerContentCollapsed,
+                  backgroundStyle,
+                ]}
                 showsVerticalScrollIndicator={false}
+                nestedScrollEnabled={true}
                 automaticallyAdjustKeyboardInsets={isExpanded}
                 keyboardShouldPersistTaps="handled"
               >
@@ -472,7 +487,9 @@ export default function FocusedCardView({
                   </TouchableOpacity>
                 </View>
               )}
-              </ScrollView>
+              </ScrollComponent>
+                );
+              })()
               )}
             </View>
           </View>
@@ -525,6 +542,12 @@ const styles = StyleSheet.create({
   },
   cardShellInnerContent: {
     flexGrow: 1,
+    paddingBottom: 16,
+  },
+  // Non-expanded: no flexGrow so short content stays compact (no wasted space)
+  // and the expand arrow sits directly under the content instead of being
+  // stretched to the bottom / pushed off the visible card.
+  cardShellInnerContentCollapsed: {
     paddingBottom: 16,
   },
   headerContent: {

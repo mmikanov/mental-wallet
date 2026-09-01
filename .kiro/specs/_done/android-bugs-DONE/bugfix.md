@@ -236,3 +236,35 @@ This document collects visual and behavioral bugs found during Android emulator 
 
 ---
 
+### Bug 12: Focused Card Expand Arrow Missing / Unreachable + Wasted Vertical Space
+
+### Current Behavior (Defect)
+
+27.1 WHEN a card is focused on Android and its content is short THEN the expand arrow (▼) is not visible and cannot be scrolled to, so the user has no way to expand the card
+
+27.2 There is excessive vertical space between the origin badge/tag and the stats bar, and the stats white bar appears taller than it should
+
+27.3 Two root causes: (a) `flexGrow: 1` on the scroll content container stretches short content to fill the viewport, distributing empty space and pushing the arrow to/below the card bottom; (b) the non-expanded state used a plain `react-native` ScrollView nested under the swipe-to-dismiss `GestureDetector`, which does not scroll on Android — so when the arrow is pushed below the fold it is unreachable
+
+### Expected Behavior (Correct)
+
+28.1 WHEN a card is focused with short content THEN the expand arrow SHALL sit directly beneath the content with no wasted vertical space
+
+28.2 WHEN a card is focused with tall content on Android THEN the content SHALL scroll so the expand arrow is reachable
+
+28.3 The stats bar SHALL render at its natural height (no stretching)
+
+### Unchanged Behavior (Regression Prevention)
+
+29.1 ON iOS, the focused card layout and expand arrow SHALL CONTINUE TO work as before
+
+29.2 The expanded state (both the normal expanded content and the session-launcher custom content) SHALL CONTINUE TO scroll tall content correctly
+
+29.3 Swipe-to-dismiss SHALL CONTINUE TO work on the focused card
+
+### Status
+
+**Fixed** — In `FocusedCardView`, the non-expanded branch now uses `GHScrollView` on Android (coordinates scroll with the pan GestureDetector) and a new `cardShellInnerContentCollapsed` content style WITHOUT `flexGrow` so short content stays compact and the arrow sits directly under it. The expanded paths keep `flexGrow` (they legitimately need to fill/scroll). StatsRow needed no change — the "taller bar" was purely the flexGrow stretching.
+
+---
+
