@@ -169,6 +169,21 @@ eas submit --platform android
   - Missing or inaccessible privacy policy
   - Health claims without appropriate disclaimers (we have the disclaimer screen ✓)
 
+### Rollout safety (do once there are real users)
+
+The `production` track with `eas submit` publishes to **100% of users** after Google's (fast, mostly automated) review — there is no manual gate. This is fine pre-launch, but once real users exist, use one of these safer patterns:
+
+- **Staged rollout** — in Play Console, set the release to a percentage (e.g. 20%), monitor crash-free rate / reviews, then ramp to 100%. A bad build then only reaches a fraction of users.
+- **Testing track first** — change `submit.production.android.track` in `eas.json` to `"internal"` or `"beta"`, verify, then promote to production in Play Console.
+
+> **Reminder:** Revisit the straight-to-production setup before the real launch and switch to staged rollout or a testing track.
+
+### Automating release notes (optional, not set up)
+
+EAS Submit does **not** have a first-class "what's new" text field in `eas.json`, so release notes are currently a **manual Play Console step** after each submit (and a manual App Store Connect step for iOS).
+
+To fully automate on Android you would move to **fastlane `supply`** (or a GitHub Actions pipeline) that reads a `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` file and pushes it via the Play Developer API using the same service account key. This is more setup than it's worth at the current cadence — revisit if releases become frequent. For now, keep the copy in `store-listing-copy.md` and paste it into each console.
+
 ---
 
 ## Deploy Both Platforms at Once
