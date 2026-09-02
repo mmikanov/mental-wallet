@@ -120,6 +120,37 @@ A card-based toolkit to build coping habits and discover what works for you.
 
 ---
 
+## Version History — "What's New" (Apple App Store)
+
+Track the release notes submitted for each Apple version here. Newest first.
+
+### 1.0.3
+
+**Promotional Text (in use):**
+```
+Your personal toolkit for building coping habits. 20+ evidence-informed tools, custom card builder, personal insights — all private, all on your device.
+```
+
+**What's New in This Version:**
+```
+Thanks for trying Mental Health Wallet. This update brings one new capability and a round of polish:
+
+• Media that plays inline — cards with a YouTube, Spotify, or other media link now play right inside the card, with a one-tap option to open the full app.
+• Attached images now stick around reliably.
+• Smoother scrolling in the guided check-in and tool previews.
+• Layout and display fixes across the app.
+
+Have feedback? We'd love to hear it — reach us from Settings.
+```
+
+**Notes:** First update since the initial App Store release (1.0.1). Apple version jumped from 1.0.1 to 1.0.3 to stay consistent with the Google Play version numbering (1.0.2 was skipped on the App Store).
+
+### 1.0.1
+
+Initial App Store release. (No "What's New" — first version.)
+
+---
+
 ## Notes
 
 - Apple uses bullet points (•), Google Play supports more symbols (✦, ★, etc.)
