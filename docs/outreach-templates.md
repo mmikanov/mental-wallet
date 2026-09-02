@@ -55,6 +55,46 @@ Placeholders in [brackets] are per-person. Sections in {braces} are conditional 
 
 ---
 
+### Template: Generic Message (friends & people you know — not interviewees)
+
+For people in your network who didn't take part in the interviews. Keep it casual and low-pressure. Pick the store link that matches their phone (or include both if unsure). Trim to fit the channel (a text should be shorter than an email).
+
+---
+
+**Opening (if email):** Something I built — would love your take
+
+**Message:**
+
+> Hey [Name],
+>
+> I've been building something on the side and just put it out into the world — figured you might find it interesting (or know someone who would).
+>
+> It's called Mental Health Wallet — a simple app that keeps your coping tools in one place, like a wallet for the little techniques that actually help. Breathing exercises, grounding, quick check-ins, that kind of thing. You can use ready-made tools, build your own, and it quietly shows you which ones work for you over time. It's free, and completely private — no account, nothing leaves your phone.
+>
+> {iOS:} https://apps.apple.com/app/mental-health-wallet/id6800036822
+> {Android:} https://play.google.com/store/apps/details?id=com.mentalwallet.app
+>
+> To get going: open it, tap a card to try one, and add more from the ⋮ menu (top right) with "Add Tool", or "Create Tool" to make your own.
+>
+> It's brand new, so if you try it I'd genuinely love your honest take — what's useful, what's confusing, what's missing. You can send feedback right from Settings, or just reply here.
+>
+> No pressure at all. And if it's not your thing but you know someone it might help, feel free to pass it along.
+>
+> Thanks!
+> Moshe
+
+---
+
+**Shorter variant (text / DM):**
+
+> Hey [Name] — I built an app and just launched it. Mental Health Wallet: a simple, private place to keep the coping tools that actually help (breathing, grounding, check-ins). Free, no account.
+> {iOS:} https://apps.apple.com/app/mental-health-wallet/id6800036822
+> {Android:} https://play.google.com/store/apps/details?id=com.mentalwallet.app
+>
+> If you give it a try I'd love your honest take — or pass it to someone it might help. 🙏
+
+---
+
 ### Personalization Checklist (per person)
 
 For each of your 16 documented interviewees, fill in:
