@@ -30,7 +30,7 @@ Placeholders in [brackets] are per-person. Sections in {braces} are conditional 
 > **Getting started (takes about a minute):**
 > 1. Open the app — it'll walk you through a quick setup.
 > 2. You'll land on your wallet with a few starter cards. Tap one to open it, then tap it again to expand and use it.
-> 3. Browse the Library to add more tools, or build your own from the "+" button.
+> 3. To get more tools, tap the menu (⋮) at the top right: "Add Tool" pulls in ready-made tools, or "Create Tool" lets you build your own.
 > 4. That's it — use whatever's helpful, ignore the rest.
 >
 > **If something breaks or feels off:** tap **Send Feedback** in Settings (it opens an email to me), or just reply here. Bug reports are genuinely welcome — you're among the first people using this, so anything you hit helps.
@@ -49,7 +49,7 @@ Placeholders in [brackets] are per-person. Sections in {braces} are conditional 
 > {iOS:} https://apps.apple.com/app/mental-health-wallet/id6800036822
 > {Android:} https://play.google.com/store/apps/details?id=com.mentalwallet.app
 >
-> Open it, tap a card to try it, add more from the Library or build your own. {If implemented: You'll spot [their feature] in there — your idea.}
+> Open it, tap a card to try it. For more, use the ⋮ menu top-right — "Add Tool" for ready-made ones or "Create Tool" to build your own. {If implemented: You'll spot [their feature] in there — your idea.}
 >
 > If anything's buggy, hit Send Feedback in Settings or just text me back. Would love your honest take. Thanks 🙏
 
