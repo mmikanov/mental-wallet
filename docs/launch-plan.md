@@ -35,7 +35,7 @@ Launch to the 25 interviewees who expressed interest. These people already under
 
 #### Checklist
 
-- [x] App submitted and approved on App Store (approved Aug 17, 2026). Google Play in review.
+- [x] App live on App Store (approved Aug 17, 2026) and on Google Play (live, v1.0.3).
 - [x] Analytics dashboard updated with launch KPIs (activation, engagement, retention)
 - [x] `share_tapped` event added to track organic sharing
 - [x] Phase milestone filtering added to dashboard

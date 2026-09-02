@@ -44,3 +44,6 @@ src/data/licenses.json
 .dev.vars
 # Google Play service account key (for eas submit --platform android)
 credentials/
+# Personalized outreach messages — contain real tester names/PII, keep local only
+docs/warm-launch-messages.md
+docs/*.private.md
