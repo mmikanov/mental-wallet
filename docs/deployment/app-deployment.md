@@ -154,9 +154,11 @@ eas submit --platform android
    - App icon (512×512px)
 4. **Production → Create new release:**
    - Upload the AAB (or let `eas submit` push it)
-   - Add release notes
+   - ⚠️ **Add release notes** — `eas submit` does NOT set these automatically. Go to the release → **Release notes** and paste the `<en-US>...</en-US>` copy. Use/track it in `docs/store-listing-copy.md` (Version History — Release Notes / Google Play). Limit: 500 chars per language.
    - Select countries/regions for distribution
    - Submit for review
+
+> **Reminder:** After every `eas submit --platform android`, log into Play Console and set the release notes for the new versionCode — otherwise users see no "What's changed" text. Keep the copy in sync with `store-listing-copy.md`.
 
 ### App Review
 

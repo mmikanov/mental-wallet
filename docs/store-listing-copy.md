@@ -151,6 +151,27 @@ Initial App Store release. (No "What's New" — first version.)
 
 ---
 
+## Version History — Release Notes (Google Play)
+
+Google Play release notes use `<en-US>...</en-US>` language tags and have a **500-character limit per language**. Set them per release in Play Console → Production → (release) → Release notes. Newest first.
+
+### 1.0.3 (versionCode 6)
+
+```
+<en-US>
+This update brings one new capability and a round of polish:
+
+• Media that plays inline — cards with a YouTube, Spotify, or other media link now play right inside the card, with a one-tap option to open the full app.
+• Attached images now stick around reliably.
+• Smoother scrolling in the guided check-in and tool previews.
+• Layout and display fixes across the app.
+
+Have feedback? Reach us from Settings.
+</en-US>
+```
+
+---
+
 ## Notes
 
 - Apple uses bullet points (•), Google Play supports more symbols (✦, ★, etc.)

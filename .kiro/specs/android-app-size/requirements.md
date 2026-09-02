@@ -74,10 +74,27 @@ Contributors identified:
 
 4.2 THE findings and final configuration SHALL be documented in `docs/deployment/app-deployment.md` (or a size-optimization note) so the settings aren't accidentally reverted.
 
+## Related Play Console Warnings (observed Sept 2026)
+
+The Play Console Release dashboard surfaced advisory (non-blocking) warnings that overlap with this work:
+
+- **"App optimization is below our threshold — Obfuscation (1%)" (fix by Feb 2027)** — This is the same issue as Requirement 1 (R8 minification/obfuscation is OFF). Enabling R8 resolves it. Long runway; not urgent.
+- **"Uses deprecated APIs/parameters for edge-to-edge"** — Android 15 edge-to-edge enforcement. Likely a config flag (`edgeToEdgeEnabled` in `android/gradle.properties` / Expo). Tracked separately below.
+- **"Remove resizability and orientation restrictions to support large screens"** — App is portrait-locked (`orientation: "portrait"` in app.json). This is an intentional product choice for a phone-first app; many apps ignore this warning. Optional.
+
+### Requirement 5: Edge-to-Edge Deprecation (Android 15)
+
+#### Acceptance Criteria
+
+5.1 THE app SHALL adopt the non-deprecated edge-to-edge configuration for Android 15 (verify the Expo/RN `edgeToEdgeEnabled` setting and safe-area handling) before it becomes mandatory.
+
+5.2 WHEN edge-to-edge is enabled THE existing safe-area insets (already fixed for the nav bar) SHALL CONTINUE TO render correctly on all screens.
+
 ## Out of Scope
 
 - Removing any actively-used native module (Reanimated, SQLite, WebView, etc.)
 - iOS size optimization (already thinned to 14.8MB — acceptable)
+- Large-screen / orientation support (portrait-lock is an intentional product decision; the Play warning is advisory)
 - Migrating away from the New Architecture or Hermes (both should stay)
 - Asset optimization (assets are only 1.4MB — not worth it)
 
