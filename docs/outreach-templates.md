@@ -4,7 +4,9 @@
 
 ### Template: Personalized Launch Message
 
-Use this as a base and customize per person using your interview notes. Send via the same channel you originally spoke with them (LinkedIn DM, email, text, etc.)
+Use this as a base and customize per person using your interview notes. Send via the same channel you originally spoke with them (LinkedIn DM, email, text, etc.). Keep it warm and brief — trim any section that feels like too much for the channel (a text can be shorter than an email).
+
+Placeholders in [brackets] are per-person. Sections in {braces} are conditional — include only if they apply.
 
 ---
 
@@ -16,22 +18,40 @@ Use this as a base and customize per person using your interview notes. Send via
 >
 > Remember when we chatted about [specific topic from their interview — e.g. "how you manage anxiety at work" / "your breathing exercises routine" / "finding coping tools that actually stick"]?
 >
-> I took that conversation (and your suggestion about [specific suggestion they made]) seriously — Mental Health Wallet is now live on the [App Store / Play Store].
+> I took that conversation seriously — Mental Health Wallet is now live and ready for you to download.
 >
-> [If their suggestion was implemented:]
-> You'll notice [specific feature/card they influenced] — that came directly from what you told me.
+> {If their suggestion was implemented in this release:}
+> You'll notice [specific feature/card they influenced] — that came directly from what you told me, and it's in the version that's live right now.
 >
-> [If they're on iOS:]
-> Here's the link: https://apps.apple.com/app/mental-health-wallet/id6800036822
+> **Get it here:**
+> {iOS:} https://apps.apple.com/app/mental-health-wallet/id6800036822
+> {Android:} https://play.google.com/store/apps/details?id=com.mentalwallet.app
 >
-> [If they're on Android:]
-> Here's the link: https://play.google.com/store/apps/details?id=com.mentalwallet.app
+> **Getting started (takes about a minute):**
+> 1. Open the app — it'll walk you through a quick setup.
+> 2. You'll land on your wallet with a few starter cards. Tap one to open it, then tap it again to expand and use it.
+> 3. Browse the Library to add more tools, or build your own from the "+" button.
+> 4. That's it — use whatever's helpful, ignore the rest.
 >
-> I'd love to know if it's actually useful for you. No pressure at all — but if you try it for a week or two, I'd genuinely appreciate hearing what works and what doesn't.
+> **If something breaks or feels off:** tap **Send Feedback** in Settings (it opens an email to me), or just reply here. Bug reports are genuinely welcome — you're among the first people using this, so anything you hit helps.
+>
+> No pressure at all — but if you try it for a week or two, I'd love to hear what works and what doesn't.
 >
 > Thanks for being part of this.
 >
 > Moshe
+
+---
+
+### Shorter variant (for text / DM)
+
+> Hey [Name] — the app you helped shape is live! Mental Health Wallet:
+> {iOS:} https://apps.apple.com/app/mental-health-wallet/id6800036822
+> {Android:} https://play.google.com/store/apps/details?id=com.mentalwallet.app
+>
+> Open it, tap a card to try it, add more from the Library or build your own. {If implemented: You'll spot [their feature] in there — your idea.}
+>
+> If anything's buggy, hit Send Feedback in Settings or just text me back. Would love your honest take. Thanks 🙏
 
 ---
 
