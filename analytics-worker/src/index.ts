@@ -116,10 +116,15 @@ async function handlePostEvents(request: Request, env: Env): Promise<Response> {
     }
   }
 
+  // Coarse geo from Cloudflare's edge (derived from the request IP).
+  // Same for all events in this batch since they share one request.
+  // Country-level only; the app sends no location data.
+  const country = (request as Request & { cf?: { country?: string } }).cf?.country || null;
+
   // Insert events into D1
   const receivedAt = new Date().toISOString();
   const stmt = env.DB.prepare(
-    'INSERT INTO events (id, anonymous_user_id, session_id, event_type, timestamp, properties, platform, os_version, app_version, received_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    'INSERT INTO events (id, anonymous_user_id, session_id, event_type, timestamp, properties, platform, os_version, app_version, country, received_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
   );
 
   // D1 batch supports up to 100 statements per batch call
@@ -134,7 +139,7 @@ async function handlePostEvents(request: Request, env: Env): Promise<Response> {
       const platform = event.platform || null;
       const osVersion = event.os_version || null;
       const appVersion = event.app_version || null;
-      return stmt.bind(id, event.anonymous_user_id, event.session_id, event.event_type, event.timestamp, properties, platform, osVersion, appVersion, receivedAt);
+      return stmt.bind(id, event.anonymous_user_id, event.session_id, event.event_type, event.timestamp, properties, platform, osVersion, appVersion, country, receivedAt);
     });
     await env.DB.batch(statements);
   }
@@ -546,15 +551,18 @@ async function handleDetailUsers(request: Request, env: Env): Promise<Response> 
         ORDER BY p.timestamp DESC LIMIT 1) as platform,
       (SELECT o.os_version FROM events o
         WHERE o.anonymous_user_id = e.anonymous_user_id AND o.os_version IS NOT NULL${clause}
-        ORDER BY o.timestamp DESC LIMIT 1) as os_version
+        ORDER BY o.timestamp DESC LIMIT 1) as os_version,
+      (SELECT c.country FROM events c
+        WHERE c.anonymous_user_id = e.anonymous_user_id AND c.country IS NOT NULL${clause}
+        ORDER BY c.timestamp DESC LIMIT 1) as country
     FROM events e
     WHERE 1=1${clause}
     GROUP BY e.anonymous_user_id
     ORDER BY event_count DESC
     LIMIT 200
   `;
-  // Param order matches the three clause occurrences: platform sub, os sub, outer.
-  const allParams = [...params, ...params, ...params];
+  // Param order matches the four clause occurrences: platform sub, os sub, country sub, outer.
+  const allParams = [...params, ...params, ...params, ...params];
   const stmt = env.DB.prepare(sql);
   const result = await (allParams.length > 0 ? stmt.bind(...allParams) : stmt).all();
 

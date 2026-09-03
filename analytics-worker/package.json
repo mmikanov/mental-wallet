@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "db:migrate:local": "wrangler d1 execute analytics-db --local --file=./migrations/0001_create_events.sql && wrangler d1 execute analytics-db --local --file=./migrations/0002_add_device_columns.sql",
-    "db:migrate:remote": "wrangler d1 execute analytics-db --remote --file=./migrations/0001_create_events.sql && wrangler d1 execute analytics-db --remote --file=./migrations/0002_add_device_columns.sql",
+    "db:migrate:local": "wrangler d1 execute analytics-db --local --file=./migrations/0001_create_events.sql && wrangler d1 execute analytics-db --local --file=./migrations/0002_add_device_columns.sql && wrangler d1 execute analytics-db --local --file=./migrations/0003_add_country_column.sql",
+    "db:migrate:remote": "wrangler d1 execute analytics-db --remote --file=./migrations/0001_create_events.sql && wrangler d1 execute analytics-db --remote --file=./migrations/0002_add_device_columns.sql && wrangler d1 execute analytics-db --remote --file=./migrations/0003_add_country_column.sql",
     "tail": "wrangler tail"
   },
   "devDependencies": {
