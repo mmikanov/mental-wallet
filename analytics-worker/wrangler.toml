@@ -16,5 +16,6 @@ database_id = "8996f51a-c715-4007-b470-c711678f741d"
 [vars]
 MILESTONE_RELEASE = "2026-09-02"
 MILESTONE_WARM_END = "2026-09-03T19:00:00Z"
-MILESTONE_COLD_START = ""
+# Cold acquisition begins exactly when warm launch ends (contiguous, no gap/overlap)
+MILESTONE_COLD_START = "2026-09-03T19:00:00Z"
 EXCLUDED_USER_IDS = ""
