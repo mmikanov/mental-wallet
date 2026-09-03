@@ -530,19 +530,33 @@ function buildDetailFilter(request: Request, env: Env) {
 async function handleDetailUsers(request: Request, env: Env): Promise<Response> {
   if (!isAuthorized(request, env)) return unauthorizedResponse();
 
-  const { clause, query } = buildDetailFilter(request, env);
-  const result = await query(`
+  const { clause, params } = buildDetailFilter(request, env);
+  // Platform / OS version are per-event. Show each user's most recent
+  // non-null value via correlated subqueries against their latest event.
+  // The subqueries reuse the same phase/exclusion filter params, so the
+  // filter clause appears three times and params are bound three times.
+  const sql = `
     SELECT
-      anonymous_user_id,
+      e.anonymous_user_id,
       COUNT(*) as event_count,
-      MIN(timestamp) as first_seen,
-      MAX(timestamp) as last_seen
-    FROM events
+      MIN(e.timestamp) as first_seen,
+      MAX(e.timestamp) as last_seen,
+      (SELECT p.platform FROM events p
+        WHERE p.anonymous_user_id = e.anonymous_user_id AND p.platform IS NOT NULL${clause}
+        ORDER BY p.timestamp DESC LIMIT 1) as platform,
+      (SELECT o.os_version FROM events o
+        WHERE o.anonymous_user_id = e.anonymous_user_id AND o.os_version IS NOT NULL${clause}
+        ORDER BY o.timestamp DESC LIMIT 1) as os_version
+    FROM events e
     WHERE 1=1${clause}
-    GROUP BY anonymous_user_id
+    GROUP BY e.anonymous_user_id
     ORDER BY event_count DESC
     LIMIT 200
-  `).all();
+  `;
+  // Param order matches the three clause occurrences: platform sub, os sub, outer.
+  const allParams = [...params, ...params, ...params];
+  const stmt = env.DB.prepare(sql);
+  const result = await (allParams.length > 0 ? stmt.bind(...allParams) : stmt).all();
 
   return corsResponse(JSON.stringify(result.results), {
     status: 200,

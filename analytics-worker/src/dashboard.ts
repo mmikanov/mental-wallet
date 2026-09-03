@@ -474,9 +474,9 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
         const users = Array.isArray(data) ? data : [];
         html = '<div class="detail-panel">' +
           '<h3>Unique Users (' + users.length + ') <button class="close-btn" onclick="closeDetail()">Close</button></h3>' +
-          '<table><thead><tr><th>User ID</th><th>Events</th><th>First Seen</th><th>Last Seen</th></tr></thead><tbody>' +
+          '<table><thead><tr><th>User ID</th><th>Platform</th><th>OS Version</th><th>Events</th><th>First Seen</th><th>Last Seen</th></tr></thead><tbody>' +
           users.map(function(u) {
-            return '<tr><td>' + shortId(u.anonymous_user_id) + '</td><td>' + u.event_count + '</td><td>' + fmtDate(u.first_seen) + '</td><td>' + fmtDate(u.last_seen) + '</td></tr>';
+            return '<tr><td>' + shortId(u.anonymous_user_id) + '</td><td>' + (u.platform || '-') + '</td><td>' + (u.os_version || '-') + '</td><td>' + u.event_count + '</td><td>' + fmtDate(u.first_seen) + '</td><td>' + fmtDate(u.last_seen) + '</td></tr>';
           }).join('') +
           '</tbody></table></div>';
       }
