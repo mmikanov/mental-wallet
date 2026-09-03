@@ -14,7 +14,7 @@ database_id = "8996f51a-c715-4007-b470-c711678f741d"
 # Launch phase milestone dates (ISO 8601 format, UTC)
 # Update these as you hit each milestone. Dashboard uses them to filter data by phase.
 [vars]
-MILESTONE_RELEASE = ""
-MILESTONE_WARM_END = ""
+MILESTONE_RELEASE = "2026-09-02"
+MILESTONE_WARM_END = "2026-09-03T19:00:00Z"
 MILESTONE_COLD_START = ""
 EXCLUDED_USER_IDS = ""

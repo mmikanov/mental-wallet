@@ -44,7 +44,7 @@ Launch to the 25 interviewees who expressed interest. These people already under
 - [ ] Short follow-up survey prepared (send at Day 7)
 - [x] Deploy analytics worker to production
 - [ ] Set MILESTONE_RELEASE date in wrangler.toml once Google Play approves, then redeploy
-- [ ] Send personalized launch messages to all 25 interviewees
+- [x] Send personalized launch messages to all 16 documented interviewees (done Sep 2026 — tracked in docs/warm-launch-messages.md)
 - [ ] Monitor dashboard daily for first 7 days
 - [ ] Send Day-7 follow-up survey
 - [ ] Compile warm cohort results at Day 14
