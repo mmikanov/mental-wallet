@@ -286,6 +286,28 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
       return params;
     }
 
+    // Length of the currently selected phase window in days.
+    // Returns Infinity when unbounded (All Time, or a phase missing a bound),
+    // since retention buckets are only meaningful over a long enough window.
+    function phaseWindowDays() {
+      if (currentPhase === 'all') return Infinity;
+      var r = getActiveRange();
+      if (!r.from || !r.to) return Infinity;
+      var ms = new Date(r.to).getTime() - new Date(r.from).getTime();
+      if (!isFinite(ms) || ms < 0) return Infinity;
+      return ms / (24 * 60 * 60 * 1000);
+    }
+
+    // Renders a retention percentage, or "n/a" when the selected window is
+    // shorter than the bucket horizon (a DN number over a few hours is
+    // meaningless because days_since_install is per-event, not per-window).
+    function retentionValue(pctValue, horizonDays) {
+      if (phaseWindowDays() < horizonDays) {
+        return '<span style="color:#999;">n/a</span>';
+      }
+      return pct(pctValue);
+    }
+
     function updatePhaseRange() {
       var el = document.getElementById('phase-range');
       if (!el) return;
@@ -409,17 +431,17 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
             <div class="detail">Avg card completions/user/week (last 14 days, \${kpis.launch.activeUsers14d} active users)</div>
             <div class="detail" style="margin-top:4px;font-size:0.75rem;color:\${kpis.launch.weeklyEngagement >= 3 ? '#4caf50' : '#6c757d'}">Target: 3+/week</div>
           </div>
-          <div class="card" style="border-left: 4px solid \${kpis.launch.retentionD7Pct >= 40 ? '#4caf50' : kpis.launch.retentionD7Pct >= 25 ? '#ff9800' : '#e53935'}">
+          <div class="card" style="border-left: 4px solid \${phaseWindowDays() < 7 ? '#ddd' : kpis.launch.retentionD7Pct >= 40 ? '#4caf50' : kpis.launch.retentionD7Pct >= 25 ? '#ff9800' : '#e53935'}">
             <h3>D7 Retention</h3>
-            <div class="value">\${pct(kpis.launch.retentionD7Pct)}</div>
+            <div class="value">\${retentionValue(kpis.launch.retentionD7Pct, 7)}</div>
             <div class="detail">Users returning within 7 days of install</div>
-            <div class="detail" style="margin-top:4px;font-size:0.75rem;color:\${kpis.launch.retentionD7Pct >= 40 ? '#4caf50' : '#6c757d'}">Target: 40%+</div>
+            <div class="detail" style="margin-top:4px;font-size:0.75rem;color:\${phaseWindowDays() < 7 ? '#999' : kpis.launch.retentionD7Pct >= 40 ? '#4caf50' : '#6c757d'}">\${phaseWindowDays() < 7 ? 'Window shorter than 7 days' : 'Target: 40%+'}</div>
           </div>
-          <div class="card" style="border-left: 4px solid \${kpis.launch.retentionD30Pct >= 25 ? '#4caf50' : kpis.launch.retentionD30Pct >= 15 ? '#ff9800' : '#e53935'}">
+          <div class="card" style="border-left: 4px solid \${phaseWindowDays() < 30 ? '#ddd' : kpis.launch.retentionD30Pct >= 25 ? '#4caf50' : kpis.launch.retentionD30Pct >= 15 ? '#ff9800' : '#e53935'}">
             <h3>D30 Retention</h3>
-            <div class="value">\${pct(kpis.launch.retentionD30Pct)}</div>
+            <div class="value">\${retentionValue(kpis.launch.retentionD30Pct, 30)}</div>
             <div class="detail">Users returning within 30 days of install</div>
-            <div class="detail" style="margin-top:4px;font-size:0.75rem;color:\${kpis.launch.retentionD30Pct >= 25 ? '#4caf50' : '#6c757d'}">Target: 25%+</div>
+            <div class="detail" style="margin-top:4px;font-size:0.75rem;color:\${phaseWindowDays() < 30 ? '#999' : kpis.launch.retentionD30Pct >= 25 ? '#4caf50' : '#6c757d'}">\${phaseWindowDays() < 30 ? 'Window shorter than 30 days' : 'Target: 25%+'}</div>
           </div>
           <div class="card">
             <h3>Share Taps</h3>
@@ -436,6 +458,11 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
         <div id="detail-panel"></div>
 
         <div class="section-title">Retention (unique users by days since install)</div>
+        <div class="detail" style="margin-bottom:8px;color:#6c757d;font-size:0.8rem;">
+          These buckets count app opens by each event's <em>days since install</em>, within the selected phase window.
+          They are not a tracked install cohort: the D7/D30 users can be different people from the D0 users.
+          When a phase window is shorter than the bucket horizon, D7/D30 percentages show "n/a" because a returning user who installed earlier would otherwise inflate them.
+        </div>
         <table>
           <thead>
             <tr><th>Bucket</th><th>Description</th><th>Unique Users</th></tr>
