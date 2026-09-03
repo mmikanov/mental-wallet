@@ -490,16 +490,55 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
 
 // --- Detail endpoints for dashboard drill-downs ---
 
+// Shared phase/date + excluded-user filter for detail drill-downs.
+// Mirrors the dateFilter/withFilter logic in handleKpis so drill-downs
+// respect the active phase filter (from/to) exactly like the top cards.
+function buildDetailFilter(request: Request, env: Env) {
+  const url = new URL(request.url);
+  const fromDate = url.searchParams.get('from') || null;
+  const toDate = url.searchParams.get('to') || null;
+
+  const excludedIds = env.EXCLUDED_USER_IDS
+    ? env.EXCLUDED_USER_IDS.split(',').map(id => id.trim()).filter(id => id.length > 0)
+    : [];
+
+  let clause = '';
+  const params: string[] = [];
+  if (fromDate) {
+    clause += ' AND timestamp >= ?';
+    params.push(fromDate);
+  }
+  if (toDate) {
+    clause += ' AND timestamp < ?';
+    params.push(toDate);
+  }
+  if (excludedIds.length > 0) {
+    const placeholders = excludedIds.map(() => '?').join(', ');
+    clause += ` AND anonymous_user_id NOT IN (${placeholders})`;
+    params.push(...excludedIds);
+  }
+
+  // Bind helper that tolerates empty params (local D1 compatibility).
+  const query = (sql: string) => {
+    const stmt = env.DB.prepare(sql);
+    return params.length > 0 ? stmt.bind(...params) : stmt;
+  };
+
+  return { clause, params, query };
+}
+
 async function handleDetailUsers(request: Request, env: Env): Promise<Response> {
   if (!isAuthorized(request, env)) return unauthorizedResponse();
 
-  const result = await env.DB.prepare(`
+  const { clause, query } = buildDetailFilter(request, env);
+  const result = await query(`
     SELECT
       anonymous_user_id,
       COUNT(*) as event_count,
       MIN(timestamp) as first_seen,
       MAX(timestamp) as last_seen
     FROM events
+    WHERE 1=1${clause}
     GROUP BY anonymous_user_id
     ORDER BY event_count DESC
     LIMIT 200
@@ -514,19 +553,27 @@ async function handleDetailUsers(request: Request, env: Env): Promise<Response> 
 async function handleDetailOnboarding(request: Request, env: Env): Promise<Response> {
   if (!isAuthorized(request, env)) return unauthorizedResponse();
 
+  const { clause, params, query } = buildDetailFilter(request, env);
+
+  // The counts query has two independent sub-selects; each needs its own
+  // copy of the filter params, so bind params twice (in sub-select order).
+  const countsStmt = env.DB.prepare(`
+    SELECT
+      (SELECT COUNT(DISTINCT anonymous_user_id) FROM events WHERE event_type = 'app_opened'${clause}) as opened,
+      (SELECT COUNT(DISTINCT anonymous_user_id) FROM events WHERE event_type = 'onboarding_completed'${clause}) as completed
+  `);
+  const countsParams = [...params, ...params];
+
   const [stepsResult, countsResult] = await Promise.all([
-    env.DB.prepare(`
+    query(`
       SELECT json_extract(properties, '$.step_name') as step_name, COUNT(*) as views
       FROM events
-      WHERE event_type = 'onboarding_step_viewed'
+      WHERE event_type = 'onboarding_step_viewed'${clause}
       GROUP BY step_name
       ORDER BY views DESC
     `).all(),
-    env.DB.prepare(`
-      SELECT
-        (SELECT COUNT(DISTINCT anonymous_user_id) FROM events WHERE event_type = 'app_opened') as opened,
-        (SELECT COUNT(DISTINCT anonymous_user_id) FROM events WHERE event_type = 'onboarding_completed') as completed
-    `).first<{ opened: number; completed: number }>(),
+    (countsParams.length > 0 ? countsStmt.bind(...countsParams) : countsStmt)
+      .first<{ opened: number; completed: number }>(),
   ]);
 
   return corsResponse(JSON.stringify({
@@ -542,13 +589,14 @@ async function handleDetailOnboarding(request: Request, env: Env): Promise<Respo
 async function handleDetailModes(request: Request, env: Env): Promise<Response> {
   if (!isAuthorized(request, env)) return unauthorizedResponse();
 
-  const result = await env.DB.prepare(`
+  const { clause, query } = buildDetailFilter(request, env);
+  const result = await query(`
     SELECT
       anonymous_user_id,
       json_extract(properties, '$.mode') as mode,
       timestamp
     FROM events
-    WHERE event_type = 'start_mode_selected'
+    WHERE event_type = 'start_mode_selected'${clause}
     ORDER BY timestamp DESC
     LIMIT 200
   `).all();
@@ -562,14 +610,15 @@ async function handleDetailModes(request: Request, env: Env): Promise<Response> 
 async function handleDetailTools(request: Request, env: Env): Promise<Response> {
   if (!isAuthorized(request, env)) return unauthorizedResponse();
 
-  const result = await env.DB.prepare(`
+  const { clause, query } = buildDetailFilter(request, env);
+  const result = await query(`
     SELECT
       json_extract(properties, '$.card_id') as card_id,
       json_extract(properties, '$.card_category') as card_category,
       COUNT(*) as completions,
       AVG(CAST(json_extract(properties, '$.duration_ms') AS REAL)) as avg_duration_ms
     FROM events
-    WHERE event_type = 'tool_completed'
+    WHERE event_type = 'tool_completed'${clause}
     GROUP BY card_id
     ORDER BY completions DESC
     LIMIT 100
@@ -584,12 +633,13 @@ async function handleDetailTools(request: Request, env: Env): Promise<Response> 
 async function handleDetailOutcomes(request: Request, env: Env): Promise<Response> {
   if (!isAuthorized(request, env)) return unauthorizedResponse();
 
-  const result = await env.DB.prepare(`
+  const { clause, query } = buildDetailFilter(request, env);
+  const result = await query(`
     SELECT
       json_extract(properties, '$.response') as response,
       COUNT(*) as count
     FROM events
-    WHERE event_type = 'outcome_response'
+    WHERE event_type = 'outcome_response'${clause}
     GROUP BY response
     ORDER BY count DESC
   `).all();
@@ -603,26 +653,27 @@ async function handleDetailOutcomes(request: Request, env: Env): Promise<Respons
 async function handleDetailPlatforms(request: Request, env: Env): Promise<Response> {
   if (!isAuthorized(request, env)) return unauthorizedResponse();
 
+  const { clause, query } = buildDetailFilter(request, env);
   const [platformResult, osVersionResult, appVersionResult] = await Promise.all([
-    env.DB.prepare(`
+    query(`
       SELECT platform, COUNT(DISTINCT anonymous_user_id) as users, COUNT(*) as events
       FROM events
-      WHERE platform IS NOT NULL
+      WHERE platform IS NOT NULL${clause}
       GROUP BY platform
       ORDER BY users DESC
     `).all(),
-    env.DB.prepare(`
+    query(`
       SELECT platform, os_version, COUNT(DISTINCT anonymous_user_id) as users
       FROM events
-      WHERE platform IS NOT NULL AND os_version IS NOT NULL
+      WHERE platform IS NOT NULL AND os_version IS NOT NULL${clause}
       GROUP BY platform, os_version
       ORDER BY users DESC
       LIMIT 50
     `).all(),
-    env.DB.prepare(`
+    query(`
       SELECT app_version, COUNT(DISTINCT anonymous_user_id) as users, COUNT(*) as events
       FROM events
-      WHERE app_version IS NOT NULL
+      WHERE app_version IS NOT NULL${clause}
       GROUP BY app_version
       ORDER BY app_version DESC
       LIMIT 20

@@ -279,7 +279,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
 
     async function fetchDetail(type) {
       try {
-        const res = await fetch('/details/' + type + '?secret=' + encodeURIComponent(SECRET));
+        const res = await fetch('/details/' + type + '?secret=' + encodeURIComponent(SECRET) + getPhaseParams());
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return await res.json();
       } catch (e) {
