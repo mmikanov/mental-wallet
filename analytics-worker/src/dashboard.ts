@@ -171,6 +171,13 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     .phase-filter .phase-btn.active { background: #4285f4; color: #fff; border-color: #4285f4; }
     .phase-filter .phase-btn.disabled { opacity: 0.4; cursor: not-allowed; }
     .phase-filter .phase-dates { font-size: 0.75rem; color: #999; margin-left: 8px; }
+    .phase-filter .phase-range {
+      flex-basis: 100%;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #1a73e8;
+      margin-top: 4px;
+    }
   </style>
 </head>
 <body>
@@ -186,9 +193,10 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
   <div class="phase-filter" id="phase-filter">
     <label>Phase:</label>
     <button class="phase-btn active" data-phase="all" onclick="setPhase('all')">All Time</button>
-    <button class="phase-btn disabled" data-phase="pre-release" onclick="setPhase('pre-release')">Pre-Release</button>
-    <button class="phase-btn disabled" data-phase="warm" onclick="setPhase('warm')">Warm Launch</button>
-    <button class="phase-btn disabled" data-phase="cold" onclick="setPhase('cold')">Cold Acquisition</button>
+    <button class="phase-btn disabled" data-phase="pre-release" onclick="setPhase('pre-release')">Pre-Release (before release)</button>
+    <button class="phase-btn disabled" data-phase="warm" onclick="setPhase('warm')">Warm Launch (release to warm end)</button>
+    <button class="phase-btn disabled" data-phase="cold" onclick="setPhase('cold')">Cold Acquisition (after cold start)</button>
+    <div class="phase-range" id="phase-range"></div>
     <span class="phase-dates" id="phase-dates"></span>
   </div>
 
@@ -241,6 +249,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
         excludedText = '<br><span style="color:#e53935;">Excluded from KPIs:</span> ' + milestones.excludedUserIds.join(', ');
       }
       el.innerHTML = datesText + excludedText;
+      updatePhaseRange();
     }
 
     function setPhase(phase) {
@@ -249,21 +258,45 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
       currentPhase = phase;
       document.querySelectorAll('.phase-btn').forEach(function(b) { b.classList.remove('active'); });
       if (btn) btn.classList.add('active');
+      updatePhaseRange();
       refresh();
     }
 
-    function getPhaseParams() {
-      var params = '';
+    // Returns the actual {from, to} timestamps for the current phase (null = unbounded).
+    // Single source of truth for both the query params and the range shown on the bar.
+    function getActiveRange() {
+      var from = null, to = null;
       if (currentPhase === 'pre-release' && milestones.release) {
-        params = '&to=' + encodeURIComponent(milestones.release);
+        to = milestones.release;
       } else if (currentPhase === 'warm') {
-        if (milestones.release) params += '&from=' + encodeURIComponent(milestones.release);
-        if (milestones.warmEnd) params += '&to=' + encodeURIComponent(milestones.warmEnd);
-        else if (milestones.coldStart) params += '&to=' + encodeURIComponent(milestones.coldStart);
+        if (milestones.release) from = milestones.release;
+        if (milestones.warmEnd) to = milestones.warmEnd;
+        else if (milestones.coldStart) to = milestones.coldStart;
       } else if (currentPhase === 'cold') {
-        if (milestones.coldStart) params += '&from=' + encodeURIComponent(milestones.coldStart);
+        if (milestones.coldStart) from = milestones.coldStart;
       }
+      return { from: from, to: to };
+    }
+
+    function getPhaseParams() {
+      var r = getActiveRange();
+      var params = '';
+      if (r.from) params += '&from=' + encodeURIComponent(r.from);
+      if (r.to) params += '&to=' + encodeURIComponent(r.to);
       return params;
+    }
+
+    function updatePhaseRange() {
+      var el = document.getElementById('phase-range');
+      if (!el) return;
+      if (currentPhase === 'all') {
+        el.textContent = 'Showing: all events (no date filter)';
+        return;
+      }
+      var r = getActiveRange();
+      var fromText = r.from ? fmtDate(r.from) : 'the beginning';
+      var toText = r.to ? fmtDate(r.to) : 'now';
+      el.textContent = 'Showing: ' + fromText + ' \u2192 ' + toText;
     }
 
     async function fetchKPIs() {
