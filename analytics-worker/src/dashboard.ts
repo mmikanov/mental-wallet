@@ -232,9 +232,9 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
       var el = document.getElementById('phase-dates');
       if (!el) return;
       var parts = [];
-      if (milestones.release) parts.push('Release: ' + milestones.release.slice(0, 10));
-      if (milestones.warmEnd) parts.push('Warm ends: ' + milestones.warmEnd.slice(0, 10));
-      if (milestones.coldStart) parts.push('Cold starts: ' + milestones.coldStart.slice(0, 10));
+      if (milestones.release) parts.push('Release: ' + fmtDate(milestones.release));
+      if (milestones.warmEnd) parts.push('Warm ends: ' + fmtDate(milestones.warmEnd));
+      if (milestones.coldStart) parts.push('Cold starts: ' + fmtDate(milestones.coldStart));
       var datesText = parts.length > 0 ? parts.join(' | ') : 'No milestone dates set (configure in wrangler.toml)';
       var excludedText = '';
       if (milestones.excludedUserIds && milestones.excludedUserIds.length > 0) {
