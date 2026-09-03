@@ -194,6 +194,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     <label>Phase:</label>
     <button class="phase-btn active" data-phase="all" onclick="setPhase('all')">All Time</button>
     <button class="phase-btn disabled" data-phase="pre-release" onclick="setPhase('pre-release')">Pre-Release (before release)</button>
+    <button class="phase-btn disabled" data-phase="post-release" onclick="setPhase('post-release')">Post-Release (release to now)</button>
     <button class="phase-btn disabled" data-phase="warm" onclick="setPhase('warm')">Warm Launch (release to warm end)</button>
     <button class="phase-btn disabled" data-phase="cold" onclick="setPhase('cold')">Cold Acquisition (after cold start)</button>
     <div class="phase-range" id="phase-range"></div>
@@ -230,6 +231,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
         var phase = btn.getAttribute('data-phase');
         if (phase === 'all') { btn.classList.remove('disabled'); return; }
         if (phase === 'pre-release' && milestones.release) btn.classList.remove('disabled');
+        if (phase === 'post-release' && milestones.release) btn.classList.remove('disabled');
         if (phase === 'warm' && milestones.release) btn.classList.remove('disabled');
         if (phase === 'cold' && milestones.coldStart) btn.classList.remove('disabled');
       });
@@ -268,6 +270,8 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
       var from = null, to = null;
       if (currentPhase === 'pre-release' && milestones.release) {
         to = milestones.release;
+      } else if (currentPhase === 'post-release') {
+        if (milestones.release) from = milestones.release;
       } else if (currentPhase === 'warm') {
         if (milestones.release) from = milestones.release;
         if (milestones.warmEnd) to = milestones.warmEnd;

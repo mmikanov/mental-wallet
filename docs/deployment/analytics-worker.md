@@ -83,6 +83,7 @@ Timeline:  ──────────|────────────�
 |--------|----------------|-----|
 | **All Time** | Beginning | Now (no filter) |
 | **Pre-Release** | Beginning | `MILESTONE_RELEASE` |
+| **Post-Release** | `MILESTONE_RELEASE` | Now (covers Warm + Cold together) |
 | **Warm Launch** | `MILESTONE_RELEASE` | `MILESTONE_WARM_END` or `MILESTONE_COLD_START` (whichever is set) |
 | **Cold Acquisition** | `MILESTONE_COLD_START` | Now |
 
