@@ -124,6 +124,23 @@ A card-based toolkit to build coping habits and discover what works for you.
 
 Track the release notes submitted for each Apple version here. Newest first.
 
+### Unreleased (next version — not yet built)
+
+Running list of changes landed in the repo since 1.0.3 but NOT yet shipped to any store. Finalize the version number and "What's New" copy when building. Bump the marketing version in all four places (see the release checklist) since 1.0.3 is already live.
+
+**Changes landed (developer-facing):**
+- **Fix: emotion sessions were being over-counted.** The active emotion session ended (and re-logged its analytics `session_ended` event) on transient iOS foreground interruptions (Control Center, app switcher, permission prompts, call banners), and `endSession()` had no re-entrancy guard — so a single session could log many endings. Now `endSession()` fires at most once per session, and the app only ends a session on a real background transition, not on `inactive`. Files: `src/stores/sessionStore.ts`, `src/navigation/RootNavigator.tsx` (+ `sessionStore.endSessionIdempotency.test.ts`).
+  - **User-facing angle (optional for notes):** more accurate session/insights data; sessions are no longer cut short by momentary interruptions.
+  - **Not user-visible enough to require a "What's New" bullet** — reviewer/internal note is enough. Include a line only if we want to signal "improved reliability."
+  - **Data caveat:** only events from this build onward are clean; historical `session_ended` data stays duplicated. The analytics dashboard's emotion-sessions drill-down still carries a "read as proportions" note until this ships — remove that note after release.
+
+_(Analytics-worker dashboard changes — Emotion Sessions card/drill-down, Active/New users filter — are already deployed server-side and do NOT depend on an app release.)_
+
+**Draft "What's New" (Apple) — fill in at build time:**
+```
+(TBD — add a reliability bullet if desired, e.g. "Emotion sessions are no longer interrupted by switching apps, and session data is more accurate.")
+```
+
 ### 1.0.3
 
 **Promotional Text (in use):**
