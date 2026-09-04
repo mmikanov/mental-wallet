@@ -201,6 +201,13 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     <span class="phase-dates" id="phase-dates"></span>
   </div>
 
+  <div class="phase-filter" id="cohort-filter">
+    <label>Users:</label>
+    <button class="phase-btn active" data-cohort="active" onclick="setCohort('active')">Active unique users</button>
+    <button class="phase-btn" data-cohort="new" onclick="setCohort('new')">New unique users</button>
+    <span class="phase-dates" id="cohort-hint">Active = anyone with activity in the phase. New = first joined in the phase.</span>
+  </div>
+
   <div id="dashboard-content">
     <div class="empty-state"><p>Loading...</p></div>
   </div>
@@ -213,6 +220,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     const SECRET = '__DASHBOARD_SECRET__';
     let milestones = { release: null, warmEnd: null, coldStart: null };
     let currentPhase = 'all';
+    let currentCohort = 'active';
 
     async function fetchMilestones() {
       try {
@@ -255,12 +263,28 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     }
 
     function setPhase(phase) {
-      var btn = document.querySelector('.phase-btn[data-phase="' + phase + '"]');
+      var btn = document.querySelector('#phase-filter .phase-btn[data-phase="' + phase + '"]');
       if (btn && btn.classList.contains('disabled')) return;
       currentPhase = phase;
-      document.querySelectorAll('.phase-btn').forEach(function(b) { b.classList.remove('active'); });
+      // Scope to the phase filter only — the cohort filter reuses .phase-btn
+      // styling, so an unscoped clear would wipe its selection highlight.
+      document.querySelectorAll('#phase-filter .phase-btn').forEach(function(b) { b.classList.remove('active'); });
       if (btn) btn.classList.add('active');
       updatePhaseRange();
+      refresh();
+    }
+
+    // Active vs New unique-user cohort. Works in conjunction with the phase
+    // filter: e.g. Post-Release + New scopes every metric and table below to
+    // users whose first-ever event fell in the Post-Release window.
+    function setCohort(cohort) {
+      currentCohort = cohort;
+      // An explicit global filter change takes over any open drill-down's
+      // per-panel override, so the open table follows the global filter again.
+      activeDetailCohort = null;
+      document.querySelectorAll('#cohort-filter .phase-btn').forEach(function(b) { b.classList.remove('active'); });
+      var btn = document.querySelector('#cohort-filter .phase-btn[data-cohort="' + cohort + '"]');
+      if (btn) btn.classList.add('active');
       refresh();
     }
 
@@ -282,11 +306,16 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
       return { from: from, to: to };
     }
 
-    function getPhaseParams() {
+    // cohortOverride: optional 'active'|'new' to override the global Users
+    // filter for a single request (used by the New Unique Users drill-down,
+    // which shows new users without changing the global filter).
+    function getPhaseParams(cohortOverride) {
       var r = getActiveRange();
+      var cohort = cohortOverride || currentCohort;
       var params = '';
       if (r.from) params += '&from=' + encodeURIComponent(r.from);
       if (r.to) params += '&to=' + encodeURIComponent(r.to);
+      if (cohort === 'new') params += '&cohort=new';
       return params;
     }
 
@@ -349,9 +378,9 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
       }
     }
 
-    async function fetchDetail(type) {
+    async function fetchDetail(type, cohortOverride) {
       try {
-        const res = await fetch('/details/' + type + '?secret=' + encodeURIComponent(SECRET) + getPhaseParams());
+        const res = await fetch('/details/' + type + '?secret=' + encodeURIComponent(SECRET) + getPhaseParams(cohortOverride));
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return await res.json();
       } catch (e) {
@@ -383,6 +412,10 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     }
 
     let activeDetail = null;
+    // Per-drill-down cohort override (null = follow the global Users filter).
+    // Kept separate from currentCohort so the New Unique Users list can show
+    // new users without flipping the global filter, and survive refreshes.
+    let activeDetailCohort = null;
 
     function render(kpis) {
       if (!kpis || kpis.totalEvents === 0) {
@@ -402,10 +435,10 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
             <div class="value">\${num(kpis.uniqueUsers)}</div>
             <div class="detail">Any activity in this phase. Click for list. Not additive across phases.</div>
           </div>
-          <div class="card">
+          <div class="card" onclick="showDetailNewUsers()">
             <h3>New Unique Users</h3>
             <div class="value">\${num(kpis.newUsers)}</div>
-            <div class="detail">First joined in this phase (acquisition cohort). Additive across phases.</div>
+            <div class="detail">First joined in this phase (acquisition cohort). Click for list. Additive across phases.</div>
           </div>
           <div class="card" onclick="window.open('/events?secret=' + encodeURIComponent(SECRET), '_blank')">
             <h3>Total Events</h3>
@@ -421,6 +454,11 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
             <h3>Mode Split</h3>
             <div class="value">\${pct(walletPct)} / \${pct(emotionPct)}</div>
             <div class="detail">Wallet-first vs Emotion-first (\${totalModes} selections)</div>
+          </div>
+          <div class="card" onclick="showDetail('emotion-sessions')">
+            <h3>Emotion Sessions</h3>
+            <div class="value">\${num(kpis.emotionSession.users)}</div>
+            <div class="detail">Unique users who started "Start from how I feel". \${num(kpis.emotionSession.sessions)} sessions started. Click for breakdown.</div>
           </div>
           <div class="card" onclick="showDetail('tools')">
             <h3>Tool Completion Rate</h3>
@@ -498,20 +536,28 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
         </table>
       \`;
 
-      // Re-open detail panel if one was active
+      // Re-open detail panel if one was active (preserving its cohort override)
       if (activeDetail) {
-        showDetail(activeDetail);
+        showDetail(activeDetail, activeDetailCohort);
       }
     }
 
-    async function showDetail(type) {
+    // Clicking the New Unique Users card opens the users table scoped to the
+    // new cohort for the current phase window, WITHOUT changing the global
+    // Users filter. The override applies only to this drill-down.
+    function showDetailNewUsers() {
+      showDetail('users', 'new');
+    }
+
+    async function showDetail(type, cohortOverride) {
       activeDetail = type;
+      activeDetailCohort = cohortOverride || null;
       const panel = document.getElementById('detail-panel');
       if (!panel) return;
 
       panel.innerHTML = '<div class="loading-detail">Loading...</div>';
 
-      const data = await fetchDetail(type);
+      const data = await fetchDetail(type, activeDetailCohort);
       if (!data) {
         panel.innerHTML = '<div class="detail-panel"><h3>Error loading data <button class="close-btn" onclick="closeDetail()">Close</button></h3></div>';
         return;
@@ -521,8 +567,10 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
 
       if (type === 'users') {
         const users = Array.isArray(data) ? data : [];
+        var effectiveCohort = activeDetailCohort || currentCohort;
+        var usersLabel = effectiveCohort === 'new' ? 'New Unique Users' : 'Active Unique Users';
         html = '<div class="detail-panel">' +
-          '<h3>Unique Users (' + users.length + ') <button class="close-btn" onclick="closeDetail()">Close</button></h3>' +
+          '<h3>' + usersLabel + ' (' + users.length + ') <button class="close-btn" onclick="closeDetail()">Close</button></h3>' +
           '<table><thead><tr><th>User ID</th><th>Platform</th><th>OS Version</th><th>Country</th><th>Events</th><th>First Seen</th><th>Last Seen</th></tr></thead><tbody>' +
           users.map(function(u) {
             return '<tr><td>' + shortId(u.anonymous_user_id) + '</td><td>' + (u.platform || '-') + '</td><td>' + (u.os_version || '-') + '</td><td>' + (u.country || '-') + '</td><td>' + u.event_count + '</td><td>' + fmtDate(u.first_seen) + '</td><td>' + fmtDate(u.last_seen) + '</td></tr>';
@@ -548,6 +596,35 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
           '<table><thead><tr><th>User ID</th><th>Mode</th><th>Timestamp</th></tr></thead><tbody>' +
           modes.map(function(m) {
             return '<tr><td>' + shortId(m.anonymous_user_id) + '</td><td>' + (m.mode || '-') + '</td><td>' + fmtDate(m.timestamp) + '</td></tr>';
+          }).join('') +
+          '</tbody></table></div>';
+      }
+
+      if (type === 'emotion-sessions') {
+        var esUsers = (data && data.users) ? data.users : [];
+        var esEmotions = (data && data.emotions) ? data.emotions : [];
+        var esContexts = (data && data.contexts) ? data.contexts : [];
+        var emotionsTotal = esEmotions.reduce(function(sum, e) { return sum + e.count; }, 0);
+        html = '<div class="detail-panel">' +
+          '<h3>Emotion Sessions <button class="close-btn" onclick="closeDetail()">Close</button></h3>' +
+          '<p style="margin-bottom:12px;color:#6c757d;font-size:0.85rem;">Users who started "Start from how I feel", and what they selected. Session counts come from <code>session_started</code> (one per session, all entry points). The emotion/context breakdowns come from <code>session_ended</code>.</p>' +
+          '<p style="font-weight:600;margin-bottom:8px;">Users who started a session (' + esUsers.length + ')</p>' +
+          '<table><thead><tr><th>User ID</th><th>Sessions Started</th><th>First Seen</th><th>Last Seen</th></tr></thead><tbody>' +
+          esUsers.map(function(u) {
+            return '<tr><td>' + shortId(u.anonymous_user_id) + '</td><td>' + u.sessions_started + '</td><td>' + fmtDate(u.first_seen) + '</td><td>' + fmtDate(u.last_seen) + '</td></tr>';
+          }).join('') +
+          '</tbody></table>' +
+          '<p style="margin:16px 0 4px;font-weight:600;">Emotions selected (' + emotionsTotal + ')</p>' +
+          '<p style="margin-bottom:8px;color:#b26a00;font-size:0.78rem;">Note: from <code>session_ended</code>, which is currently over-fired by a known app bug (duplicate endings on app backgrounding). Read these as relative proportions, not exact session counts, until the app fix ships.</p>' +
+          '<table><thead><tr><th>Emotion</th><th>Count</th><th>Percentage</th></tr></thead><tbody>' +
+          esEmotions.map(function(e) {
+            return '<tr><td>' + (e.emotion || '-') + '</td><td>' + e.count + '</td><td>' + (emotionsTotal > 0 ? (e.count / emotionsTotal * 100).toFixed(1) + '%' : '-') + '</td></tr>';
+          }).join('') +
+          '</tbody></table>' +
+          '<p style="margin:16px 0 8px;font-weight:600;">Contexts selected</p>' +
+          '<table><thead><tr><th>Context</th><th>Count</th></tr></thead><tbody>' +
+          esContexts.map(function(c) {
+            return '<tr><td>' + (c.context || '-') + '</td><td>' + c.count + '</td></tr>';
           }).join('') +
           '</tbody></table></div>';
       }
@@ -607,6 +684,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
 
     function closeDetail() {
       activeDetail = null;
+      activeDetailCohort = null;
       var panel = document.getElementById('detail-panel');
       if (panel) panel.innerHTML = '';
     }

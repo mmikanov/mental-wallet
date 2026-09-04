@@ -218,11 +218,35 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   const fromDate = url.searchParams.get('from') || null;
   const toDate = url.searchParams.get('to') || null;
+  // Cohort filtering: 'active' (default) counts every user with activity in the
+  // window; 'new' restricts to the acquisition cohort — users whose FIRST-EVER
+  // event falls inside the phase window.
+  const cohort = url.searchParams.get('cohort') === 'new' ? 'new' : 'active';
 
   // Internal user exclusion
   const excludedIds = env.EXCLUDED_USER_IDS
     ? env.EXCLUDED_USER_IDS.split(',').map(id => id.trim()).filter(id => id.length > 0)
     : [];
+
+  // Build the "new user cohort" restriction. This is an anonymous_user_id IN (...)
+  // subquery that selects users whose first-ever event (MIN timestamp across ALL
+  // history, not just the window) lands inside the phase window. The subquery is
+  // deliberately NOT constrained by the outer timestamp filter, only by the
+  // exclusion list, so first-touch is measured over the full event history.
+  // Returns the SQL fragment and the params to bind (in the order they appear).
+  const buildCohortClause = (col: string) => {
+    if (cohort !== 'new') return { sql: '', params: [] as string[] };
+    const params: string[] = [];
+    let sub = 'SELECT anonymous_user_id FROM events';
+    if (excludedIds.length > 0) {
+      sub += ` WHERE anonymous_user_id NOT IN (${excludedIds.map(() => '?').join(', ')})`;
+      params.push(...excludedIds);
+    }
+    sub += ' GROUP BY anonymous_user_id HAVING 1=1';
+    if (fromDate) { sub += ' AND MIN(timestamp) >= ?'; params.push(fromDate); }
+    if (toDate) { sub += ' AND MIN(timestamp) < ?'; params.push(toDate); }
+    return { sql: ` AND ${col} IN (${sub})`, params };
+  };
 
   // Build WHERE clause for date filtering and user exclusion
   let dateFilter = '';
@@ -240,6 +264,11 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
     dateFilter += ` AND anonymous_user_id NOT IN (${placeholders})`;
     dateParams.push(...excludedIds);
   }
+  // Append the new-user cohort restriction (unqualified column) so it flows
+  // through withFilter into every simple query below.
+  const cohortMain = buildCohortClause('anonymous_user_id');
+  dateFilter += cohortMain.sql;
+  dateParams.push(...cohortMain.params);
 
   // Helper to build filtered queries
   const withFilter = (baseWhere: string) => {
@@ -257,6 +286,14 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
   const appOpenedFilter = withFilter("WHERE event_type = 'app_opened'");
   const onboardingFilter = withFilter("WHERE event_type = 'onboarding_completed'");
   const modeFilter = withFilter("WHERE event_type = 'start_mode_selected'");
+  // Emotion sessions: session_started is emitted once per emotion session
+  // (sessionStore.selectEmotion, guarded by !isSessionActive) and ONLY for the
+  // emotion flow — never wallet-first. It fires regardless of entry point
+  // (onboarding choice, saved default, manual launch, guided check-in), so it
+  // is the canonical "an emotion session was started" signal. Unlike
+  // start_mode_selected (onboarding-only, once per user) and session_ended
+  // (currently over-fired by an AppState bug), this counts sessions reliably.
+  const emotionSessionFilter = withFilter("WHERE event_type = 'session_started'");
   const toolOpenedFilter = withFilter("WHERE event_type = 'tool_opened'");
   const toolCompletedFilter = withFilter("WHERE event_type = 'tool_completed'");
   const outcomeFilter = withFilter("WHERE event_type = 'outcome_response'");
@@ -291,6 +328,7 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
     appOpenedUsersResult,
     onboardingCompletedUsersResult,
     modeResult,
+    emotionSessionResult,
     toolOpenedResult,
     toolCompletedResult,
     outcomeResult,
@@ -303,6 +341,7 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
     query(`SELECT COUNT(DISTINCT anonymous_user_id) as count FROM events ${appOpenedFilter.where}`, appOpenedFilter.params).first<{ count: number }>(),
     query(`SELECT COUNT(DISTINCT anonymous_user_id) as count FROM events ${onboardingFilter.where}`, onboardingFilter.params).first<{ count: number }>(),
     query(`SELECT json_extract(properties, '$.mode') as mode, COUNT(*) as count FROM events ${modeFilter.where} GROUP BY mode`, modeFilter.params).all(),
+    query(`SELECT COUNT(DISTINCT anonymous_user_id) as users, COUNT(*) as sessions FROM events ${emotionSessionFilter.where}`, emotionSessionFilter.params).first<{ users: number; sessions: number }>(),
     query(`SELECT COUNT(*) as count FROM events ${toolOpenedFilter.where}`, toolOpenedFilter.params).first<{ count: number }>(),
     query(`SELECT COUNT(*) as count FROM events ${toolCompletedFilter.where}`, toolCompletedFilter.params).first<{ count: number }>(),
     query(`SELECT json_extract(properties, '$.response') as response, COUNT(*) as count FROM events ${outcomeFilter.where} GROUP BY response`, outcomeFilter.params).all(),
@@ -351,6 +390,13 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
         innerParams.push(...excludedIds);
         outerParams.push(...excludedIds);
       }
+      // Restrict to the new-user acquisition cohort when active.
+      const innerCohort = buildCohortClause('events.anonymous_user_id');
+      const outerCohort = buildCohortClause('tc.anonymous_user_id');
+      innerFilter += innerCohort.sql;
+      innerParams.push(...innerCohort.params);
+      outerFilter += outerCohort.sql;
+      outerParams.push(...outerCohort.params);
       return query(`
         SELECT tc.anonymous_user_id, tc.timestamp as completed_at, fo.first_open
         FROM events tc
@@ -397,6 +443,13 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
         outerParams.push(...excludedIds);
         innerParams.push(...excludedIds);
       }
+      // Restrict to the new-user acquisition cohort when active.
+      const outerCohort = buildCohortClause('e1.anonymous_user_id');
+      const innerCohort = buildCohortClause('e2.anonymous_user_id');
+      outerFilter += outerCohort.sql;
+      outerParams.push(...outerCohort.params);
+      innerFilter += innerCohort.sql;
+      innerParams.push(...innerCohort.params);
       return query(`
         SELECT COUNT(DISTINCT e1.anonymous_user_id) as users_who_added
         FROM events e1
@@ -490,6 +543,10 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
     retention,
     iosUsers,
     androidUsers,
+    emotionSession: {
+      users: emotionSessionResult?.users || 0,
+      sessions: emotionSessionResult?.sessions || 0,
+    },
     // Launch KPIs
     launch: {
       activationRate,
@@ -526,6 +583,7 @@ function buildDetailFilter(request: Request, env: Env) {
   const url = new URL(request.url);
   const fromDate = url.searchParams.get('from') || null;
   const toDate = url.searchParams.get('to') || null;
+  const cohort = url.searchParams.get('cohort') === 'new' ? 'new' : 'active';
 
   const excludedIds = env.EXCLUDED_USER_IDS
     ? env.EXCLUDED_USER_IDS.split(',').map(id => id.trim()).filter(id => id.length > 0)
@@ -545,6 +603,21 @@ function buildDetailFilter(request: Request, env: Env) {
     const placeholders = excludedIds.map(() => '?').join(', ');
     clause += ` AND anonymous_user_id NOT IN (${placeholders})`;
     params.push(...excludedIds);
+  }
+  // New-user acquisition cohort restriction. Selects users whose first-ever
+  // event (MIN timestamp over ALL history) falls inside the phase window.
+  // The subquery is only bounded by from/to (via HAVING) and the exclusion
+  // list — never by the outer window — so first-touch is measured correctly.
+  if (cohort === 'new') {
+    let sub = 'SELECT anonymous_user_id FROM events';
+    if (excludedIds.length > 0) {
+      sub += ` WHERE anonymous_user_id NOT IN (${excludedIds.map(() => '?').join(', ')})`;
+      params.push(...excludedIds);
+    }
+    sub += ' GROUP BY anonymous_user_id HAVING 1=1';
+    if (fromDate) { sub += ' AND MIN(timestamp) >= ?'; params.push(fromDate); }
+    if (toDate) { sub += ' AND MIN(timestamp) < ?'; params.push(toDate); }
+    clause += ` AND anonymous_user_id IN (${sub})`;
   }
 
   // Bind helper that tolerates empty params (local D1 compatibility).
@@ -648,6 +721,78 @@ async function handleDetailModes(request: Request, env: Env): Promise<Response> 
   `).all();
 
   return corsResponse(JSON.stringify(result.results), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+// Emotion Session drill-down: who tried "Start from how I feel" and what they
+// picked. Built entirely from existing events:
+//   - start_mode_selected (mode='emotion_first') -> per-user "tried it" counts
+//   - session_ended        (emotion/contexts set) -> what they selected
+// Respects the shared phase + cohort + exclusion filter via buildDetailFilter.
+async function handleDetailEmotionSessions(request: Request, env: Env): Promise<Response> {
+  if (!isAuthorized(request, env)) return unauthorizedResponse();
+
+  const { clause, params, query } = buildDetailFilter(request, env);
+
+  // Per-user: number of emotion sessions started (session_started, one per
+  // session, all entry points) + first/last seen. This is the reliable
+  // per-session count. The emotions/contexts breakdowns below come from
+  // session_ended (the only event carrying what the user picked) and are
+  // currently inflated by a duplicate-firing bug — read them as proportions.
+  const usersSql = `
+    SELECT
+      anonymous_user_id,
+      COUNT(*) as sessions_started,
+      MIN(timestamp) as first_seen,
+      MAX(timestamp) as last_seen
+    FROM events
+    WHERE event_type = 'session_started'${clause}
+    GROUP BY anonymous_user_id
+    ORDER BY sessions_started DESC
+    LIMIT 200
+  `;
+  const usersStmt = env.DB.prepare(usersSql);
+  const usersParams = [...params];
+
+  const [usersResult, emotionsResult, contextsResult] = await Promise.all([
+    (usersParams.length > 0 ? usersStmt.bind(...usersParams) : usersStmt).all(),
+    query(`
+      SELECT json_extract(properties, '$.emotion') as emotion, COUNT(*) as count
+      FROM events
+      WHERE event_type = 'session_ended'
+        AND json_extract(properties, '$.emotion') IS NOT NULL${clause}
+      GROUP BY emotion
+      ORDER BY count DESC
+    `).all(),
+    query(`
+      SELECT json_extract(properties, '$.contexts') as contexts
+      FROM events
+      WHERE event_type = 'session_ended'
+        AND json_extract(properties, '$.contexts') IS NOT NULL${clause}
+    `).all(),
+  ]);
+
+  // contexts is a comma-joined string per row; split + tally in JS.
+  const contextCounts = new Map<string, number>();
+  for (const row of (contextsResult.results as Array<{ contexts: string | null }>)) {
+    if (!row.contexts) continue;
+    for (const raw of String(row.contexts).split(',')) {
+      const ctx = raw.trim();
+      if (!ctx) continue;
+      contextCounts.set(ctx, (contextCounts.get(ctx) || 0) + 1);
+    }
+  }
+  const contexts = Array.from(contextCounts.entries())
+    .map(([context, count]) => ({ context, count }))
+    .sort((a, b) => b.count - a.count);
+
+  return corsResponse(JSON.stringify({
+    users: usersResult.results,
+    emotions: emotionsResult.results,
+    contexts,
+  }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   });
@@ -772,6 +917,9 @@ export default {
     }
     if (path === '/details/modes' && request.method === 'GET') {
       return handleDetailModes(request, env);
+    }
+    if (path === '/details/emotion-sessions' && request.method === 'GET') {
+      return handleDetailEmotionSessions(request, env);
     }
     if (path === '/details/tools' && request.method === 'GET') {
       return handleDetailTools(request, env);
