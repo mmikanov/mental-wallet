@@ -316,6 +316,15 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
       return pct(pctValue);
     }
 
+    // Same suppression for the raw unique-user counts in the bottom table:
+    // a DN bucket over a window shorter than N days is misleading.
+    function retentionCount(count, horizonDays) {
+      if (phaseWindowDays() < horizonDays) {
+        return '<span style="color:#999;">n/a</span>';
+      }
+      return count;
+    }
+
     function updatePhaseRange() {
       var el = document.getElementById('phase-range');
       if (!el) return;
@@ -483,8 +492,8 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
           <tbody>
             <tr><td><strong>D0</strong></td><td>Install day</td><td>\${kpis.retention.D0}</td></tr>
             <tr><td><strong>D1</strong></td><td>Day 1 after install</td><td>\${kpis.retention.D1}</td></tr>
-            <tr><td><strong>D7</strong></td><td>Within first 7 days</td><td>\${kpis.retention.D7}</td></tr>
-            <tr><td><strong>D30</strong></td><td>Within first 30 days</td><td>\${kpis.retention.D30}</td></tr>
+            <tr><td><strong>D7</strong></td><td>Within first 7 days</td><td>\${retentionCount(kpis.retention.D7, 7)}</td></tr>
+            <tr><td><strong>D30</strong></td><td>Within first 30 days</td><td>\${retentionCount(kpis.retention.D30, 30)}</td></tr>
           </tbody>
         </table>
       \`;
