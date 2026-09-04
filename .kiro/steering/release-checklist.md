@@ -25,7 +25,7 @@ When the user is about to build, submit, or release a new app version (any menti
    git tag -a v<version> <commit> -m "Release <version> — <short summary>"
    git push origin v<version>
    ```
-   Use `v` + the marketing version (e.g. `v1.0.4`). Existing tags: `v1.0.1`, `v1.0.3` (1.0.2 was skipped on the App Store; tag it only if it was a real Google Play release). Tag the commit that actually built the release, not necessarily HEAD.
+   Use `v` + the marketing version (e.g. `v1.0.4`). Existing tags: `v1.0.1`, `v1.0.2` (Google Play only — skipped on the App Store), `v1.0.3`. Tag the commit that actually built the release, not necessarily HEAD.
 
 ## Rollout safety (once there are real users)
 
