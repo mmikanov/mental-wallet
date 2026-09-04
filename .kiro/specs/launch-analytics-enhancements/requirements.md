@@ -4,7 +4,7 @@
 
 The **analytics worker dashboard** is the operator-facing (not user-facing) launch-metrics dashboard served by the Cloudflare Worker in `analytics-worker/`. It ingests anonymous events from production app builds into D1 (SQLite) and renders an HTML dashboard of launch KPIs at `GET /dashboard?secret=<DASHBOARD_SECRET>`. This is entirely separate from the in-app, user-facing `analytics-dashboard` spec (which is `AnalyticsDashboardScreen.tsx` over the local wallet DB).
 
-This spec documents the dashboard **as-built** after a round of fixes and enhancements made in this session, so the behavior is captured somewhere durable. It is primarily an as-built record; the one piece of forward-looking work (true cohort retention) is split into its own `retention-cohorts` spec and only referenced here.
+The dashboard was originally built by the `launch-analytics` spec (now in `.kiro/specs/_done/launch-analytics-DONE/`), which introduced the launch KPIs and phase-based filtering. This spec is a follow-up round of **enhancements and fixes** to that existing dashboard, documented **as-built** so the behavior is captured somewhere durable. It is primarily an as-built record; the one piece of forward-looking work (true cohort retention) is split into its own `retention-cohorts` spec and only referenced here.
 
 **Note on the pseudo-retention:** the D7/D30 retention shown here is an interim metric (bucketing opens by per-event `days_since_install`), mitigated but not corrected. The correct cohort metric is specced separately in `.kiro/specs/retention-cohorts/`.
 
