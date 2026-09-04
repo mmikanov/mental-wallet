@@ -170,7 +170,20 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   },
 
   async endSession() {
-    const { currentSessionId, selectedEmotion, selectedContexts, selectedTime, toolsUsedInSession, toolsAddedToWallet } = get();
+    const { isSessionActive, currentSessionId, selectedEmotion, selectedContexts, selectedTime, toolsUsedInSession, toolsAddedToWallet } = get();
+
+    // Re-entrancy guard: endSession can be invoked multiple times for one
+    // session (e.g. the AppState listener firing on transient background/
+    // inactive transitions while the "End session" tap is also in flight).
+    // Without this guard, each call re-fires the session_ended analytics event,
+    // massively inflating session counts. Flip isSessionActive synchronously
+    // BEFORE any await or logEvent so concurrent/repeat calls bail out here.
+    // We already snapshotted the emotion/context/time above, so the end logic
+    // below still uses the correct values.
+    if (!isSessionActive) {
+      return;
+    }
+    set({ isSessionActive: false });
 
     if (currentSessionId) {
       await emotionSessionService.endSession(currentSessionId);

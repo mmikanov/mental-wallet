@@ -58,10 +58,15 @@ export default function RootNavigator() {
     initializeApp();
   }, []);
 
-  // End active emotion session when app goes to background/inactive (Req 11.3)
+  // End active emotion session when the app is actually backgrounded (Req 11.3).
+  // Only 'background' — NOT 'inactive'. On iOS 'inactive' fires transiently for
+  // Control Center, the app switcher, permission prompts, and call banners; each
+  // one would otherwise end (and re-log) the session. endSession() also has its
+  // own re-entrancy guard, but restricting to 'background' avoids ending
+  // sessions during momentary foreground interruptions.
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
-      if (nextAppState === 'background' || nextAppState === 'inactive') {
+      if (nextAppState === 'background') {
         const { isSessionActive, endSession } = useSessionStore.getState();
         if (isSessionActive) {
           endSession();
