@@ -1,0 +1,12 @@
+{
+  "name": "mental-wallet-website",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Marketing landing page for Mental Health Wallet (Cloudflare Pages)",
+  "scripts": {
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^3.90.0"
+  }
+}

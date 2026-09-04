@@ -1,0 +1,8 @@
+# Cloudflare Worker (static assets) for the Mental Health Wallet marketing site.
+# Serves the files in this folder. Custom domain (mentalhealthwallet.productsforgood.co)
+# is managed in the Cloudflare dashboard and is unaffected by deploys.
+name = "black-hall-1f37"
+compatibility_date = "2025-09-01"
+
+[assets]
+directory = "."
