@@ -263,9 +263,31 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
   const retentionFilter = withFilter("WHERE event_type = 'app_opened'");
   const platformFilter = withFilter("WHERE platform IS NOT NULL");
 
+  // New users (first-touch): users whose FIRST-EVER event falls in the phase
+  // window. Computed over all history (per-user MIN timestamp), then the
+  // install-time is tested against from/to via HAVING. This partitions users
+  // cleanly by acquisition phase, so per-phase counts are additive.
+  // Excluded internal users are removed before aggregating.
+  const newUsersExclusion = excludedIds.length > 0
+    ? ` WHERE anonymous_user_id NOT IN (${excludedIds.map(() => '?').join(', ')})`
+    : '';
+  let newUsersHaving = '';
+  const newUsersParams: string[] = [...excludedIds];
+  if (fromDate) { newUsersHaving += ' AND MIN(timestamp) >= ?'; newUsersParams.push(fromDate); }
+  if (toDate) { newUsersHaving += ' AND MIN(timestamp) < ?'; newUsersParams.push(toDate); }
+  const newUsersSql = `
+    SELECT COUNT(*) as count FROM (
+      SELECT anonymous_user_id
+      FROM events${newUsersExclusion}
+      GROUP BY anonymous_user_id
+      HAVING 1=1${newUsersHaving}
+    )
+  `;
+
   const [
     totalResult,
     usersResult,
+    newUsersResult,
     appOpenedUsersResult,
     onboardingCompletedUsersResult,
     modeResult,
@@ -277,6 +299,7 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
   ] = await Promise.all([
     query(`SELECT COUNT(*) as total FROM events${allFilter.where}`, allFilter.params).first<{ total: number }>(),
     query(`SELECT COUNT(DISTINCT anonymous_user_id) as count FROM events${allFilter.where}`, allFilter.params).first<{ count: number }>(),
+    query(newUsersSql, newUsersParams).first<{ count: number }>(),
     query(`SELECT COUNT(DISTINCT anonymous_user_id) as count FROM events ${appOpenedFilter.where}`, appOpenedFilter.params).first<{ count: number }>(),
     query(`SELECT COUNT(DISTINCT anonymous_user_id) as count FROM events ${onboardingFilter.where}`, onboardingFilter.params).first<{ count: number }>(),
     query(`SELECT json_extract(properties, '$.mode') as mode, COUNT(*) as count FROM events ${modeFilter.where} GROUP BY mode`, modeFilter.params).all(),
@@ -448,6 +471,7 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
   const kpis = {
     totalEvents: totalResult?.total || 0,
     uniqueUsers: usersResult?.count || 0,
+    newUsers: newUsersResult?.count || 0,
     onboardingRate: (appOpenedUsersResult?.count || 0) > 0
       ? ((onboardingCompletedUsersResult?.count || 0) / (appOpenedUsersResult?.count || 0)) * 100
       : 0,

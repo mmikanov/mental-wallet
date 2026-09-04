@@ -389,9 +389,14 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
       document.getElementById('dashboard-content').innerHTML = \`
         <div class="grid">
           <div class="card" onclick="showDetail('users')">
-            <h3>Unique Users</h3>
+            <h3>Active Unique Users</h3>
             <div class="value">\${num(kpis.uniqueUsers)}</div>
-            <div class="detail">Click to view user list</div>
+            <div class="detail">Any activity in this phase. Click for list. Not additive across phases.</div>
+          </div>
+          <div class="card">
+            <h3>New Unique Users</h3>
+            <div class="value">\${num(kpis.newUsers)}</div>
+            <div class="detail">First joined in this phase (acquisition cohort). Additive across phases.</div>
           </div>
           <div class="card" onclick="window.open('/events?secret=' + encodeURIComponent(SECRET), '_blank')">
             <h3>Total Events</h3>
