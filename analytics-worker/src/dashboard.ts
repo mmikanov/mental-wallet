@@ -291,14 +291,18 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     }
 
     // Length of the currently selected phase window in days.
-    // Returns Infinity when unbounded (All Time, or a phase missing a bound),
-    // since retention buckets are only meaningful over a long enough window.
+    // A missing "to" means the window runs up to now (open-ended phases like
+    // Post-Release and Cold Acquisition), so we measure to the current time,
+    // NOT infinity. A missing "from" (only All Time) is genuinely unbounded
+    // into the past and is treated as long enough.
     function phaseWindowDays() {
       if (currentPhase === 'all') return Infinity;
       var r = getActiveRange();
-      if (!r.from || !r.to) return Infinity;
-      var ms = new Date(r.to).getTime() - new Date(r.from).getTime();
-      if (!isFinite(ms) || ms < 0) return Infinity;
+      if (!r.from) return Infinity;
+      var toMs = r.to ? new Date(r.to).getTime() : Date.now();
+      var ms = toMs - new Date(r.from).getTime();
+      if (!isFinite(ms)) return Infinity;
+      if (ms < 0) return 0; // degenerate/empty window -> treat as too short (n/a)
       return ms / (24 * 60 * 60 * 1000);
     }
 
