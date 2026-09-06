@@ -1,0 +1,139 @@
+[
+  {
+    "slug": "feeling-anxious",
+    "title": "Feeling anxious right now? Try this",
+    "summary": "When anxiety spikes, you don't have to figure out what to do. Open the app, tell it you're anxious, and it points you to tools that fit.",
+    "type": "problem_solving",
+    "topics": [
+      "anxiety",
+      "grounding",
+      "in-the-moment"
+    ],
+    "heroImage": "",
+    "cta": {
+      "label": "Start from how I feel",
+      "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+    },
+    "url": "/tips/feeling-anxious",
+    "publishedAt": "2026-09-05"
+  },
+  {
+    "slug": "come-back-reset",
+    "title": "Here whenever you need it",
+    "summary": "No guilt, no streak to protect. If now's a good moment, one 60-second tool is waiting in your wallet.",
+    "type": "come_back",
+    "topics": [
+      "re-engagement",
+      "reminders"
+    ],
+    "heroImage": "",
+    "cta": {
+      "label": "Open your wallet",
+      "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+    },
+    "url": "/tips/come-back-reset",
+    "publishedAt": "2026-09-05"
+  },
+  {
+    "slug": "welcome",
+    "title": "Welcome to Mental Health Wallet",
+    "summary": "Glad you're here. Here's what to expect from these emails, and one small thing to try first.",
+    "type": "feature",
+    "topics": [
+      "welcome",
+      "getting-started"
+    ],
+    "heroImage": "",
+    "cta": {
+      "label": "Open the app and tap a card",
+      "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+    },
+    "url": "/tips/welcome",
+    "publishedAt": "2026-09-05"
+  },
+  {
+    "slug": "discover-third-party-apps",
+    "title": "Keep the apps you already use, all in one place",
+    "summary": "Add apps like Headspace, Calm, and Insight Timer as cards in your wallet and launch them straight from there. Your whole toolkit lives in one place.",
+    "type": "feature",
+    "topics": [
+      "discovery",
+      "apps"
+    ],
+    "heroImage": "",
+    "cta": {
+      "label": "Browse app cards to add",
+      "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+    },
+    "url": "/tips/discover-third-party-apps",
+    "publishedAt": "2026-09-04"
+  },
+  {
+    "slug": "emotion-based-session",
+    "title": "Not sure what you need? Start from how you feel",
+    "summary": "Instead of hunting for the right tool, pick your emotion and let the app suggest what fits. Not sure how you feel? A short guided check-in figures it out with you.",
+    "type": "feature",
+    "topics": [
+      "emotions",
+      "getting-started"
+    ],
+    "heroImage": "",
+    "cta": {
+      "label": "Try Start from how I feel",
+      "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+    },
+    "url": "/tips/emotion-based-session",
+    "publishedAt": "2026-09-04"
+  },
+  {
+    "slug": "outcome-capture",
+    "title": "See which tools actually help you",
+    "summary": "After you use a tool, the app asks how you feel. Over time it shows you which tools genuinely move the needle for you, so you can lean on what works.",
+    "type": "feature",
+    "topics": [
+      "tracking",
+      "reflection"
+    ],
+    "heroImage": "",
+    "cta": {
+      "label": "Use a tool and check in",
+      "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+    },
+    "url": "/tips/outcome-capture",
+    "publishedAt": "2026-09-04"
+  },
+  {
+    "slug": "personal-kpi-check-in",
+    "title": "Track the thing that matters to you",
+    "summary": "You choose what getting better means to you during setup, then the daily check-in tracks how you're doing against your own measure, not a generic score.",
+    "type": "feature",
+    "topics": [
+      "tracking",
+      "goals"
+    ],
+    "heroImage": "",
+    "cta": {
+      "label": "Log a check-in",
+      "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+    },
+    "url": "/tips/personal-kpi-check-in",
+    "publishedAt": "2026-09-04"
+  },
+  {
+    "slug": "learn-more-evidence",
+    "title": "Why does this tool work? Tap Learn more",
+    "summary": "Every tool in the library has a Learn more link that explains how it works, the evidence behind it, and where to read further. No blind trust required.",
+    "type": "feature",
+    "topics": [
+      "trust",
+      "evidence"
+    ],
+    "heroImage": "",
+    "cta": {
+      "label": "Open a tool and tap Learn more",
+      "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+    },
+    "url": "/tips/learn-more-evidence",
+    "publishedAt": "2026-09-04"
+  }
+]
