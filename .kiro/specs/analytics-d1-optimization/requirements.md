@@ -67,7 +67,41 @@ reasonable, so that I avoid unnecessary cost.
    worker are unaffected; only the dashboard is impacted), and this expectation SHALL be
    documented.
 
-### Requirement 4: Explainability and documentation consistency
+### Requirement 4: D1 health indicator on the dashboard
+
+**User Story:** As the operator, I want the dashboard to warn me when the events table
+grows large enough to risk the D1 read budget, so that I act (optimize or upgrade) before
+hitting the cap rather than after.
+
+#### Acceptance Criteria
+
+1. THE dashboard SHALL show a health indicator on/near the **Total Events** card that
+   reflects D1 read-budget risk.
+2. Because the dashboard/worker CANNOT read the account's actual D1 `rows_read` usage
+   (that lives in Cloudflare's billing layer, not queryable from the worker), THE indicator
+   SHALL use **total event count as a proxy** for read-cost risk (more events → more rows
+   scanned per `/kpis` call → closer to the daily cap).
+3. THE indicator SHALL have at least three states: normal (below caution), caution
+   (approaching risky size), and warning (large enough that routine dashboard use could
+   approach the read cap), with a short plain-language explanation and a suggested action
+   (prioritize `/kpis` caching/indexing, or upgrade the plan).
+4. THE thresholds SHALL be **configurable constants** (like `REFRESH_INTERVAL_MS`), not
+   hardcoded inline, so they can be tuned as the real per-query read cost is learned.
+5. Initial thresholds are best-guess (e.g. caution ~50k events, warning ~150k events) and
+   SHALL be documented as tunable; refine against measured `rows_read`-per-`/kpis` as the
+   table grows.
+6. THE indicator SHALL NOT itself add meaningful D1 read cost (a bare `COUNT(*)` for the
+   all-time total is acceptable; no extra expensive aggregation).
+
+**Status: IMPLEMENTED (2026-09-06) against the CURRENT query approach.** Shipped in
+`analytics-worker`: `/kpis` now returns `totalEventsAllTime` (an unfiltered `COUNT(*)`, so
+the health signal is correct regardless of the selected phase), and the dashboard's Total
+Events card shows a green/amber/red pill (`renderD1Health`) driven by
+`D1_HEALTH_CAUTION_EVENTS` (50k) / `D1_HEALTH_WARNING_EVENTS` (150k). When the `/kpis`
+caching/indexing work (Reqs 1-3) lands, revisit these thresholds since the per-query read
+cost, and thus the risk-vs-event-count relationship, will change.
+
+### Requirement 5: Explainability and documentation consistency
 
 **User Story:** As the operator, I want docs and explainability content to stay accurate
 after the change.
@@ -120,6 +154,22 @@ The dashboard's auto-refresh was the dominant driver of `rows_read` and has been
 
 This addresses frequency (Requirement 1.2 in part). The remaining per-call cost of `/kpis`
 (the hot path) is still to be optimized (caching/indexing) — see Findings above.
+
+### Measured baseline after the refresh fix (2026-09-06)
+
+A full day of normal solo use, dashboard opened in the morning with ~6-10 interactions
+(phase changes, drill-downs), no overnight open tab:
+
+- **Rows read: ~186k / 5,000,000 daily cap (~3.7%).**
+- Total queries: 363 → **~510 rows read per query** on average.
+- Rows written: 245. Storage: 426 kB.
+- Read spikes cluster only around active use; overnight is flat (visibility-pause working).
+
+Compared to the pre-fix incident (~4.6M reads, cap exceeded overnight), this is a ~25x
+reduction. **Conclusion:** comfortably within the free tier for current usage; the $5
+upgrade and the `/kpis` caching work are NOT urgent. Caveat: the ~510 rows/query figure
+will rise as the `events` table grows (aggregations scan more rows), so recheck in a month
+or two — a large jump is the signal to prioritize caching/indexing.
 
 ## Open Questions (for design phase)
 

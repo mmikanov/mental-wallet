@@ -361,6 +361,7 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
     weeklyEngagementResult,
     shareTapsResult,
     walletGrowthResult,
+    allTimeEventsResult,
   ] = await Promise.all([
     // Activation: users who completed a tool within 48h of first app_opened
     // Since ISO timestamps aren't easily compared with +2 days in pure SQL without datetime(),
@@ -461,6 +462,9 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
           )
       `, [...outerParams, ...innerParams]);
     })().first<{ users_who_added: number }>(),
+    // All-time total event count (UNfiltered) — powers the D1 health indicator, which
+    // reflects table size regardless of the selected phase. A bare COUNT(*) is cheap.
+    env.DB.prepare('SELECT COUNT(*) as total FROM events').first<{ total: number }>(),
   ]);
 
   // Compute mode split
@@ -523,6 +527,7 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
 
   const kpis = {
     totalEvents: totalResult?.total || 0,
+    totalEventsAllTime: allTimeEventsResult?.total || 0,
     uniqueUsers: usersResult?.count || 0,
     newUsers: newUsersResult?.count || 0,
     onboardingRate: (appOpenedUsersResult?.count || 0) > 0
