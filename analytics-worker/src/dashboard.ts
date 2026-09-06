@@ -46,6 +46,14 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     }
     .card .value { font-size: 2rem; font-weight: 700; color: #16213e; }
     .card .detail { font-size: 0.85rem; color: #6c757d; margin-top: 4px; }
+    .d1-health { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; margin-top: 8px; padding: 2px 8px; border-radius: 10px; cursor: help; }
+    .d1-health .d1-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .d1-health-ok { background: #e6f4ea; color: #1e7e34; }
+    .d1-health-ok .d1-dot { background: #28a745; }
+    .d1-health-caution { background: #fff4e5; color: #a15c00; }
+    .d1-health-caution .d1-dot { background: #f0ad4e; }
+    .d1-health-warn { background: #fdecea; color: #b02a37; }
+    .d1-health-warn .d1-dot { background: #dc3545; }
     .section-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; color: #16213e; }
     table {
       width: 100%;
@@ -224,6 +232,15 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     // value to adjust the cadence. Auto-refresh also pauses while the tab is
     // hidden, so a forgotten open tab does not keep querying D1 in the background.
     const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+
+    // D1 health indicator thresholds (event count as a proxy for read-budget risk).
+    // The dashboard can't read the account's actual D1 rows_read, so it warns based on
+    // the all-time event count: more events -> more rows scanned per /kpis -> closer to
+    // the daily read cap. These are best-guess starting points; tune against measured
+    // rows_read-per-/kpis as the table grows. Based on the current query approach; revisit
+    // when /kpis caching/indexing lands (see analytics-d1-optimization spec).
+    const D1_HEALTH_CAUTION_EVENTS = 50000;   // amber: table getting large
+    const D1_HEALTH_WARNING_EVENTS = 150000;  // red: routine use could approach the cap
 
     let milestones = { release: null, warmEnd: null, coldStart: null };
     let currentPhase = 'all';
@@ -430,6 +447,27 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     // new users without flipping the global filter, and survive refreshes.
     let activeDetailCohort = null;
 
+    // D1 health indicator: event count as a proxy for D1 read-budget risk.
+    // (Note: \${...} is escaped because this whole file is a JS template literal.)
+    function renderD1Health(totalAllTime) {
+      var n = totalAllTime || 0;
+      var state, msg;
+      if (n >= D1_HEALTH_WARNING_EVENTS) {
+        state = 'warn';
+        msg = 'Large event table — routine dashboard use may approach the D1 daily read limit. Prioritize KPI caching/indexing, or upgrade the plan.';
+      } else if (n >= D1_HEALTH_CAUTION_EVENTS) {
+        state = 'caution';
+        msg = 'Event table growing — keep an eye on D1 read usage; consider the KPI caching/indexing work soon.';
+      } else {
+        state = 'ok';
+        msg = 'D1 read budget healthy for this table size.';
+      }
+      var label = { ok: 'D1: healthy', caution: 'D1: watch', warn: 'D1: at risk' }[state];
+      return '<div class="d1-health d1-health-' + state + '" title="' + msg + '">' +
+        '<span class="d1-dot"></span>' + label +
+        ' (' + num(n) + ' total events)</div>';
+    }
+
     function render(kpis) {
       if (!kpis || kpis.totalEvents === 0) {
         document.getElementById('dashboard-content').innerHTML =
@@ -457,6 +495,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
             <h3>Total Events</h3>
             <div class="value">\${num(kpis.totalEvents)}</div>
             <div class="detail">Click to view raw events</div>
+            \${renderD1Health(kpis.totalEventsAllTime)}
           </div>
           <div class="card" onclick="showDetail('onboarding')">
             <h3>Onboarding Completion</h3>
