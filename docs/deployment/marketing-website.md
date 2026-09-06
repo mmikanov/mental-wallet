@@ -75,8 +75,15 @@ website/
 ├── index.html          # Main landing page
 ├── privacy.html        # Privacy policy
 ├── terms.html          # Terms of service
-├── styles.css          # All styles
+├── subscribe.html      # Email subscribe form (messaging worker)
+├── preferences.html    # Manage email preferences (messaging worker)
+├── unsubscribe.html    # Unsubscribe confirmation (messaging worker)
+├── styles.css          # All styles (incl. consent-page + tips styles)
 ├── script.js           # FAQ accordion
+├── messaging.js        # Consent-page fetch logic (messaging worker)
+├── build-content.js    # Generates tips pages from content/tips/*.md (not served)
+├── tips/               # GENERATED: /tips index + /tips/<slug> article pages
+├── content/index.json  # GENERATED: machine-readable tips index
 ├── CNAME               # Custom domain config
 ├── assets/
 │   ├── icon.png            # App icon (240px, optimized for web)
@@ -97,6 +104,66 @@ The App Store / Google Play links live in `index.html` (hero section and the
 bottom CTA). The App Store URL should match `APP_STORE_URL` in
 `src/config/appInfo.ts`.
 
+### Tips content (generated from markdown)
+
+The tips pages are **generated** from `content/tips/*.md` by a build script, not
+hand-written. Run the build before deploying any content change:
+
+```bash
+cd website
+npm install            # first time only (installs marked)
+npm run build:content
+```
+
+This reads every `content/tips/*.md` and generates (into `website/`):
+
+```
+website/
+├── tips/
+│   ├── index.html          # /tips  — searchable/filterable index page
+│   └── <slug>.html         # /tips/<slug> — one article page per tip
+└── content/
+    └── index.json          # machine-readable index (web index + future in-app feed)
+```
+
+- URLs: the index is at **`/tips`**, each article at **`/tips/<slug>`** (Cloudflare serves
+  the extensionless form).
+- The build is idempotent and cleans orphaned pages (a tip removed from `content/tips/`
+  disappears from the site on the next build).
+- The build needs NO network or database — safe to run and preview anytime. Open the
+  generated files directly in a browser to preview.
+- `build-content.js` is excluded from served assets via `.assetsignore`; the generated
+  `tips/` pages and `content/index.json` ARE served.
+- Authoring format for tips: `content/tips/README.md`.
+
+**Order of operations for a content change:** edit markdown in `content/tips/` → run
+`npm run build:content` → `npm run deploy`.
+
+### Email consent pages (talk to the messaging worker)
+
+Three additional static pages let people manage the email/reminder subscription owned by
+the messaging worker (`messaging-worker/`). They are plain HTML + `messaging.js` (no build
+step) and call the worker over `fetch()`:
+
+```
+website/
+├── subscribe.html      # opt-in form (email, first name, tips/reminders scopes)
+├── preferences.html    # manage scopes; reads ?token= from the URL
+├── unsubscribe.html    # one-click unsubscribe confirmation; reads ?token=
+└── messaging.js        # shared worker base URL + fetch helpers + email validator
+```
+
+- Worker base URL is set once in `messaging.js`
+  (`https://mental-wallet-messaging.mentalwallet.workers.dev`).
+- Endpoints used: `POST /subscribe`, `GET /preferences?token=` (read current scopes),
+  `POST /preferences` (save), `GET /unsubscribe?token=` (disable all).
+- The email footer links "Manage preferences" and "Unsubscribe" point at
+  `preferences.html?token=...` and `unsubscribe.html?token=...` on this site.
+- CORS: the worker allows this site's origin (`SITE_ORIGIN` in the worker's
+  `wrangler.toml`). If the site origin ever changes, update `SITE_ORIGIN` and redeploy the
+  worker.
+- Full worker docs: `messaging-worker/README.md`.
+
 ---
 
 ## DNS Setup
@@ -105,3 +172,30 @@ bottom CTA). The App Store URL should match `APP_STORE_URL` in
 - DNS managed by: Cloudflare (nameservers: `lady.ns.cloudflare.com`, `newt.ns.cloudflare.com`)
 - Subdomain `mentalhealthwallet` points to the `black-hall-1f37` Worker via a
   custom domain binding
+
+---
+
+## Subscriber list (messaging worker)
+
+The email subscriber list is owned by the **messaging worker** (a separate project,
+`messaging-worker/`), not the marketing site. Full docs: `messaging-worker/README.md`.
+Noted here because the subscribe/preferences forms live on this website and this is a
+handy place to find the "who's on my list" command.
+
+Live worker: `https://mental-wallet-messaging.mentalwallet.workers.dev`
+
+List everyone currently opted into a scope (`tips` = tips & newsletter,
+`reminders` = come-back nudges). Requires the admin secret (`ADMIN_SECRET`, set via
+`wrangler secret put` on the messaging worker). Wrap the URL in **single quotes** so zsh
+doesn't choke on the `&`:
+
+```bash
+# Tips & newsletter opt-ins
+curl -s 'https://mental-wallet-messaging.mentalwallet.workers.dev/subscribers?scope=tips&secret=YOUR_ADMIN_SECRET' | python3 -m json.tool
+
+# Come-back reminder opt-ins
+curl -s 'https://mental-wallet-messaging.mentalwallet.workers.dev/subscribers?scope=reminders&secret=YOUR_ADMIN_SECRET' | python3 -m json.tool
+```
+
+Returns `{ scope, count, recipients: [{ email, first_name, unsubscribe_token, source }] }`.
+Only one scope per call (`tips` or `reminders`). `401` = wrong secret; `400` = missing/mistyped scope.
