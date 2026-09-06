@@ -1,0 +1,23 @@
+name = "mental-wallet-messaging"
+main = "src/index.ts"
+compatibility_date = "2025-07-01"
+
+# D1 Database binding
+# Create with: npx wrangler d1 create messaging-db
+# then paste the returned database_id below.
+[[d1_databases]]
+binding = "DB"
+database_name = "messaging-db"
+database_id = "054a0ba6-9ad8-4c1b-bdde-93b50bcb9cfd"
+
+[vars]
+# Marketing website origin — used for CORS on public endpoints and for
+# building unsubscribe / preferences links in emails.
+SITE_ORIGIN = "https://mentalhealthwallet.productsforgood.co"
+# Sender identity for Resend.
+EMAIL_FROM = "Mental Health Wallet <moshe@productsforgood.co>"
+EMAIL_REPLY_TO = "moshe@productsforgood.co"
+
+# Secrets (set via `wrangler secret put`, never committed):
+#   ADMIN_SECRET    — protects /subscribers and /send-test
+#   RESEND_API_KEY  — Resend API key for sending
