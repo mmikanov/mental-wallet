@@ -186,7 +186,8 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
 
   <div class="status-bar">
     <span class="dot"></span>
-    <span>Auto-refreshing every 30 seconds</span>
+    <span id="refresh-info">Auto-refreshing</span>
+    <button id="refresh-now-btn" onclick="manualRefresh()" style="margin-left: 12px; cursor: pointer;">Refresh now</button>
     <span id="last-updated" style="margin-left: auto;"></span>
   </div>
 
@@ -218,9 +219,21 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
 
   <script>
     const SECRET = '__DASHBOARD_SECRET__';
+
+    // How often the dashboard auto-refreshes, in milliseconds. Change this one
+    // value to adjust the cadence. Auto-refresh also pauses while the tab is
+    // hidden, so a forgotten open tab does not keep querying D1 in the background.
+    const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+
     let milestones = { release: null, warmEnd: null, coldStart: null };
     let currentPhase = 'all';
     let currentCohort = 'active';
+
+    // Refresh scheduling state
+    let lastRefreshAt = null;   // Date of the last successful refresh
+    let nextRefreshAt = null;   // Date the next auto-refresh is due
+    let refreshTimer = null;    // setTimeout handle for the next auto-refresh
+    let countdownTimer = null;  // setInterval handle for the countdown display
 
     async function fetchMilestones() {
       try {
@@ -692,8 +705,80 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     async function refresh() {
       const kpis = await fetchKPIs();
       render(kpis);
-      document.getElementById('last-updated').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+      lastRefreshAt = new Date();
+      document.getElementById('last-updated').textContent = 'Updated: ' + lastRefreshAt.toLocaleTimeString();
     }
+
+    // --- Refresh scheduling (visibility-aware, configurable interval) ---
+
+    function formatDuration(ms) {
+      if (ms < 0) ms = 0;
+      const totalSec = Math.round(ms / 1000);
+      const m = Math.floor(totalSec / 60);
+      const s = totalSec % 60;
+      return m > 0 ? (m + 'm ' + s + 's') : (s + 's');
+    }
+
+    function updateRefreshInfo() {
+      const info = document.getElementById('refresh-info');
+      if (!info) return;
+      if (document.hidden) {
+        info.textContent = 'Auto-refresh paused (tab in background)';
+        return;
+      }
+      if (nextRefreshAt) {
+        info.textContent = 'Next auto-refresh in ' + formatDuration(nextRefreshAt - Date.now());
+      } else {
+        info.textContent = 'Auto-refreshing';
+      }
+    }
+
+    // Run one refresh, then schedule the next one REFRESH_INTERVAL_MS later.
+    async function refreshAndSchedule() {
+      try {
+        await refresh();
+      } finally {
+        scheduleNext();
+      }
+    }
+
+    function scheduleNext() {
+      if (refreshTimer) { clearTimeout(refreshTimer); refreshTimer = null; }
+      // Only schedule while the tab is visible; hidden tabs stop querying D1.
+      if (document.hidden) { nextRefreshAt = null; updateRefreshInfo(); return; }
+      nextRefreshAt = new Date(Date.now() + REFRESH_INTERVAL_MS);
+      refreshTimer = setTimeout(refreshAndSchedule, REFRESH_INTERVAL_MS);
+      updateRefreshInfo();
+    }
+
+    // Manual "Refresh now": refresh immediately and reset the interval clock.
+    async function manualRefresh() {
+      const btn = document.getElementById('refresh-now-btn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Refreshing...'; }
+      try {
+        await refresh();
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Refresh now'; }
+        scheduleNext();
+      }
+    }
+
+    // Pause when the tab is hidden; resume (with one immediate refresh if the
+    // interval elapsed while hidden) when it becomes visible again.
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) {
+        if (refreshTimer) { clearTimeout(refreshTimer); refreshTimer = null; }
+        nextRefreshAt = null;
+        updateRefreshInfo();
+      } else {
+        const elapsed = lastRefreshAt ? (Date.now() - lastRefreshAt.getTime()) : Infinity;
+        if (elapsed >= REFRESH_INTERVAL_MS) {
+          refreshAndSchedule();
+        } else {
+          scheduleNext();
+        }
+      }
+    });
 
     async function clearEvents() {
       if (!confirm('Clear ALL analytics events? This cannot be undone.')) return;
@@ -706,9 +791,12 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
       }
     }
 
-    refresh();
+    // Initial load, then schedule the first auto-refresh.
+    refreshAndSchedule();
     fetchMilestones();
-    setInterval(refresh, 30000);
+
+    // Lightweight 1s ticker that only updates the countdown text (no network).
+    countdownTimer = setInterval(updateRefreshInfo, 1000);
   </script>
 </body>
 </html>`;
