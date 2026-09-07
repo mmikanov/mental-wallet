@@ -93,15 +93,72 @@ Reads the tip markdown, renders it, and emails it. Recipient must be subscribed.
 # Preview only (no send):
 DRY_RUN=1 npm run send:tip -- --slug emotion-based-session --to you@example.com
 
-# Send for real (run from messaging-worker/):
+# Send for real — test/preview (NOT recorded; won't affect campaign dedupe):
 MESSAGING_BASE_URL=https://mental-wallet-messaging.mentalwallet.workers.dev \
 ADMIN_SECRET=YOUR_ADMIN_SECRET \
 npm run send:tip -- --slug emotion-based-session --to you@example.com
+
+# Send for real AND record it, so a later campaign for this tip skips this recipient:
+MESSAGING_BASE_URL=https://mental-wallet-messaging.mentalwallet.workers.dev \
+ADMIN_SECRET=YOUR_ADMIN_SECRET \
+npm run send:tip -- --slug emotion-based-session --to jane@example.com --record
 ```
 
 Available slugs = filenames in `content/tips/` without `.md`
 (`emotion-based-session`, `outcome-capture`, `personal-kpi-check-in`,
 `learn-more-evidence`, `discover-third-party-apps`).
+
+**`--record`** counts a one-off send toward the tip's dedupe history (writes a `sent` row in
+`tip_sends`), so a later campaign for the same tip skips this recipient. Omit it for
+test/preview sends (default: not recorded, so previewing to yourself never excludes anyone
+from a real campaign).
+
+---
+
+## Campaigns (batch send to the whole list)
+
+A campaign = "send tip X to scope Y in mode Z", executed by id. Individual per-recipient
+emails (never BCC), de-duplicated by tip so re-runs reach only new sign-ups. Full docs:
+`messaging-worker/README.md`.
+
+### Create / list / inspect
+
+```bash
+# Create a campaign (name must be unique; mode defaults to new_only)
+curl -s -X POST 'https://mental-wallet-messaging.mentalwallet.workers.dev/campaigns?secret=YOUR_ADMIN_SECRET' \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"Welcome wave","tip_slug":"welcome","scope":"tips","mode":"new_only"}'
+
+# List all campaigns (with send counts)
+curl -s 'https://mental-wallet-messaging.mentalwallet.workers.dev/campaigns?secret=YOUR_ADMIN_SECRET' | python3 -m json.tool
+
+# One campaign
+curl -s 'https://mental-wallet-messaging.mentalwallet.workers.dev/campaigns/CAMPAIGN_ID?secret=YOUR_ADMIN_SECRET' | python3 -m json.tool
+
+# Delete (send history preserved; dedupe survives)
+curl -s -X DELETE 'https://mental-wallet-messaging.mentalwallet.workers.dev/campaigns/CAMPAIGN_ID?secret=YOUR_ADMIN_SECRET'
+```
+
+### Run a campaign (preview, then send)
+
+Use the driver script (from `messaging-worker/`), which loops chunks with pacing:
+
+```bash
+# 1) PREVIEW first — lists WHO would receive it (and the count), sends nothing:
+MESSAGING_BASE_URL=https://mental-wallet-messaging.mentalwallet.workers.dev \
+ADMIN_SECRET=YOUR_ADMIN_SECRET \
+npm run run:campaign -- --id CAMPAIGN_ID --mode dry-run
+
+# 2) SEND for real (only after the preview looks right):
+MESSAGING_BASE_URL=https://mental-wallet-messaging.mentalwallet.workers.dev \
+ADMIN_SECRET=YOUR_ADMIN_SECRET \
+npm run run:campaign -- --id CAMPAIGN_ID --mode production
+```
+
+- `--mode` is required; there is no default, so you can never send by forgetting a flag.
+- Safe to interrupt/re-run: already-sent recipients are skipped (idempotent).
+- **Send ONE message first, then observe** (per `docs/message-release-plan.md`) rather than
+  a backlog dump.
 
 ---
 
@@ -145,10 +202,10 @@ npm run tail
 | Code | Meaning |
 |------|---------|
 | `200` | Success |
-| `400` | Bad input (invalid email, missing token/fields) |
+| `400` | Bad input (invalid email, missing token/fields, missing/invalid execute `mode`) |
 | `401` | Wrong or missing `ADMIN_SECRET` (admin commands only) |
-| `404` | Unknown token (preferences read) |
-| `409` | Recipient not opted into that scope (sending) |
+| `404` | Unknown token (preferences read) / unknown campaign id |
+| `409` | Recipient not opted into that scope (send-test); duplicate campaign name; editing a sent/sending campaign |
 | `502` | Resend send failed (check `RESEND_API_KEY` / domain verified) |
 
 ---

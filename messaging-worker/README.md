@@ -146,8 +146,10 @@ ADMIN_SECRET=<ADMIN_SECRET> \
 npm run send:tip -- --slug emotion-based-session --to you@example.com
 ```
 
-Options: `--scope tips|reminders` (default `tips`), `--tips-dir <path>` (default
-`../content/tips`). Note the `--` before script args when using `npm run`.
+Options: `--scope tips|reminders` (default `tips`), `--record` (record this send in
+`tip_sends` so a later campaign for the same tip skips this recipient — default OFF so
+test/preview sends don't affect dedupe), `--tips-dir <path>` (default `../content/tips`).
+Note the `--` before script args when using `npm run`.
 
 The tip email includes a personalized greeting, the hero image (if the tip sets one), the
 summary (and body), the CTA link, and the same `List-Unsubscribe` headers + footer as all
@@ -156,6 +158,58 @@ other sends. Consent is enforced: a non-subscribed address returns `409`.
 Available slugs are the filenames in `content/tips/` (without `.md`), e.g.
 `emotion-based-session`, `outcome-capture`, `personal-kpi-check-in`, `learn-more-evidence`,
 `discover-third-party-apps`.
+
+## Campaigns (batch send to a whole scope)
+
+A **campaign** is a stored, reusable definition of "send tip X to scope Y in mode Z",
+executed by id. Send-to-all uses many **individual** per-recipient emails (never BCC),
+de-duplicated by tip so re-runs reach only new sign-ups. Spec:
+`.kiro/specs/messaging-batch-send/`.
+
+Endpoints (all admin-only):
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/campaigns` | POST | Create `{ name (unique), tip_slug, scope, mode? }` |
+| `/campaigns` | GET | List all campaigns + send counts |
+| `/campaigns/:id` | GET | One campaign + counts |
+| `/campaigns/:id` | PUT/PATCH | Edit a draft/paused campaign (blocked once sending/sent) |
+| `/campaigns/:id` | DELETE | Delete campaign (send history in `tip_sends` is preserved) |
+| `/campaigns/:id/execute` | POST | Execute one chunk; body `{ mode, tip?, limit? }` |
+
+- `mode` on **execute** is REQUIRED and must be `dry-run` or `production` (no default —
+  omitting it never sends).
+- `mode` on the **campaign** is `new_only` (default; reaches only those who haven't received
+  the tip) or `resend_all` (deliberately re-sends the tip to everyone; clears the tip's send
+  history at run start).
+- Dedupe is keyed by **tip slug** (not campaign id): deleting a campaign never causes a
+  re-send, and campaign ids are UUIDs that are never reused.
+
+### Run a campaign (driver script)
+
+`run-campaign.ts` reads the campaign, parses its tip markdown, and loops execute-chunks with
+pacing until done.
+
+```bash
+# Preview (lists who would receive it + count, no send):
+MESSAGING_BASE_URL=https://mental-wallet-messaging.<subdomain>.workers.dev \
+ADMIN_SECRET=<ADMIN_SECRET> \
+npm run run:campaign -- --id <campaignId> --mode dry-run
+
+# Send for real:
+MESSAGING_BASE_URL=... ADMIN_SECRET=... \
+npm run run:campaign -- --id <campaignId> --mode production
+```
+
+Options: `--limit <n>` (chunk size, default 50), `--pace-ms <n>` (delay between chunks,
+default 1000). Interrupting is safe — resume by running again; already-sent recipients are
+skipped (idempotent via a per-tip send record + a Resend idempotency key).
+
+### Migrations
+
+Campaigns use two additional tables (`campaigns`, `tip_sends`), created by
+`0002_create_campaigns.sql` and `0003_create_tip_sends.sql`. `npm run db:migrate:local` /
+`db:migrate:remote` apply all migrations in order.
 
 ## Local Development
 
