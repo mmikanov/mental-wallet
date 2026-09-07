@@ -63,6 +63,35 @@ NOT add people silently; every subscriber must have given consent.
 valid consent; scraping contacts or assuming interest is not. The website page is the
 preferred path because the opt-in and scope choices are self-evident.
 
+### Canonical "invite to subscribe" copy
+
+Personalize `[name]` per person. No em/en dashes (project preference). Sends people to the
+website subscribe form so consent + scopes are self-serve and the app stays PII-free.
+
+```
+Hi [name],
+
+I hope you had a chance to download Mental Health Wallet and take a look.
+
+The real value tends to show up after using it a few times and finding the tools that fit
+you. To help with that, I've put together a short series of tips and gentle reminders that
+I'm sharing with early users.
+
+If you'd like to get them, you can sign up here:
+https://mentalhealthwallet.productsforgood.co/subscribe
+
+A few things worth knowing:
+- It's just an occasional email, and you can unsubscribe anytime.
+- Signing up only shares your email with me, for these messages. It stays completely
+  separate from the app, which collects no personal data, so I still have no view into how
+  you personally use it.
+
+No pressure at all. Only sign up if it feels useful. Either way, thanks for being one of
+the first to try it.
+
+[your name]
+```
+
 ---
 
 ## The user journey (stages we send against)

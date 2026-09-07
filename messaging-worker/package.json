@@ -6,10 +6,11 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "db:migrate:local": "wrangler d1 execute messaging-db --local --file=./migrations/0001_create_subscribers.sql",
-    "db:migrate:remote": "wrangler d1 execute messaging-db --remote --file=./migrations/0001_create_subscribers.sql",
+    "db:migrate:local": "wrangler d1 execute messaging-db --local --file=./migrations/0001_create_subscribers.sql && wrangler d1 execute messaging-db --local --file=./migrations/0002_create_campaigns.sql && wrangler d1 execute messaging-db --local --file=./migrations/0003_create_tip_sends.sql",
+    "db:migrate:remote": "wrangler d1 execute messaging-db --remote --file=./migrations/0001_create_subscribers.sql && wrangler d1 execute messaging-db --remote --file=./migrations/0002_create_campaigns.sql && wrangler d1 execute messaging-db --remote --file=./migrations/0003_create_tip_sends.sql",
     "seed:warm-launch": "tsx scripts/seed-warm-launch.ts",
     "send:tip": "tsx scripts/send-tip.ts",
+    "run:campaign": "tsx scripts/run-campaign.ts",
     "tail": "wrangler tail"
   },
   "devDependencies": {

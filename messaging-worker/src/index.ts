@@ -33,7 +33,7 @@ const SCOPES: Scope[] = ['reminders', 'tips'];
 function corsHeaders(env: Env): Record<string, string> {
   return {
     'Access-Control-Allow-Origin': env.SITE_ORIGIN || '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
 }
@@ -432,12 +432,38 @@ async function handleSendTip(request: Request, env: Env): Promise<Response> {
     );
   }
 
-  const sendResult = await sendTipEmail(env, recipient, tip);
+  // Optional: record this send in tip_sends so a later campaign for the same tip skips
+  // this recipient. Off by default so preview/test sends don't pollute dedupe history.
+  // Requires tip_slug (the dedupe key); if record is requested without it, reject.
+  const record = body.record === true;
+  const tipSlug = typeof body.tip_slug === 'string' ? body.tip_slug.trim() : '';
+  if (record && !tipSlug) {
+    return jsonResponse(
+      env,
+      { error: 'record:true requires tip_slug (the dedupe key used by campaigns)' },
+      { status: 400 }
+    );
+  }
+
+  const idempotencyKey = record && tipSlug ? `${tipSlug}:${recipient.email}` : undefined;
+  const sendResult = await sendTipEmail(env, recipient, tip, idempotencyKey);
   if (!sendResult.ok) {
     return jsonResponse(env, { error: 'Send failed', detail: sendResult.detail }, { status: 502 });
   }
 
-  return jsonResponse(env, { ok: true, id: sendResult.id });
+  // Record a 'sent' row (tip-keyed) when requested, so campaigns dedupe against it.
+  if (record && tipSlug) {
+    const now = new Date().toISOString();
+    await env.DB.prepare(
+      `INSERT INTO tip_sends (id, tip_slug, email, campaign_id, status, resend_id, sent_at, created_at, updated_at)
+       VALUES (?, ?, ?, NULL, 'sent', ?, ?, ?, ?)
+       ON CONFLICT (tip_slug, email) DO UPDATE SET
+         status = 'sent', resend_id = excluded.resend_id, error = NULL,
+         sent_at = excluded.sent_at, updated_at = excluded.updated_at`
+    ).bind(crypto.randomUUID(), tipSlug, recipient.email, sendResult.id, now, now, now).run();
+  }
+
+  return jsonResponse(env, { ok: true, id: sendResult.id, recorded: record });
 }
 
 /**
@@ -447,7 +473,8 @@ async function handleSendTip(request: Request, env: Env): Promise<Response> {
 async function sendTipEmail(
   env: Env,
   recipient: SubscriberRow,
-  tip: TipPayload
+  tip: TipPayload,
+  idempotencyKey?: string
 ): Promise<{ ok: true; id: string } | { ok: false; detail: string }> {
   const greetingName = recipient.first_name && recipient.first_name.trim().length > 0
     ? recipient.first_name.trim()
@@ -491,6 +518,7 @@ You're receiving this because you subscribed to Mental Health Wallet updates.
     html,
     text,
     unsubscribeUrl,
+    idempotencyKey,
   });
 }
 
@@ -545,7 +573,7 @@ You're receiving this because you subscribed to Mental Health Wallet updates.
  */
 async function sendViaResend(
   env: Env,
-  msg: { to: string; subject: string; html: string; text: string; unsubscribeUrl: string }
+  msg: { to: string; subject: string; html: string; text: string; unsubscribeUrl: string; idempotencyKey?: string }
 ): Promise<{ ok: true; id: string } | { ok: false; detail: string }> {
   const payload = {
     from: env.EMAIL_FROM,
@@ -560,13 +588,18 @@ async function sendViaResend(
     },
   };
 
+  const reqHeaders: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${env.RESEND_API_KEY}`,
+  };
+  // Resend de-duplicates identical sends carrying the same Idempotency-Key, closing the
+  // crash-between-send-and-record window (at-most-once).
+  if (msg.idempotencyKey) reqHeaders['Idempotency-Key'] = msg.idempotencyKey;
+
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${env.RESEND_API_KEY}`,
-      },
+      headers: reqHeaders,
       body: JSON.stringify(payload),
     });
 
@@ -588,6 +621,383 @@ function escapeHtml(s: string): string {
     .replace(/>/g, '&gt;');
 }
 
+// ============================================================================
+// Campaigns (batch send) — Requirements: messaging-batch-send
+// ============================================================================
+
+type CampaignScope = Scope;
+type CampaignMode = 'new_only' | 'resend_all';
+type CampaignStatus = 'draft' | 'sending' | 'sent' | 'paused';
+
+interface CampaignRow {
+  id: string;
+  name: string;
+  tip_slug: string;
+  scope: CampaignScope;
+  mode: CampaignMode;
+  status: CampaignStatus;
+  created_at: string;
+  updated_at: string;
+  last_run_at: string | null;
+}
+
+function isScope(v: unknown): v is CampaignScope {
+  return v === 'tips' || v === 'reminders';
+}
+function isMode(v: unknown): v is CampaignMode {
+  return v === 'new_only' || v === 'resend_all';
+}
+
+async function getCampaign(env: Env, id: string): Promise<CampaignRow | null> {
+  return env.DB.prepare('SELECT * FROM campaigns WHERE id = ?').bind(id).first<CampaignRow>();
+}
+
+/** Send counts for a campaign's tip (dedupe is tip-keyed, so counts are by tip_slug). */
+async function tipSendCounts(env: Env, tipSlug: string): Promise<{ sent: number; failed: number; pending: number }> {
+  const row = await env.DB.prepare(
+    `SELECT
+       SUM(CASE WHEN status = 'sent' THEN 1 ELSE 0 END) as sent,
+       SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+       SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending
+     FROM tip_sends WHERE tip_slug = ?`
+  ).bind(tipSlug).first<{ sent: number | null; failed: number | null; pending: number | null }>();
+  return { sent: row?.sent || 0, failed: row?.failed || 0, pending: row?.pending || 0 };
+}
+
+// --- POST /campaigns (create) ---
+
+async function handleCreateCampaign(request: Request, env: Env): Promise<Response> {
+  if (!isAuthorized(request, env)) return unauthorized(env);
+
+  let body: Record<string, unknown>;
+  try {
+    body = (await request.json()) as Record<string, unknown>;
+  } catch {
+    return jsonResponse(env, { error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  const name = typeof body.name === 'string' ? body.name.trim() : '';
+  const tipSlug = typeof body.tip_slug === 'string' ? body.tip_slug.trim() : '';
+  const scope = body.scope;
+  const mode = 'mode' in body ? body.mode : 'new_only';
+
+  if (!name) return jsonResponse(env, { error: 'name is required' }, { status: 400 });
+  if (!tipSlug) return jsonResponse(env, { error: 'tip_slug is required' }, { status: 400 });
+  if (!isScope(scope)) return jsonResponse(env, { error: "scope must be 'tips' or 'reminders'" }, { status: 400 });
+  if (!isMode(mode)) return jsonResponse(env, { error: "mode must be 'new_only' or 'resend_all'" }, { status: 400 });
+
+  // Unique name check (friendly 409 rather than relying on the DB constraint error).
+  const existing = await env.DB.prepare('SELECT id FROM campaigns WHERE name = ?').bind(name).first();
+  if (existing) {
+    return jsonResponse(env, { error: `A campaign named "${name}" already exists` }, { status: 409 });
+  }
+
+  const now = new Date().toISOString();
+  const id = crypto.randomUUID();
+  try {
+    await env.DB.prepare(
+      `INSERT INTO campaigns (id, name, tip_slug, scope, mode, status, created_at, updated_at, last_run_at)
+       VALUES (?, ?, ?, ?, ?, 'draft', ?, ?, NULL)`
+    ).bind(id, name, tipSlug, scope, mode, now, now).run();
+  } catch (err) {
+    // Unique constraint race, or other write failure.
+    const detail = err instanceof Error ? err.message : String(err);
+    if (detail.includes('UNIQUE')) {
+      return jsonResponse(env, { error: `A campaign named "${name}" already exists` }, { status: 409 });
+    }
+    throw err;
+  }
+
+  const campaign = await getCampaign(env, id);
+  return jsonResponse(env, { ok: true, campaign }, { status: 201 });
+}
+
+// --- GET /campaigns (list all) ---
+
+async function handleListCampaigns(request: Request, env: Env): Promise<Response> {
+  if (!isAuthorized(request, env)) return unauthorized(env);
+
+  const result = await env.DB.prepare('SELECT * FROM campaigns ORDER BY created_at DESC').all<CampaignRow>();
+  const campaigns = [];
+  for (const c of result.results) {
+    const counts = await tipSendCounts(env, c.tip_slug);
+    campaigns.push({ ...c, counts });
+  }
+  return jsonResponse(env, { count: campaigns.length, campaigns });
+}
+
+// --- GET /campaigns/:id (read one) ---
+
+async function handleGetCampaign(request: Request, env: Env, id: string): Promise<Response> {
+  if (!isAuthorized(request, env)) return unauthorized(env);
+
+  const campaign = await getCampaign(env, id);
+  if (!campaign) return jsonResponse(env, { error: 'Campaign not found' }, { status: 404 });
+
+  const counts = await tipSendCounts(env, campaign.tip_slug);
+  return jsonResponse(env, { campaign: { ...campaign, counts } });
+}
+
+// --- PUT/PATCH /campaigns/:id (update a not-yet-sent campaign) ---
+
+async function handleUpdateCampaign(request: Request, env: Env, id: string): Promise<Response> {
+  if (!isAuthorized(request, env)) return unauthorized(env);
+
+  const campaign = await getCampaign(env, id);
+  if (!campaign) return jsonResponse(env, { error: 'Campaign not found' }, { status: 404 });
+
+  // Block destructive edits once it has sent or is sending (Requirement 1.5).
+  if (campaign.status === 'sent' || campaign.status === 'sending') {
+    return jsonResponse(
+      env,
+      { error: `Cannot edit a campaign with status '${campaign.status}'. Only draft/paused campaigns are editable.` },
+      { status: 409 }
+    );
+  }
+
+  let body: Record<string, unknown>;
+  try {
+    body = (await request.json()) as Record<string, unknown>;
+  } catch {
+    return jsonResponse(env, { error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  const name = 'name' in body ? (typeof body.name === 'string' ? body.name.trim() : '') : campaign.name;
+  const tipSlug = 'tip_slug' in body ? (typeof body.tip_slug === 'string' ? body.tip_slug.trim() : '') : campaign.tip_slug;
+  const scope = 'scope' in body ? body.scope : campaign.scope;
+  const mode = 'mode' in body ? body.mode : campaign.mode;
+
+  if (!name) return jsonResponse(env, { error: 'name cannot be empty' }, { status: 400 });
+  if (!tipSlug) return jsonResponse(env, { error: 'tip_slug cannot be empty' }, { status: 400 });
+  if (!isScope(scope)) return jsonResponse(env, { error: "scope must be 'tips' or 'reminders'" }, { status: 400 });
+  if (!isMode(mode)) return jsonResponse(env, { error: "mode must be 'new_only' or 'resend_all'" }, { status: 400 });
+
+  // Name uniqueness (excluding this campaign).
+  if (name !== campaign.name) {
+    const clash = await env.DB.prepare('SELECT id FROM campaigns WHERE name = ? AND id != ?').bind(name, id).first();
+    if (clash) return jsonResponse(env, { error: `A campaign named "${name}" already exists` }, { status: 409 });
+  }
+
+  const now = new Date().toISOString();
+  await env.DB.prepare(
+    `UPDATE campaigns SET name = ?, tip_slug = ?, scope = ?, mode = ?, updated_at = ? WHERE id = ?`
+  ).bind(name, tipSlug, scope, mode, now, id).run();
+
+  return jsonResponse(env, { ok: true, campaign: await getCampaign(env, id) });
+}
+
+// --- DELETE /campaigns/:id (leaves tip_sends intact) ---
+
+async function handleDeleteCampaign(request: Request, env: Env, id: string): Promise<Response> {
+  if (!isAuthorized(request, env)) return unauthorized(env);
+
+  const campaign = await getCampaign(env, id);
+  if (!campaign) return jsonResponse(env, { error: 'Campaign not found' }, { status: 404 });
+
+  // Delete the campaign row only. tip_sends is keyed by tip and preserved so the
+  // "already received this tip" history survives (Requirement 1.5 / 5.2).
+  await env.DB.prepare('DELETE FROM campaigns WHERE id = ?').bind(id).run();
+  return jsonResponse(env, { ok: true, deleted: id });
+}
+
+// --- Audience selection ---
+
+/**
+ * Recipients for a campaign, per scope + mode, excluding those already sent this tip
+ * (new_only) or including all opted-in (resend_all). Returns up to `limit` not-yet-sent
+ * subscribers, plus the total counts for reporting.
+ */
+async function selectAudience(
+  env: Env,
+  campaign: CampaignRow,
+  limit: number
+): Promise<{ recipients: SubscriberRow[]; newCount: number; fullCount: number }> {
+  const scopeCol = campaign.scope === 'reminders' ? 'scope_reminders' : 'scope_tips';
+
+  // Full opted-in count for this scope.
+  const fullRow = await env.DB.prepare(
+    `SELECT COUNT(*) as c FROM subscribers WHERE ${scopeCol} = 1`
+  ).first<{ c: number }>();
+  const fullCount = fullRow?.c || 0;
+
+  // Recipients who have NOT yet received this tip = opted-in AND without a sent/pending
+  // tip_sends row (pending is in-doubt and must NOT be blindly resent — at-most-once).
+  // This is the chunking/remaining basis for BOTH modes: new_only excludes prior sends
+  // permanently, while resend_all clears prior sends once at run start (in the execute
+  // handler) so everyone requalifies, then converges via this same exclusion.
+  const notYetClause =
+    `AND s.email NOT IN (SELECT email FROM tip_sends WHERE tip_slug = ? AND status IN ('sent','pending'))`;
+
+  const newRow = await env.DB.prepare(
+    `SELECT COUNT(*) as c FROM subscribers s WHERE s.${scopeCol} = 1 ${notYetClause}`
+  ).bind(campaign.tip_slug).first<{ c: number }>();
+  const newCount = newRow?.c || 0;
+
+  const result = await env.DB.prepare(
+    `SELECT * FROM subscribers s WHERE s.${scopeCol} = 1 ${notYetClause} ORDER BY s.created_at ASC LIMIT ?`
+  ).bind(campaign.tip_slug, limit).all<SubscriberRow>();
+
+  return { recipients: result.results, newCount, fullCount };
+}
+
+// --- POST /campaigns/:id/execute (chunked, explicit mode) ---
+
+async function handleExecuteCampaign(request: Request, env: Env, id: string): Promise<Response> {
+  if (!isAuthorized(request, env)) return unauthorized(env);
+
+  const campaign = await getCampaign(env, id);
+  if (!campaign) return jsonResponse(env, { error: 'Campaign not found' }, { status: 404 });
+
+  let body: Record<string, unknown>;
+  try {
+    body = (await request.json()) as Record<string, unknown>;
+  } catch {
+    return jsonResponse(env, { error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  // REQUIRED explicit mode; no dangerous default (Requirement 7.2/7.3).
+  const runMode = body.mode;
+  if (runMode !== 'dry-run' && runMode !== 'production') {
+    return jsonResponse(
+      env,
+      { error: "mode is required and must be 'dry-run' or 'production'" },
+      { status: 400 }
+    );
+  }
+
+  const limit = typeof body.limit === 'number' && body.limit > 0 ? Math.min(body.limit, 100) : 50;
+  const { recipients, newCount, fullCount } = await selectAudience(env, campaign, limit);
+
+  if (runMode === 'dry-run') {
+    // Dry-run shows WHO would receive it (not just how many), so the operator can eyeball
+    // the list before an irreversible send. Capped so a huge list doesn't blow up the
+    // response; `wouldSend` still reflects the true total. Admin-only endpoint, so showing
+    // emails (PII) here is consistent with /subscribers.
+    const PREVIEW_CAP = 500;
+    const scopeCol = campaign.scope === 'reminders' ? 'scope_reminders' : 'scope_tips';
+    // new_only previews those not-yet-sent; resend_all previews ALL opted-in (it clears the
+    // tip's history at run start, so everyone requalifies).
+    const previewRows = await (
+      campaign.mode === 'new_only'
+        ? env.DB.prepare(
+            `SELECT s.email FROM subscribers s WHERE s.${scopeCol} = 1
+             AND s.email NOT IN (SELECT email FROM tip_sends WHERE tip_slug = ? AND status IN ('sent','pending'))
+             ORDER BY s.created_at ASC LIMIT ?`
+          ).bind(campaign.tip_slug, PREVIEW_CAP)
+        : env.DB.prepare(
+            `SELECT s.email FROM subscribers s WHERE s.${scopeCol} = 1 ORDER BY s.created_at ASC LIMIT ?`
+          ).bind(PREVIEW_CAP)
+    ).all<{ email: string }>();
+    const wouldSend = campaign.mode === 'new_only' ? newCount : fullCount;
+    const recipientEmails = previewRows.results.map((r) => r.email);
+
+    return jsonResponse(env, {
+      ok: true,
+      mode: 'dry-run',
+      tip_slug: campaign.tip_slug,
+      scope: campaign.scope,
+      campaignMode: campaign.mode,
+      wouldSend,
+      newOnlyCount: newCount,
+      fullAudienceCount: fullCount,
+      recipients: recipientEmails,
+      recipientsTruncated: wouldSend > recipientEmails.length,
+    });
+  }
+
+  // --- production ---
+  const tip = parseTip(body.tip);
+  if (!tip) {
+    return jsonResponse(env, { error: 'production send requires tip.title and tip.summary' }, { status: 400 });
+  }
+
+  const scopeCol = campaign.scope === 'reminders' ? 'scope_reminders' : 'scope_tips';
+  const now = new Date().toISOString();
+
+  // resend_all intent = "reach everyone again". Since dedupe is tip-keyed, a deliberate
+  // full re-send clears this tip's prior send records ONCE at the start of a fresh run
+  // (only when the campaign isn't already mid-send), so all opted-in recipients requalify.
+  // After that, both modes proceed identically: exclude sent/pending as they go, so a
+  // resumed run never double-sends within the run.
+  if (campaign.mode === 'resend_all' && campaign.status !== 'sending') {
+    await env.DB.prepare('DELETE FROM tip_sends WHERE tip_slug = ?').bind(campaign.tip_slug).run();
+  }
+
+  await env.DB.prepare("UPDATE campaigns SET status = 'sending', last_run_at = ?, updated_at = ? WHERE id = ?")
+    .bind(now, now, id).run();
+
+  let sent = 0;
+  let failed = 0;
+  let skipped = 0;
+
+  for (const recipient of recipients) {
+    // Re-check consent right now (Requirement 3.1) — the list may be stale mid-run.
+    const fresh = await env.DB.prepare(`SELECT * FROM subscribers WHERE email = ?`).bind(recipient.email).first<SubscriberRow>();
+    if (!fresh || (fresh as unknown as Record<string, number>)[scopeCol] !== 1) {
+      skipped++;
+      continue;
+    }
+
+    // Skip if already sent/pending for this tip (idempotency; new_only already excludes,
+    // but this guards resend_all and concurrent runs).
+    const already = await env.DB.prepare(
+      `SELECT status FROM tip_sends WHERE tip_slug = ? AND email = ?`
+    ).bind(campaign.tip_slug, recipient.email).first<{ status: string }>();
+    if (already && (already.status === 'sent' || already.status === 'pending')) {
+      skipped++;
+      continue;
+    }
+
+    // Write intent (pending) BEFORE sending, so a crash mid-send is recoverable and not
+    // blindly resent (at-most-once, Requirement 5.6).
+    const rowId = crypto.randomUUID();
+    await env.DB.prepare(
+      `INSERT INTO tip_sends (id, tip_slug, email, campaign_id, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, 'pending', ?, ?)
+       ON CONFLICT (tip_slug, email) DO UPDATE SET status = 'pending', campaign_id = excluded.campaign_id, updated_at = excluded.updated_at
+       WHERE tip_sends.status = 'failed'`
+    ).bind(rowId, campaign.tip_slug, recipient.email, id, now, now).run();
+
+    // Send individually (never BCC) via the shared renderer, with a Resend idempotency key.
+    const idempotencyKey = `${campaign.tip_slug}:${recipient.email}`;
+    const result = await sendTipEmail(env, fresh, tip, idempotencyKey);
+
+    const ts = new Date().toISOString();
+    if (result.ok) {
+      await env.DB.prepare(
+        `UPDATE tip_sends SET status = 'sent', resend_id = ?, error = NULL, sent_at = ?, updated_at = ? WHERE tip_slug = ? AND email = ?`
+      ).bind(result.id, ts, ts, campaign.tip_slug, recipient.email).run();
+      sent++;
+    } else {
+      await env.DB.prepare(
+        `UPDATE tip_sends SET status = 'failed', error = ?, updated_at = ? WHERE tip_slug = ? AND email = ?`
+      ).bind(result.detail, ts, campaign.tip_slug, recipient.email).run();
+      failed++;
+    }
+  }
+
+  // Recompute how many not-yet-sent recipients remain for this tip. Both modes converge
+  // on the same "not yet sent/pending" query after a chunk: newCount reflects opted-in
+  // recipients without a sent/pending tip_sends row.
+  const after = await selectAudience(env, campaign, 1);
+  const remainingCount = after.newCount;
+
+  const doneStatus: CampaignStatus = remainingCount > 0 ? 'sending' : 'sent';
+  const finishedAt = new Date().toISOString();
+  await env.DB.prepare('UPDATE campaigns SET status = ?, updated_at = ? WHERE id = ?')
+    .bind(doneStatus, finishedAt, id).run();
+
+  return jsonResponse(env, {
+    ok: true,
+    mode: 'production',
+    sent,
+    failed,
+    skipped,
+    remaining: remainingCount,
+    status: doneStatus,
+  });
+}
+
 // --- Main Fetch Handler ---
 
 export default {
@@ -607,6 +1017,19 @@ export default {
       if (path === '/subscribers' && request.method === 'GET') return await handleSubscribers(request, env);
       if (path === '/send-test' && request.method === 'POST') return await handleSendTest(request, env);
       if (path === '/send-tip' && request.method === 'POST') return await handleSendTip(request, env);
+
+      // --- Campaign routes (admin) ---
+      if (path === '/campaigns' && request.method === 'POST') return await handleCreateCampaign(request, env);
+      if (path === '/campaigns' && request.method === 'GET') return await handleListCampaigns(request, env);
+      const campaignExecMatch = path.match(/^\/campaigns\/([^/]+)\/execute$/);
+      if (campaignExecMatch && request.method === 'POST') return await handleExecuteCampaign(request, env, decodeURIComponent(campaignExecMatch[1]));
+      const campaignIdMatch = path.match(/^\/campaigns\/([^/]+)$/);
+      if (campaignIdMatch) {
+        const campaignId = decodeURIComponent(campaignIdMatch[1]);
+        if (request.method === 'GET') return await handleGetCampaign(request, env, campaignId);
+        if (request.method === 'PUT' || request.method === 'PATCH') return await handleUpdateCampaign(request, env, campaignId);
+        if (request.method === 'DELETE') return await handleDeleteCampaign(request, env, campaignId);
+      }
 
       if ((path === '/' || path === '/health') && request.method === 'GET') {
         return jsonResponse(env, { status: 'ok', service: 'mental-wallet-messaging' });
