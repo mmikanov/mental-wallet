@@ -13,6 +13,14 @@
   <meta property="og:image" content="https://mentalhealthwallet.productsforgood.co/assets/og-image.jpg">
   <link rel="icon" type="image/png" href="/assets/icon.png">
   <link rel="stylesheet" href="/styles.css">
+  <script>
+    (function () {
+      try {
+        var p = new URLSearchParams(window.location.search);
+        if (p.get('embed') === 'app') document.documentElement.className += ' embed-app';
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
   <a href="#main" class="skip-link">Skip to main content</a>

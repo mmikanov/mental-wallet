@@ -31,7 +31,9 @@ export type AnalyticsEventType =
   | 'guided_checkin_completed'
   | 'insights_viewed'
   | 'external_app_launched'
-  | 'share_tapped';
+  | 'share_tapped'
+  | 'tips_feed_viewed'
+  | 'tip_opened';
 
 // --- Base Event Interface ---
 
@@ -174,6 +176,15 @@ export type ShareTappedEvent = AnalyticsEventBase & {
   event_type: 'share_tapped';
 };
 
+export type TipsFeedViewedEvent = AnalyticsEventBase & {
+  event_type: 'tips_feed_viewed';
+};
+
+export type TipOpenedEvent = AnalyticsEventBase & {
+  event_type: 'tip_opened';
+  properties: { slug: string };
+};
+
 // --- Discriminated Union of All Analytics Events ---
 
 export type AnalyticsEvent =
@@ -198,7 +209,9 @@ export type AnalyticsEvent =
   | GuidedCheckinStartedEvent
   | GuidedCheckinCompletedEvent
   | ExternalAppLaunchedEvent
-  | ShareTappedEvent;
+  | ShareTappedEvent
+  | TipsFeedViewedEvent
+  | TipOpenedEvent;
 
 // --- Event Queue ---
 

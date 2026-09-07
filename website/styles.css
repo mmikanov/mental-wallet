@@ -657,6 +657,20 @@ a.btn-primary:hover {
   text-align: center;
 }
 
+/* --- Embed mode (opened from inside the app: ?embed=app) ---
+   Hide site chrome that only makes sense for web visitors. An in-app reader is already
+   in the app, so the nav, footer, "All tips" back link, and download CTA are removed;
+   only the article title + body remain. Set on <html> by the inline script in <head>. */
+.embed-app .nav,
+.embed-app .footer,
+.embed-app .article-back,
+.embed-app .article-cta {
+  display: none !important;
+}
+.embed-app .article-page {
+  padding-top: var(--space-lg);
+}
+
 /* --- Tips: index page --- */
 .tips-index {
   padding: var(--space-xl) 0;

@@ -26,6 +26,7 @@ import UsageHistoryScreen from '@/screens/UsageHistoryScreen';
 import ReminderConfigScreen from '@/screens/ReminderConfigScreen';
 import ArchiveScreen from '@/screens/ArchiveScreen';
 import SettingsScreen from '@/screens/SettingsScreen';
+import TipsFeedScreen from '@/screens/TipsFeedScreen';
 import KpiChangeScreen from '@/screens/KpiChangeScreen';
 import CrisisResourcesScreen from '@/screens/CrisisResourcesScreen';
 import LicensesScreen from '@/screens/LicensesScreen';
@@ -160,6 +161,7 @@ export default function RootNavigator() {
       />
       <Stack.Screen name="Archive" component={ArchiveScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="Tips" component={TipsFeedScreen} />
       <Stack.Screen name="WalletInsights" component={WalletInsightsScreen} />
       <Stack.Screen name="ToolInsights" component={ToolInsightsScreen} />
       <Stack.Screen name="InsightsHelp" component={InsightsHelpScreen} />

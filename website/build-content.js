@@ -160,6 +160,21 @@ const FOOTER = `  <footer class="footer">
 
 // --- article page ---
 
+// Embed mode: when a tip is opened from inside the app (in-app browser), the URL
+// carries ?embed=app. This inline script runs before paint and tags <html> so CSS can
+// hide the site chrome (nav, footer, "All tips" back link, download CTA) that only makes
+// sense for web visitors — an in-app reader is already in the app. Kept inline + in
+// <head> so there's no flash of the chrome before it's hidden. Harmless for normal web
+// visitors, who never carry the param.
+const EMBED_SCRIPT = `  <script>
+    (function () {
+      try {
+        var p = new URLSearchParams(window.location.search);
+        if (p.get('embed') === 'app') document.documentElement.className += ' embed-app';
+      } catch (e) {}
+    })();
+  </script>`;
+
 function renderArticle(tip) {
   const bodyHtml = marked.parse(tip.body);
   const hero = tip.heroImage
@@ -175,7 +190,7 @@ function renderArticle(tip) {
           <a href="/#hero" class="btn-primary app-cta">${ctaLabel}</a>
         </div>`;
 
-  return `${pageHead(tip.title, tip.summary, '/tips/' + tip.slug)}
+  return `${pageHead(tip.title, tip.summary, '/tips/' + tip.slug).replace('</head>', `${EMBED_SCRIPT}\n</head>`)}
 <body>
 ${NAV}
   <main id="main" class="article-page">
