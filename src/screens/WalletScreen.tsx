@@ -459,6 +459,10 @@ export default function WalletScreen() {
     navigation.navigate('Settings');
   }
 
+  function handleTipsPress() {
+    navigation.navigate('Tips');
+  }
+
   function handleAddToolPress() {
     navigation.navigate('LibraryBrowser');
   }
@@ -731,6 +735,7 @@ export default function WalletScreen() {
         onSettingsPress={handleSettingsPress}
         onAddToolPress={handleAddToolPress}
         onCreateToolPress={handleCreateToolPress}
+        onTipsPress={handleTipsPress}
         onInsightsPress={handleOpenInsights}
       />
       {/* First Action Checklist — show when store says visible, or briefly for celebration before dismiss */}

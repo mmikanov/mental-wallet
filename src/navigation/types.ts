@@ -17,6 +17,7 @@ export type RootStackParamList = {
   CardCreator: { cardId?: string; adminEditCardId?: string; adminEditSource?: 'admin' | 'static' } | undefined;
   Archive: undefined;
   Settings: undefined;
+  Tips: undefined;
   CrisisResources: undefined;
   UsageHistory: { cardId: string };
   ReminderConfig: { cardId: string };
