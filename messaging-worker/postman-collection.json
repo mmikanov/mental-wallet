@@ -1,0 +1,245 @@
+{
+  "info": {
+    "name": "Mental Wallet — Messaging",
+    "description": "Messaging worker API: subscribers/consent, sending, and campaigns (batch send).\n\nSetup:\n1. Import this collection.\n2. Open the collection → Variables. `baseUrl` defaults to production. Set `adminSecret` to your ADMIN_SECRET (it is a 'secret' type variable and stays local — do not commit it).\n3. Admin requests use Bearer auth via {{adminSecret}} (inherited from the collection). Public requests (subscribe/preferences/unsubscribe) need no secret.\n\nSAFETY: `Execute campaign — PRODUCTION` actually emails real people. Always run the dry-run first.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{adminSecret}}", "type": "string" }]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://mental-wallet-messaging.mentalwallet.workers.dev",
+      "type": "string"
+    },
+    {
+      "key": "adminSecret",
+      "value": "",
+      "type": "secret"
+    },
+    {
+      "key": "campaignId",
+      "value": "",
+      "type": "string",
+      "description": "Paste a campaign id here after creating/listing one."
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string",
+      "description": "A subscriber's unsubscribe_token (from Subscribers list), for preferences/unsubscribe."
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Subscribers (consent)",
+      "item": [
+        {
+          "name": "Subscribe (public)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"you@example.com\",\n  \"first_name\": \"You\",\n  \"tips\": true,\n  \"reminders\": true,\n  \"source\": \"postman\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/subscribe", "host": ["{{baseUrl}}"], "path": ["subscribe"] },
+            "description": "Public opt-in. No secret needed."
+          }
+        },
+        {
+          "name": "List subscribers by scope (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/subscribers?scope=tips",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscribers"],
+              "query": [{ "key": "scope", "value": "tips", "description": "tips | reminders" }]
+            },
+            "description": "Recipients opted into a scope. Returns email, first_name, unsubscribe_token, source."
+          }
+        },
+        {
+          "name": "Get preferences by token (public)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/preferences?token={{token}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["preferences"],
+              "query": [{ "key": "token", "value": "{{token}}" }]
+            }
+          }
+        },
+        {
+          "name": "Update preferences by token (public)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{token}}\",\n  \"tips\": true,\n  \"reminders\": false\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/preferences", "host": ["{{baseUrl}}"], "path": ["preferences"] }
+          }
+        },
+        {
+          "name": "Unsubscribe by token (public)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/unsubscribe?token={{token}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["unsubscribe"],
+              "query": [{ "key": "token", "value": "{{token}}" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sending (single)",
+      "item": [
+        {
+          "name": "Send test email (admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"you@example.com\",\n  \"scope\": \"tips\",\n  \"subject\": \"Test\",\n  \"body\": \"Hello from Postman.\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/send-test", "host": ["{{baseUrl}}"], "path": ["send-test"] },
+            "description": "Recipient must be opted into the scope (else 409)."
+          }
+        },
+        {
+          "name": "Send a tip (admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"you@example.com\",\n  \"scope\": \"tips\",\n  \"tip\": {\n    \"title\": \"Welcome to Mental Health Wallet\",\n    \"summary\": \"Glad you're here.\",\n    \"cta\": { \"label\": \"Open the app\", \"url\": \"https://apps.apple.com/app/mental-health-wallet/id6800036822\" }\n  }\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/send-tip", "host": ["{{baseUrl}}"], "path": ["send-tip"] },
+            "description": "One-off tip send. Does NOT record to dedupe by default."
+          }
+        },
+        {
+          "name": "Send a tip AND record (admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"jane@example.com\",\n  \"scope\": \"tips\",\n  \"tip_slug\": \"welcome\",\n  \"record\": true,\n  \"tip\": {\n    \"title\": \"Welcome to Mental Health Wallet\",\n    \"summary\": \"Glad you're here.\",\n    \"cta\": { \"label\": \"Open the app\", \"url\": \"https://apps.apple.com/app/mental-health-wallet/id6800036822\" }\n  }\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/send-tip", "host": ["{{baseUrl}}"], "path": ["send-tip"] },
+            "description": "record:true writes a tip_sends row (needs tip_slug) so a later campaign for this tip skips this recipient."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Campaigns (batch send)",
+      "item": [
+        {
+          "name": "Create campaign (admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Welcome wave\",\n  \"tip_slug\": \"welcome\",\n  \"scope\": \"tips\",\n  \"mode\": \"new_only\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/campaigns", "host": ["{{baseUrl}}"], "path": ["campaigns"] },
+            "description": "name must be unique (409 otherwise). mode: new_only | resend_all. Copy the returned id into the {{campaignId}} variable."
+          }
+        },
+        {
+          "name": "List campaigns (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/campaigns", "host": ["{{baseUrl}}"], "path": ["campaigns"] }
+          }
+        },
+        {
+          "name": "Get campaign (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/campaigns/{{campaignId}}", "host": ["{{baseUrl}}"], "path": ["campaigns", "{{campaignId}}"] }
+          }
+        },
+        {
+          "name": "Update campaign (draft only) (admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Welcome wave (edited)\"\n}" },
+            "url": { "raw": "{{baseUrl}}/campaigns/{{campaignId}}", "host": ["{{baseUrl}}"], "path": ["campaigns", "{{campaignId}}"] },
+            "description": "Blocked (409) once the campaign is sending/sent."
+          }
+        },
+        {
+          "name": "Execute campaign — DRY RUN (admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"mode\": \"dry-run\"\n}" },
+            "url": { "raw": "{{baseUrl}}/campaigns/{{campaignId}}/execute", "host": ["{{baseUrl}}"], "path": ["campaigns", "{{campaignId}}", "execute"] },
+            "description": "Reports who/how many would receive it. Sends NOTHING. Always run this first."
+          }
+        },
+        {
+          "name": "Execute campaign — PRODUCTION (⚠ SENDS) (admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mode\": \"production\",\n  \"limit\": 50,\n  \"tip\": {\n    \"title\": \"Welcome to Mental Health Wallet\",\n    \"summary\": \"Glad you're here.\",\n    \"cta\": { \"label\": \"Open the app\", \"url\": \"https://apps.apple.com/app/mental-health-wallet/id6800036822\" }\n  }\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/campaigns/{{campaignId}}/execute", "host": ["{{baseUrl}}"], "path": ["campaigns", "{{campaignId}}", "execute"] },
+            "description": "⚠️ ACTUALLY SENDS one chunk to real recipients. Sends the tip fields provided here (they should match the campaign's tip_slug). Re-run until 'remaining' is 0. Prefer the run-campaign.ts script for large lists (it loops chunks with pacing)."
+          }
+        },
+        {
+          "name": "Delete campaign (admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/campaigns/{{campaignId}}", "host": ["{{baseUrl}}"], "path": ["campaigns", "{{campaignId}}"] },
+            "description": "Deletes the campaign row; tip_sends (dedupe history) is preserved."
+          }
+        }
+      ]
+    }
+  ]
+}
