@@ -99,6 +99,7 @@ export default function LibraryToolPreview({
             controls={controls}
             values={values}
             onChange={handleControlChange}
+            externalApp={card.externalApp}
           />
         </View>
       </ScrollView>

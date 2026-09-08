@@ -24,8 +24,11 @@ export interface LaunchResult {
 /**
  * Constructs the platform-appropriate app store URL from config.
  * Returns null if no store ID is available for the current platform.
+ *
+ * - iOS     → https://apps.apple.com/app/id{appStoreId}
+ * - Android → https://play.google.com/store/apps/details?id={playStoreId}
  */
-function getStoreUrl(config: ExternalAppConfig): string | null {
+export function getStoreUrl(config: ExternalAppConfig): string | null {
   if (Platform.OS === 'ios' && config.appStoreId) {
     return `https://apps.apple.com/app/id${config.appStoreId}`;
   }
@@ -33,6 +36,21 @@ function getStoreUrl(config: ExternalAppConfig): string | null {
     return `https://play.google.com/store/apps/details?id=${config.playStoreId}`;
   }
   return null;
+}
+
+/**
+ * Resolve the best platform-appropriate fallback URL for an external app when a
+ * deep link is unavailable / fails. Used by the "Open app" button so an Android
+ * user is sent to Google Play (not the Apple App Store) and vice-versa.
+ *
+ * Priority: platform store (from appStoreId/playStoreId) → affiliate URL → web URL.
+ * Returns null only if the config has no usable URL at all.
+ */
+export function resolveStoreFallbackUrl(config: ExternalAppConfig): string | null {
+  const storeUrl = getStoreUrl(config);
+  if (storeUrl) return storeUrl;
+  if (config.affiliateUrl) return config.affiliateUrl;
+  return config.webUrl || null;
 }
 
 /**

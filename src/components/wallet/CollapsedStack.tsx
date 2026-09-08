@@ -12,7 +12,7 @@
  */
 
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import type { Card } from '@/types/index';
 import { isLightBackground } from '@/utils/cardColors';
 import { renderCardIcon } from '@/utils/renderCardIcon';
@@ -24,10 +24,15 @@ export interface CollapsedStackProps {
   onUncollapse?: () => void;
 }
 
+// Android users often didn't notice the collapsed stack (Bug 4a) — it read as a
+// thin strip at the very bottom. Make it taller/more prominent on Android so it
+// clearly signals "more cards are here", while leaving the iOS look unchanged
+// (iOS users are familiar with the Apple Wallet collapsed-stack metaphor).
+
 /** Thin edge height for deeply stacked cards */
-const EDGE_HEIGHT = 6;
+const EDGE_HEIGHT = Platform.select({ android: 10, default: 6 }) as number;
 /** Height of the top card in the collapsed stack (partially visible) */
-const TOP_CARD_HEIGHT = 52;
+const TOP_CARD_HEIGHT = Platform.select({ android: 76, default: 52 }) as number;
 
 export default function CollapsedStack({
   cards,

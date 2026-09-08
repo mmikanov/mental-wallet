@@ -117,7 +117,7 @@ export default function Step1Shell({
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Title *</Text>
         <TextInput
-          style={[styles.textInput, getFieldError('title') && styles.inputError]}
+          style={[styles.textInput, styles.contentAligned, getFieldError('title') && styles.inputError]}
           value={shell.title}
           onChangeText={(text) => updateShell({ title: text })}
           placeholder="Enter card title"
@@ -136,7 +136,7 @@ export default function Step1Shell({
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Description *</Text>
         <TextInput
-          style={[styles.textInput, styles.textArea, getFieldError('description') && styles.inputError]}
+          style={[styles.textInput, styles.textArea, styles.contentAligned, getFieldError('description') && styles.inputError]}
           value={shell.description}
           onChangeText={(text) => updateShell({ description: text })}
           placeholder="Describe what this tool does"
@@ -403,6 +403,13 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 80,
     textAlignVertical: 'top',
+  },
+  // Applied to user-authored text fields (title, description) so RTL scripts
+  // like Hebrew align to their own content direction, while the app UI stays
+  // locked to LTR. Deliberately NOT applied to the icon-URL / hex-code inputs,
+  // which are always LTR.
+  contentAligned: {
+    textAlign: 'auto',
   },
   inputError: {
     borderColor: '#FF4444',

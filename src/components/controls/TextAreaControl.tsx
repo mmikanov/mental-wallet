@@ -74,6 +74,9 @@ const styles = StyleSheet.create({
     color: '#1C1C1E',
     backgroundColor: '#FAFAFA',
     minHeight: 100,
+    // Align to the content's own direction so RTL scripts (e.g. Hebrew) that the
+    // user types read naturally, while the app UI stays locked to LTR.
+    textAlign: 'auto',
   },
   inputError: {
     borderColor: '#EF4444',

@@ -150,6 +150,15 @@ export default function ExpandedContent({ card }: ExpandedContentProps) {
     return false;
   }, [card.controls, card.sourceLibraryId]);
 
+  // For curated third-party "app" cards, the external app config (holds the
+  // per-platform appStoreId/playStoreId). Passed to the link button so its store
+  // fallback resolves to the correct platform store (Bug 2: Android was opening
+  // the Apple App Store). Undefined for user-created tools.
+  const externalApp = useMemo(() => {
+    if (card.originBadge !== 'app' || !card.sourceLibraryId) return undefined;
+    return CURATED_LIBRARY.find((c) => c.id === card.sourceLibraryId)?.externalApp;
+  }, [card.originBadge, card.sourceLibraryId]);
+
   // Get stored input values for this card
   const currentInputValues = useCompletionStore((s) => s.currentInputValues);
   const setControlValue = useCompletionStore((s) => s.setControlValue);
@@ -318,6 +327,7 @@ export default function ExpandedContent({ card }: ExpandedContentProps) {
           values={cardValues}
           onChange={handleChange}
           errors={errors}
+          externalApp={externalApp}
         />
       )}
 
