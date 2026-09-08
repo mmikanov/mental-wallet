@@ -1,7 +1,23 @@
 import 'react-native-gesture-handler';
 import React, { useEffect, useRef } from 'react';
-import { AppState, AppStateStatus, StyleSheet } from 'react-native';
+import { AppState, AppStateStatus, I18nManager, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
+// The app UI is English-only. Lock layout direction to left-to-right so that
+// devices set to a right-to-left locale (e.g. Hebrew, Arabic) don't mirror the
+// interface (flipped headers, right-aligned bullets, swapped controls). This
+// only affects LAYOUT DIRECTION — users can still type and store any script
+// (including Hebrew) in text fields. Runs once at module load, before render.
+try {
+  if (I18nManager.allowRTL) {
+    I18nManager.allowRTL(false);
+  }
+  if (I18nManager.isRTL && I18nManager.forceRTL) {
+    I18nManager.forceRTL(false);
+  }
+} catch {
+  // I18nManager may be unavailable in some environments (e.g. tests) — safe to ignore.
+}
 import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import RootNavigator from '@/navigation/RootNavigator';

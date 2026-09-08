@@ -14,6 +14,8 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, TouchableOpacity, Linking, Alert, StyleSheet } from 'react-native';
 import type { Control, LinkButtonConfig } from '@/types/index';
+import type { ExternalAppConfig } from '@/types/externalApp';
+import { resolveStoreFallbackUrl } from '@/services/deepLinkService';
 import { logEvent } from '@/services/analyticsEventLogger';
 
 interface LinkButtonControlProps {
@@ -22,6 +24,14 @@ interface LinkButtonControlProps {
   onChange: (value: string) => void;
   error?: string;
   readOnly?: boolean;
+  /**
+   * For curated third-party "app" cards: the external app's config. When present,
+   * the store fallback is resolved per-platform (Google Play on Android, App Store
+   * on iOS) instead of using the control's hardcoded fallback URL — which is always
+   * an Apple App Store link. Absent for user-created link buttons, which keep their
+   * literal fallbackUrl unchanged.
+   */
+  externalApp?: ExternalAppConfig;
 }
 
 /**
@@ -57,6 +67,7 @@ export default function LinkButtonControl({
   control,
   value,
   onChange,
+  externalApp,
 }: LinkButtonControlProps) {
   const config = control.config as LinkButtonConfig;
   const [opening, setOpening] = useState(false);
@@ -80,15 +91,22 @@ export default function LinkButtonControl({
       return;
     }
 
-    // Target failed — try fallback if configured
-    if (config.fallbackUrl) {
-      console.log(`[LinkButton] Target failed, attempting fallback: ${config.fallbackUrl}`);
-      const fallbackOpened = await tryOpenUrl(config.fallbackUrl);
+    // Target failed — pick a fallback. For curated third-party app cards, resolve
+    // the store URL per-platform (Google Play on Android, App Store on iOS) so an
+    // Android user isn't sent to the Apple App Store. For user-created link buttons
+    // (no externalApp), use the control's literal fallbackUrl unchanged.
+    const fallbackUrl = externalApp
+      ? resolveStoreFallbackUrl(externalApp) ?? config.fallbackUrl
+      : config.fallbackUrl;
+
+    if (fallbackUrl) {
+      console.log(`[LinkButton] Target failed, attempting fallback: ${fallbackUrl}`);
+      const fallbackOpened = await tryOpenUrl(fallbackUrl);
 
       if (fallbackOpened) {
-        console.log(`[LinkButton] Success: opened fallback URL ${config.fallbackUrl}`);
+        console.log(`[LinkButton] Success: opened fallback URL ${fallbackUrl}`);
         void logEvent('external_resource_opened', {
-          resource_url: config.fallbackUrl!,
+          resource_url: fallbackUrl,
           resource_name: config.label,
         });
         onChange('opened');
@@ -104,7 +122,7 @@ export default function LinkButtonControl({
       "Couldn't open this app. It may not be installed. You can edit this tool to change the link."
     );
     setOpening(false);
-  }, [config.targetUrl, config.fallbackUrl, config.label, opening, onChange]);
+  }, [config.targetUrl, config.fallbackUrl, config.label, opening, onChange, externalApp]);
 
   return (
     <View style={styles.container}>

@@ -152,7 +152,9 @@ export default function TooltipOverlay({
           },
         ]}
       >
-        {/* Arrow — uses a clipping wrapper for cross-platform triangle rendering */}
+        {/* Arrow — uses a clipping wrapper for cross-platform triangle rendering.
+            `below` → bubble under the target, arrow points UP.
+            `above` → bubble over the target, arrow points DOWN. */}
         <View
           style={[
             styles.arrowClip,
@@ -160,7 +162,12 @@ export default function TooltipOverlay({
             { left: Math.max(16, spotLeft + spotWidth / 2 - 16 - ARROW_SIZE) },
           ]}
         >
-          <View style={styles.arrowInner} />
+          <View
+            style={[
+              styles.arrowInner,
+              position === 'below' ? styles.arrowInnerUp : styles.arrowInnerDown,
+            ]}
+          />
         </View>
 
         <Text
@@ -229,7 +236,14 @@ const styles = StyleSheet.create({
     height: ARROW_SIZE * 2,
     backgroundColor: '#FFFFFF',
     transform: [{ rotate: '45deg' }],
+  },
+  // Up-pointing: the diamond's top corner pokes above the top-edge clip.
+  arrowInnerUp: {
     top: ARROW_SIZE / 2,
+  },
+  // Down-pointing: the diamond's bottom corner pokes below the bottom-edge clip.
+  arrowInnerDown: {
+    bottom: ARROW_SIZE / 2,
   },
   tooltipText: {
     fontSize: 15,

@@ -24,6 +24,8 @@ export interface OnboardingState {
   };
   checklistSessionCount: number;
   bannerDismissed: boolean;
+  /** Android-only: whether the first-time "your other cards are here" hint has been shown. */
+  collapsedStackHintSeen: boolean;
 
   // Derived
   isChecklistVisible: boolean;
@@ -37,6 +39,7 @@ export interface OnboardingState {
   markChecklistItem: (item: 'openTool' | 'tryExercise' | 'addTool') => Promise<void>;
   dismissChecklist: () => Promise<void>;
   dismissBanner: () => Promise<void>;
+  markCollapsedStackHintSeen: () => Promise<void>;
   incrementSessionCount: () => Promise<void>;
   loadState: () => Promise<void>;
 }
@@ -57,6 +60,7 @@ interface PersistedState {
   };
   checklistSessionCount: number;
   bannerDismissed: boolean;
+  collapsedStackHintSeen: boolean;
 }
 
 const DEFAULT_STATE: PersistedState = {
@@ -72,6 +76,7 @@ const DEFAULT_STATE: PersistedState = {
   },
   checklistSessionCount: 0,
   bannerDismissed: false,
+  collapsedStackHintSeen: false,
 };
 
 function computeDerived(state: PersistedState) {
@@ -136,6 +141,7 @@ function getPersistedFields(state: OnboardingState): PersistedState {
     checklist: { ...state.checklist },
     checklistSessionCount: state.checklistSessionCount,
     bannerDismissed: state.bannerDismissed,
+    collapsedStackHintSeen: state.collapsedStackHintSeen,
   };
 }
 
@@ -204,6 +210,13 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
     await persistState(updated);
   },
 
+  async markCollapsedStackHintSeen() {
+    const current = getPersistedFields(get());
+    const updated: PersistedState = { ...current, collapsedStackHintSeen: true };
+    queueMicrotask(() => set({ ...updated, ...computeDerived(updated) }));
+    await persistState(updated);
+  },
+
   async incrementSessionCount() {
     const current = getPersistedFields(get());
     const updated: PersistedState = {
@@ -239,6 +252,7 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
           },
           checklistSessionCount: parsed.checklistSessionCount ?? 0,
           bannerDismissed: parsed.bannerDismissed ?? false,
+          collapsedStackHintSeen: parsed.collapsedStackHintSeen ?? false,
         };
 
         // Legacy detection (Req 8.4): if onboarding was already complete but

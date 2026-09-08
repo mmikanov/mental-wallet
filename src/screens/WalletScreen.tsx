@@ -204,6 +204,13 @@ export default function WalletScreen() {
   const [actionButtonLayout, setActionButtonLayout] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const stackedCardListRef = useRef<View>(null);
 
+  // --- Bug 4b: first-time "your other cards are here" hint (Android only) ---
+  const collapsedStackHintSeen = useOnboardingStore((s) => s.collapsedStackHintSeen);
+  const markCollapsedStackHintSeen = useOnboardingStore((s) => s.markCollapsedStackHintSeen);
+  const [showCollapsedStackHint, setShowCollapsedStackHint] = useState(false);
+  const [collapsedStackLayout, setCollapsedStackLayout] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const collapsedStackRef = useRef<View>(null);
+
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [showBackgroundCustomizer, setShowBackgroundCustomizer] = useState(false);
   const [showKpiInfoTooltip, setShowKpiInfoTooltip] = useState(false);
@@ -376,6 +383,28 @@ export default function WalletScreen() {
     }
   }, [focusedCardId, isExpanded, screenWidth]);
 
+  // --- Bug 4b: measure the collapsed stack so the hint can spotlight it ---
+  const handleCollapsedStackLayout = useCallback(() => {
+    if (!collapsedStackRef.current || !containerRef.current) return;
+    collapsedStackRef.current.measure((_x, _y, _width, _height, pageX, pageY) => {
+      if (_width > 0 && _height > 0 && containerRef.current) {
+        containerRef.current.measure((_cx, _cy, _cw, _ch, cPageX, cPageY) => {
+          setCollapsedStackLayout({
+            x: (pageX || 0) - (cPageX || 0),
+            y: (pageY || 0) - (cPageY || 0),
+            width: _width,
+            height: _height,
+          });
+        });
+      }
+    });
+  }, []);
+
+  const handleDismissCollapsedStackHint = useCallback(() => {
+    setShowCollapsedStackHint(false);
+    void markCollapsedStackHintSeen();
+  }, [markCollapsedStackHintSeen]);
+
   // --- Onboarding: Checklist items and handler ---
   const checklistItems: ChecklistItem[] = useMemo(() => [
     { id: 'open_tool', label: 'Open your first tool', isDone: checklist.openTool },
@@ -450,6 +479,26 @@ export default function WalletScreen() {
     () => (focusedCardId ? stackCards.filter((c) => c.id !== focusedCardId) : []),
     [focusedCardId, stackCards]
   );
+
+  // --- Bug 4b: show the hint the first time a card is focused with others present.
+  // Android only; never during the onboarding micro-tutorial; once per user (persisted).
+  useEffect(() => {
+    if (
+      Platform.OS === 'android' &&
+      focusedCardId &&
+      !collapsedStackHintSeen &&
+      !tutorial.isActive &&
+      otherCards.length > 0
+    ) {
+      // Small delay so the collapsed stack has laid out and been measured.
+      const t = setTimeout(() => setShowCollapsedStackHint(true), 400);
+      return () => clearTimeout(t);
+    }
+    // Hide when leaving the focused state.
+    if (!focusedCardId) {
+      setShowCollapsedStackHint(false);
+    }
+  }, [focusedCardId, collapsedStackHintSeen, tutorial.isActive, otherCards.length]);
 
   function handleArchivePress() {
     navigation.navigate('Archive');
@@ -824,7 +873,11 @@ export default function WalletScreen() {
             {otherCards.length > 0 && (
               <>
                 <View style={styles.darkDivider} />
-                <View style={styles.collapsedStackArea}>
+                <View
+                  ref={collapsedStackRef}
+                  onLayout={handleCollapsedStackLayout}
+                  style={styles.collapsedStackArea}
+                >
                   <CollapsedStack
                     cards={otherCards}
                     categoryColors={categoryColors}
@@ -884,6 +937,17 @@ export default function WalletScreen() {
         position="below"
         onTargetPress={handleTooltipTargetPress}
         onSkip={tutorial.skip}
+      />
+      {/* Bug 4b: first-time hint pointing at the collapsed stack (Android only).
+          Separate overlay/state so it never conflicts with the tutorial overlay. */}
+      <TooltipOverlay
+        visible={showCollapsedStackHint && !!collapsedStackLayout}
+        targetLayout={collapsedStackLayout}
+        text="Your other cards are tucked down here. Tap them anytime to switch or see them all."
+        position="above"
+        skipLabel="Got it"
+        onTargetPress={handleDismissCollapsedStackHint}
+        onSkip={handleDismissCollapsedStackHint}
       />
       </View>
     </SafeAreaView>

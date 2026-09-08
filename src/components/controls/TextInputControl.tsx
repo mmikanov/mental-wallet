@@ -81,6 +81,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#1C1C1E',
     backgroundColor: '#FAFAFA',
+    // Align to the content's own direction so RTL scripts the user types (e.g.
+    // Hebrew) read naturally, while the app UI stays locked to LTR.
+    textAlign: 'auto',
   },
   inputError: {
     borderColor: '#EF4444',

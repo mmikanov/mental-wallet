@@ -185,7 +185,10 @@ export default function KpiSelectionScreen() {
           What does feeling better look like for you?
         </Text>
 
-        <Text style={styles.subheading}>Choose one focus for your daily check-in</Text>
+        <Text style={styles.subheading}>
+          <Text style={styles.subheadingEmphasis}>Pick one.</Text> This becomes your daily
+          check-in — you can change it later in Settings.
+        </Text>
 
         <View style={styles.optionsContainer}>
           {KPI_OPTIONS.map((option, index) => {
@@ -203,6 +206,7 @@ export default function KpiSelectionScreen() {
                 disabled={isTransitioning}
                 accessibilityLabel={option}
                 accessibilityRole="button"
+                accessibilityHint="Pick one focus. Selecting this replaces any previous choice."
                 accessibilityState={{ selected: isSelected, disabled: isTransitioning }}
               >
                 <Text
@@ -314,7 +318,14 @@ const styles = StyleSheet.create({
   subheading: {
     fontSize: 15,
     color: '#6B7280',
+    lineHeight: 21,
     marginBottom: 20,
+  },
+  // Bold lead-in that makes the single-select instruction unmistakable (Bug 3a)
+  // without implying a tappable pill/filter.
+  subheadingEmphasis: {
+    fontWeight: '700',
+    color: '#374151',
   },
   optionsContainer: {
     gap: 12,
@@ -354,6 +365,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1A1A2E',
     minHeight: 48,
+    // Align to the content's own direction so RTL scripts (e.g. Hebrew) that the
+    // user types read naturally, while the app UI stays locked to LTR.
+    textAlign: 'auto',
   },
   charCount: {
     fontSize: 12,

@@ -223,6 +223,7 @@ export default function SettingsScreen({ navigation }: Props) {
               checklist: { openTool: false, tryExercise: false, addTool: false },
               checklistSessionCount: 0,
               bannerDismissed: false,
+              collapsedStackHintSeen: false,
               isChecklistVisible: false,
               isChecklistComplete: false,
             });
@@ -274,6 +275,7 @@ export default function SettingsScreen({ navigation }: Props) {
               checklist: { openTool: false, tryExercise: false, addTool: false },
               checklistSessionCount: 0,
               bannerDismissed: false,
+              collapsedStackHintSeen: false,
               isChecklistVisible: false,
               isChecklistComplete: false,
             });

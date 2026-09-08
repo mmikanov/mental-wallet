@@ -16,6 +16,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import type { Control } from '@/types/index';
 import type { DisplayMediaConfig } from '@/types/index';
+import type { ExternalAppConfig } from '@/types/externalApp';
 import StaticTextControl from './StaticTextControl';
 import TextInputControl from './TextInputControl';
 import TextAreaControl from './TextAreaControl';
@@ -35,6 +36,12 @@ interface ControlRendererProps {
   onChange: (controlId: string, value: string) => void;
   errors?: Record<string, string>;
   readOnly?: boolean;
+  /**
+   * For curated third-party "app" cards: the external app config, forwarded to the
+   * link_button control so its store fallback resolves per-platform. Absent for
+   * user-created tools.
+   */
+  externalApp?: ExternalAppConfig;
 }
 
 export default function ControlRenderer({
@@ -43,6 +50,7 @@ export default function ControlRenderer({
   onChange,
   errors = {},
   readOnly = false,
+  externalApp,
 }: ControlRendererProps) {
   const sortedControls = [...controls].sort((a, b) => a.position - b.position);
 
@@ -179,6 +187,7 @@ export default function ControlRenderer({
                 onChange={handleChange}
                 error={error}
                 readOnly={readOnly}
+                externalApp={externalApp}
               />
             );
 

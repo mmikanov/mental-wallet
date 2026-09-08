@@ -41,8 +41,27 @@ export default function PrivacyNoticeScreen() {
     navigation.navigate('PrivacyExplanation');
   };
 
+  const handleBack = () => {
+    navigation.goBack();
+  };
+
+  // The onboarding navigator can resume directly onto this screen (no previous
+  // screen on the stack). Only show Back when there's somewhere to go back to,
+  // so a resumed user doesn't see a broken/no-op control.
+  const canGoBack = navigation.canGoBack();
+
   return (
     <SafeAreaView style={styles.container}>
+      {canGoBack && (
+        <TouchableOpacity
+          onPress={handleBack}
+          style={styles.backButton}
+          accessibilityLabel="Go back to previous screen"
+          accessibilityRole="button"
+        >
+          <Text style={styles.backButtonText}>← Back</Text>
+        </TouchableOpacity>
+      )}
       <View style={styles.content}>
         {/* Icon */}
         <View style={styles.iconContainer}>
@@ -93,6 +112,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  // Matches the onboarding Back pattern used by Intent/KPI Selection.
+  backButton: {
+    minHeight: 44,
+    minWidth: 44,
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 24,
+    paddingTop: 8,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: '#4A90D9',
+    fontWeight: '500',
   },
   content: {
     flex: 1,
