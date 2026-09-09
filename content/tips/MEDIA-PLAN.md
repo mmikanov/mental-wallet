@@ -2,7 +2,38 @@
 
 Per-article recommendation for the **best media asset** to develop, so visual learners can
 *see* how a tip works rather than read it. Companion to the articles in `content/tips/` and
-the `heroImage` frontmatter field (currently `""` for every tip).
+the `heroImage` frontmatter field.
+
+## Ownership & status (who builds what)
+
+What the agent (Kiro) can produce in-repo vs. what needs you to capture, and where each tip
+stands. "Agent" = hand-authored CSS animation + generated GIF/poster via
+`tools/capture-tip-gif.js`, wired into web + email + feed. "You" = screen recordings / real
+screenshots of the app (Kiro can't record the simulator to production quality); Kiro then
+wraps/annotates and wires them in.
+
+| Tip | Ideal asset | Who produces | Status |
+| --- | --- | --- | --- |
+| welcome | Animation (cards fan into a wallet) | **Agent** | ✅ Done — live (web anim + email GIF + feed) |
+| come-back-reset | Animation (calm breathing card) | **Agent** | ✅ Done — live (web anim + email GIF + feed) |
+| outcome-capture | Screen video + data-reveal animation | **You** (video) + **Agent** (data-reveal anim) | ⬜ Not started |
+| feeling-anxious | Screen video ending on a breathing pacer | **You** (video) + **Agent** (breathing-pacer anim) | ⬜ Not started |
+| emotion-based-session | Screen-recorded video (flagship flow) | **You** | ⬜ Not started |
+| discover-third-party-apps | Screen video (iOS + Android) | **You** | ⬜ Not started |
+| personal-kpi-check-in | Short screen video or screenshot | **You** (Agent can annotate) | ⬜ Not started |
+| learn-more-evidence | Annotated screenshot(s) | **You** (screenshot) + **Agent** (annotation overlay) | ⬜ Not started |
+
+**What "Agent can do" means precisely:**
+- ✅ Hand-authored CSS/SVG animations (concept/feeling pieces) — web + derived email GIF + poster.
+- ✅ The GIF/poster conversion pipeline (`tools/capture-tip-gif.js`), wiring into `heroImage`,
+  the inline `<figure>`, `styles.css`, and deploy.
+- ✅ Annotation overlays / device frames *around* a screenshot you provide.
+- ❌ Cannot record app screen video or capture production-quality real screenshots.
+- ❌ Cannot produce photorealistic/brand artwork.
+
+**Split-asset tips (outcome-capture, feeling-anxious):** the flow is your screen recording, but
+the *animated beat* (the data-reveal chart; the breathing pacer) is a CSS animation Kiro can
+build and drop in — so these are a collaboration.
 
 ## How to read this
 

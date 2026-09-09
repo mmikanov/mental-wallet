@@ -7,5 +7,6 @@ wrangler.toml
 .DS_Store
 build-content.js
 tools
-assets/tip-media/welcome-wallet.html
-assets/tip-media/welcome-email-preview.html
+# Tip-media source/POC HTML (animation sources + email previews) are dev-only — never
+# deployed. Only the generated GIF/PNG assets in this folder are served publicly.
+assets/tip-media/*.html

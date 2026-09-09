@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Come-back-reset animation — POC</title>
+<style>
+  /* Standalone preview. The shippable piece is the .come-back-anim block; its CSS also
+     lives (namespaced) in website/styles.css so the tip markdown just embeds the <figure>.
+     Tone: CALM and low-pressure (the tip is "no streak to protect, here whenever you need
+     it"). One inviting card breathes softly; a "60 seconds" ring gently sweeps. No urgency. */
+  :root {
+    --color-primary: #788d75;
+    --color-primary-dark: #5a6b57;
+    --color-bg: #f5f2eb;
+    --color-card: #ffffff;
+    --color-text: #2d2d2d;
+    --color-text-muted: #6b6b6b;
+    --color-border: #e0ddd6;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--color-bg);
+    color: var(--color-text);
+    margin: 0; padding: 40px 16px;
+    display: flex; flex-direction: column; align-items: center; gap: 24px;
+  }
+  h1 { font-size: 1.3rem; }
+  .note { color: var(--color-text-muted); max-width: 34rem; text-align: center; font-size: 0.95rem; line-height: 1.5; }
+
+  /* ============ SHIPPABLE PIECE START ============ */
+  .come-back-anim {
+    width: 100%;
+    max-width: 360px;
+    margin: 1.5rem auto;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    padding: 28px 20px 20px;
+    box-sizing: border-box;
+    display: flex; flex-direction: column; align-items: center;
+    overflow: hidden;
+  }
+  .come-back-anim__stage {
+    position: relative;
+    width: 260px;
+    height: 190px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* Two faint background cards (the quiet, resting wallet) */
+  .come-back-anim__ghost {
+    position: absolute;
+    width: 220px; height: 120px;
+    border-radius: 16px;
+    background: #ffffff;
+    border: 1px solid var(--color-border);
+    opacity: 0.55;
+  }
+  .come-back-anim__ghost--a { transform: translateY(-26px) scale(0.92); }
+  .come-back-anim__ghost--b { transform: translateY(-13px) scale(0.96); }
+
+  /* The one inviting card, gently breathing */
+  .come-back-anim__card {
+    position: relative;
+    z-index: 2;
+    width: 232px; height: 132px;
+    border-radius: 16px;
+    background: #E8F5E9; /* mint — calm */
+    box-shadow: 0 6px 18px rgba(45,45,45,0.10);
+    padding: 16px 18px;
+    box-sizing: border-box;
+    display: flex; flex-direction: column; justify-content: space-between;
+    animation: comeBackBreathe 4.2s ease-in-out infinite;
+  }
+  .come-back-anim__row { display: flex; align-items: center; gap: 8px; }
+  .come-back-anim__icon { font-size: 22px; line-height: 1; }
+  .come-back-anim__title { font-weight: 600; font-size: 15px; color: #1C1C1E; }
+  .come-back-anim__sub { font-size: 12.5px; color: #4B5563; }
+
+  /* Soft breathing: subtle scale + a brand-sage glow that swells and fades */
+  @keyframes comeBackBreathe {
+    0%, 100% { transform: scale(1);     box-shadow: 0 6px 18px rgba(45,45,45,0.10); }
+    50%      { transform: scale(1.035); box-shadow: 0 10px 30px rgba(120,141,117,0.42); }
+  }
+
+  /* A gentle "60 seconds" ring that sweeps once per breath, unobtrusive */
+  .come-back-anim__timer {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 2px solid rgba(120,141,117,0.35);
+    border-top-color: var(--color-primary-dark);
+    animation: comeBackSweep 4.2s linear infinite;
+  }
+  @keyframes comeBackSweep {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .come-back-anim__caption {
+    margin-top: 14px;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    text-align: center;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .come-back-anim__card { animation: none; transform: scale(1); }
+    .come-back-anim__timer { animation: none; }
+  }
+  /* ============ SHIPPABLE PIECE END ============ */
+
+  .controls { display: flex; gap: 8px; }
+  button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--color-border); background: var(--color-card); color: var(--color-text); cursor: pointer; }
+</style>
+</head>
+<body>
+  <h1>Come-back-reset tip — animation POC (web)</h1>
+  <p class="note">Concept: a quiet wallet with one inviting card that gently breathes, and a soft
+  "60 seconds" ring. Calm and low-pressure — no streak, no urgency. Colors are the app's brand.</p>
+
+  <figure class="come-back-anim" role="img"
+          aria-label="A quiet wallet with one calm tool card gently breathing, ready for a 60-second reset.">
+    <div class="come-back-anim__stage">
+      <div class="come-back-anim__ghost come-back-anim__ghost--a"></div>
+      <div class="come-back-anim__ghost come-back-anim__ghost--b"></div>
+      <div class="come-back-anim__card">
+        <div class="come-back-anim__row">
+          <span class="come-back-anim__icon">🫁</span>
+          <span class="come-back-anim__title">Box breathing</span>
+        </div>
+        <div class="come-back-anim__row" style="justify-content:space-between">
+          <span class="come-back-anim__sub">A 60-second reset</span>
+          <span class="come-back-anim__timer"></span>
+        </div>
+      </div>
+    </div>
+    <figcaption class="come-back-anim__caption">Here whenever you need it.</figcaption>
+  </figure>
+
+  <div class="controls"><button onclick="location.reload()">Replay</button></div>
+</body>
+</html>

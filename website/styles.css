@@ -844,3 +844,86 @@ a.btn-primary:hover {
     transform: translateY(var(--settle)) scale(1);
   }
 }
+
+/* --- Come-back-reset tip animation ---
+   Calm, low-pressure: a quiet wallet with one inviting card gently breathing and a soft
+   "60 seconds" ring. Namespaced .come-back-anim; embedded inline in the tip body.
+   Web-only (email uses a GIF derived via tools/capture-tip-gif.js). Honors reduce-motion. */
+.come-back-anim {
+  width: 100%;
+  max-width: 360px;
+  margin: var(--space-lg) auto;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  padding: 28px 20px 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+}
+.come-back-anim__stage {
+  position: relative;
+  width: 260px;
+  height: 190px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.come-back-anim__ghost {
+  position: absolute;
+  width: 220px;
+  height: 120px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  opacity: 0.55;
+}
+.come-back-anim__ghost--a { transform: translateY(-26px) scale(0.92); }
+.come-back-anim__ghost--b { transform: translateY(-13px) scale(0.96); }
+.come-back-anim__card {
+  position: relative;
+  z-index: 2;
+  width: 232px;
+  height: 132px;
+  border-radius: 16px;
+  background: #e8f5e9;
+  box-shadow: 0 6px 18px rgba(45, 45, 45, 0.1);
+  padding: 16px 18px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  animation: comeBackBreathe 4.2s ease-in-out infinite;
+}
+.come-back-anim__row { display: flex; align-items: center; gap: 8px; }
+.come-back-anim__icon { font-size: 22px; line-height: 1; }
+.come-back-anim__title { font-weight: 600; font-size: 15px; color: #1c1c1e; }
+.come-back-anim__sub { font-size: 12.5px; color: #4b5563; }
+@keyframes comeBackBreathe {
+  0%, 100% { transform: scale(1);     box-shadow: 0 6px 18px rgba(45, 45, 45, 0.1); }
+  50%      { transform: scale(1.035); box-shadow: 0 10px 30px rgba(120, 141, 117, 0.42); }
+}
+.come-back-anim__timer {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid rgba(120, 141, 117, 0.35);
+  border-top-color: var(--color-primary-dark);
+  animation: comeBackSweep 4.2s linear infinite;
+}
+@keyframes comeBackSweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.come-back-anim__caption {
+  margin-top: 14px;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .come-back-anim__card { animation: none; transform: scale(1); }
+  .come-back-anim__timer { animation: none; }
+}
