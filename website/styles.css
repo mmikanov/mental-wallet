@@ -927,3 +927,24 @@ a.btn-primary:hover {
   .come-back-anim__card { animation: none; transform: scale(1); }
   .come-back-anim__timer { animation: none; }
 }
+
+/* --- Inline tip media (GIF/still from a screen recording) ---
+   For video-derived tips (e.g. emotion-based-session): a centered GIF embedded in the
+   article body. Portrait phone recordings render at a modest width so they don't dominate.
+   The email/feed use the same GIF via heroImage; the website shows it inline here. */
+.tip-media {
+  margin: var(--space-lg) auto;
+  text-align: center;
+}
+.tip-media img {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  border-radius: 18px;
+  box-shadow: 0 6px 20px rgba(45, 45, 45, 0.14);
+}
+.tip-media figcaption {
+  margin-top: 10px;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}

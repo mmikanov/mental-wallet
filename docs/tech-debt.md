@@ -108,3 +108,63 @@ removes the Resend warning and is marginally better for deliverability.
 
 **Risk if deferred:** Low — a cosmetic Resend warning; no known deliverability problem for a
 trusted store link.
+
+---
+
+## Campaign retries a non-transient failure forever (infinite chunk loop)
+
+**Type:** Bug / robustness
+**Priority:** Medium-High (can stall a real batch)
+**Discovered:** First real "Welcome wave" batch. Chunk 1 sent 5 recipients fine but 1
+recipient (the operator's own address) failed with a Resend `409 invalid_idempotent_request`.
+Every subsequent chunk retried that same recipient, failed identically, and `remaining`
+never dropped below 1 — an effectively infinite loop (chunk 2..16+ all `sent=0 failed=1
+remaining=1`) until the run was manually stopped.
+
+**Root cause:** The campaign loop treats a recipient as "done" only when their `tip_sends`
+row is `sent`/`pending`, and it retries `failed` rows on the next chunk. That's correct for
+*transient* failures, but a 409 idempotency collision (see item below) is **not transient**
+within 24h, so the recipient can never move out of `failed` and the batch spins forever.
+
+**Proposed fix:**
+- Treat certain failures as **terminal** (don't retry within the run): e.g. 409
+  idempotency collisions, hard bounces, invalid-address — mark a terminal state (e.g.
+  `failed_permanent`) that the audience/remaining query excludes.
+- Add a **max-attempts / backoff** per recipient, and detect **no-progress chunks** (if a
+  chunk yields `sent=0` and `remaining` is unchanged, stop and report rather than loop).
+- Surface a clear end-of-run summary instead of looping.
+
+**Files:** `messaging-worker/src/index.ts` (campaign execute loop + `selectAudience`
+`notYetClause`; the `tip_sends` status handling).
+
+**Interim workaround:** if a batch gets stuck on one recipient, stop the run and either mark
+that recipient's `tip_sends` row `sent` (if they actually got it) or delete it, then re-run.
+
+---
+
+## Idempotency key ignores body/version — editing a tip and re-sending within 24h fails
+
+**Type:** Bug / operability
+**Priority:** Medium
+**Discovered:** Same batch. The worker sends Resend an `Idempotency-Key` of
+`${tip_slug}:${email}` (e.g. `welcome:me@…`). Resend caches that key for 24h. After we edited
+the welcome email (paragraph-rendering fix) and re-sent to the same address, Resend returned
+`409 invalid_idempotent_request` ("same key, modified body"). Note this is enforced on
+**Resend's servers**, independent of our `tip_sends` table — deleting the D1 row does NOT
+clear it.
+
+**Root cause:** the idempotency key is stable across content changes (no body hash / version
+/ campaign component), so a legitimately *edited* re-send within 24h looks like a conflicting
+duplicate.
+
+**Proposed fix:** include a content/version discriminator in the key, e.g.
+`${tip_slug}:${version}:${email}` or `${tip_slug}:${bodyHash}:${email}` (tip frontmatter
+already has a `version` field). An edited resend then gets a fresh key and is accepted, while
+true accidental duplicates (same content) still dedupe. Pairs with the terminal-failure fix
+above so a 409 doesn't loop.
+
+**Files:** `messaging-worker/src/index.ts` (`send-test` idempotency key ~L448 and campaign
+loop `idempotencyKey` ~L985); tip `version` in `content/tips/*.md` frontmatter.
+
+**Operator note:** during iteration, re-send edited tips to yourself **without `--record`**
+(no idempotency key is sent), or use a fresh `+alias`, or wait ~24h for the key to expire.

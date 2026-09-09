@@ -4,12 +4,12 @@ summary: "Add apps like Headspace, Calm, and Insight Timer as cards in your wall
 slug: "discover-third-party-apps"
 type: "feature"
 topics: ["discovery", "apps"]
-heroImage: ""
+heroImage: "https://mentalhealthwallet.productsforgood.co/assets/tip-media/discover-third-party-apps.gif"
 cta:
   label: "Browse app cards to add"
   url: "https://apps.apple.com/app/mental-health-wallet/id6800036822"
 publishedAt: "2026-09-04"
-version: 1
+version: 2
 ---
 
 Mental Health Wallet isn't trying to replace the wellness apps you already like. It's
@@ -19,6 +19,11 @@ When you go to add tools, you'll find cards for apps like Headspace, Calm, Insig
 and more. Add any of them to your wallet, and you can launch the app right from its card.
 Alongside your quick techniques and your own custom tools, everything sits together, and
 the app can help point you to the right one based on how you feel.
+
+<figure class="tip-media">
+  <img src="https://mentalhealthwallet.productsforgood.co/assets/tip-media/discover-third-party-apps.gif" width="240" alt="Browsing the library, adding Headspace as a card, and opening it from the wallet." />
+  <figcaption>Add the apps you already use, and launch them from your wallet.</figcaption>
+</figure>
 
 So you don't have to choose between the app you love and having one organized home for your
 tools. You can have both.

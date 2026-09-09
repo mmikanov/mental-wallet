@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>learn-more-evidence — 2-beat animation POC</title>
+<style>
+  /* Two-beat animation: (1) card with pulsing ring + tapping hand on "Learn more",
+     (2) cross-fade to the rationale sheet it opens, held so it's readable, then loop.
+     One asset → works on web + email + feed. Cycle = 8s.
+     Web-only CSS; email/feed use a GIF derived via tools/capture-tip-gif.js. */
+  :root { --color-bg:#f5f2eb; --color-border:#e0ddd6; --color-text-muted:#6b6b6b; }
+  body { font-family:-apple-system,system-ui,sans-serif; background:var(--color-bg); margin:0; padding:40px 16px; display:flex; flex-direction:column; align-items:center; gap:20px; }
+  h1 { font-size:1.2rem; }
+  .note { color:var(--color-text-muted); max-width:34rem; text-align:center; font-size:.95rem; }
+
+  /* ============ SHIPPABLE PIECE START ============ */
+  .lme2 {
+    position: relative;
+    width: 294px;
+    height: 640px;
+    margin: 1.5rem auto;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 6px 20px rgba(45,45,45,0.14);
+    background: #fff;
+  }
+  .lme2__layer { position:absolute; inset:0; }
+  .lme2__layer img { display:block; width:100%; height:auto; }
+
+  /* Beat 1: card visible 0–45%, then fades out; Beat 2: sheet fades in ~40% and holds. */
+  .lme2__card  { animation: lme2Card 8s ease-in-out infinite; }
+  .lme2__sheet { opacity:0; animation: lme2Sheet 8s ease-in-out infinite; }
+  @keyframes lme2Card {
+    0%   { opacity:1; }
+    40%  { opacity:1; }
+    48%  { opacity:0; }
+    92%  { opacity:0; }
+    100% { opacity:1; }
+  }
+  @keyframes lme2Sheet {
+    0%   { opacity:0; }
+    40%  { opacity:0; }
+    48%  { opacity:1; }
+    92%  { opacity:1; }
+    100% { opacity:0; }
+  }
+
+  /* Highlight cluster on the card (only meaningful during beat 1). */
+  .lme2__spot { position:absolute; left:110px; top:238px; width:0; height:0;
+    animation: lme2Card 8s ease-in-out infinite; }  /* hide with the card */
+  .lme2__ring {
+    position:absolute; left:50%; top:50%;
+    width:84px; height:30px; margin-left:-42px; margin-top:-15px;
+    border-radius:9px; border:2.5px solid #E6A700; opacity:0;
+    animation: lmePulse 2.4s ease-out infinite;
+  }
+  .lme2__ring--2 { animation-delay:1.2s; }
+  @keyframes lmePulse {
+    0%{ transform:scale(0.7); opacity:0; } 15%{ opacity:0.9; }
+    70%{ transform:scale(1.35); opacity:0; } 100%{ opacity:0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .lme2__card, .lme2__sheet, .lme2__spot, .lme2__ring { animation:none; }
+    .lme2__card { opacity:1; } .lme2__sheet { opacity:0; }
+    .lme2__ring { opacity:0.9; transform:scale(1); }
+  }
+  /* ============ SHIPPABLE PIECE END ============ */
+
+  .controls { display:flex; gap:8px; }
+  button { font:inherit; padding:8px 14px; border-radius:8px; border:1px solid var(--color-border); background:#fff; cursor:pointer; }
+</style>
+</head>
+<body>
+  <h1>learn-more-evidence — 2-beat POC (card → sheet)</h1>
+  <p class="note">Beat 1: pulse + tap on "Learn more". Beat 2: cross-fades to the rationale
+  sheet it opens, held to read. One asset for all surfaces.</p>
+
+  <figure class="lme2" role="img" aria-label="Tapping Learn more on a tool opens an explanation of how it works and the evidence behind it.">
+    <div class="lme2__layer lme2__sheet"><img src="lme-sheet-bg.png" alt=""></div>
+    <div class="lme2__layer lme2__card"><img src="lme-card-bg.png" alt=""></div>
+    <div class="lme2__spot">
+      <div class="lme2__ring"></div>
+      <div class="lme2__ring lme2__ring--2"></div>
+    </div>
+  </figure>
+
+  <div class="controls"><button onclick="location.reload()">Replay</button></div>
+</body>
+</html>

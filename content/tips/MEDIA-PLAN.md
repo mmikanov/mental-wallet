@@ -14,14 +14,15 @@ wraps/annotates and wires them in.
 
 | Tip | Ideal asset | Who produces | Status |
 | --- | --- | --- | --- |
-| welcome | Animation (cards fan into a wallet) | **Agent** | ✅ Done — live (web anim + email GIF + feed) |
-| come-back-reset | Animation (calm breathing card) | **Agent** | ✅ Done — live (web anim + email GIF + feed) |
-| outcome-capture | Screen video + data-reveal animation | **You** (video) + **Agent** (data-reveal anim) | ⬜ Not started |
-| feeling-anxious | Screen video ending on a breathing pacer | **You** (video) + **Agent** (breathing-pacer anim) | ⬜ Not started |
-| emotion-based-session | Screen-recorded video (flagship flow) | **You** | ⬜ Not started |
-| discover-third-party-apps | Screen video (iOS + Android) | **You** | ⬜ Not started |
-| personal-kpi-check-in | Short screen video or screenshot | **You** (Agent can annotate) | ⬜ Not started |
-| learn-more-evidence | Annotated screenshot(s) | **You** (screenshot) + **Agent** (annotation overlay) | ⬜ Not started |
+| [welcome](#rec-welcome) | Animation (cards fan into a wallet) | **Agent** | ✅ Done — live (web anim + email GIF + feed) |
+| [come-back-reset](#rec-come-back-reset) | Animation (calm breathing card) | **Agent** | ✅ Done — live (web anim + email GIF + feed) |
+| [outcome-capture](#rec-outcome-capture) | Screen video + data-reveal animation | **You** (video) + **Agent** (data-reveal anim) | ⬜ Not started |
+| [feeling-anxious](#rec-feeling-anxious) | Screen video ending on a breathing pacer | **You** (video) + **Agent** (breathing-pacer anim) | ⬜ Not started |
+| [emotion-based-session](#rec-emotion-based-session) | Screen-recorded video (flagship flow) | **You** (recording) + **Agent** (clean/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero) |
+| [discover-third-party-apps](#rec-discover-third-party-apps) | Screen video (iOS) | **You** (recording) + **Agent** (clean/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero). Ends on "Open in Headspace / Link opened" (store-launch not simulator-demoable). |
+| [personal-kpi-check-in](#rec-personal-kpi-check-in) | Short screen video or screenshot | **You** (Agent can annotate) | ⬜ Not started |
+| [learn-more-evidence](#rec-learn-more-evidence) | Animated 2-beat (screenshot + pulse highlight → sheet) | **You** (screenshots) + **Agent** (animate/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero). Card w/ pulse ring on "Learn more" → cross-fades to the rationale sheet. |
+| [add-your-own-app](#rec-add-your-own-app) | Screen-recorded video (Create Tool → Link Button flow) | **You** (recording) + **Agent** (clean/GIF/wire) | ⬜ Not started |
 
 **What "Agent can do" means precisely:**
 - ✅ Hand-authored CSS/SVG animations (concept/feeling pieces) — web + derived email GIF + poster.
@@ -34,6 +35,35 @@ wraps/annotates and wires them in.
 **Split-asset tips (outcome-capture, feeling-anxious):** the flow is your screen recording, but
 the *animated beat* (the data-reveal chart; the breathing pacer) is a CSS animation Kiro can
 build and drop in — so these are a collaboration.
+
+## Standard workflow for each asset (agent)
+
+Follow these steps for every new tip asset so review is consistent:
+1. **Build/clean the asset.** CSS animation → author + `tools/capture-tip-gif.js`. Screen
+   recording → trim head/tail, speed up if needed (~1.3–1.5×), and **hold the final payoff
+   frame ~2s** (`tpad`) so the ending is readable before the loop; scale to ~300px source,
+   ~12fps; emit GIF + first-frame poster PNG.
+
+   **House style for highlights:** when you need to point at a specific UI element (a small
+   link, a button), use a **subtle pulsing ring** around it (amber `#E6A700`, ~2.4s pulse) —
+   NOT a cartoon hand/pointer (too playful, clashes with the clean screen-recording tips).
+   Position the ring over the target and verify centering with a frozen-frame capture before
+   generating the GIF (coordinates are px against the stage's authored width, so capture at
+   that same `--width`). For a "tap X → see Y" story, use a **2-beat** animation: highlight
+   the element, then cross-fade to what it opens and hold. Set the GIF **poster** to a frame
+   where the ring is fully visible (the default first frame can catch it mid-pulse).
+2. **Always build a review preview page** (`assets/tip-media/<slug>-preview.html`, dev-only,
+   excluded from deploy by the `*.html` glob) showing: the asset at a few **candidate display
+   widths** (200/240/300) AND **rendered inside the real email layout** (greeting → media →
+   title → summary → CTA). Open it in a browser for sign-off. This is the standard review the
+   operator relies on — do it every time.
+3. **Wire the tip** once approved: `heroImage` → GIF URL (email + feed); website body → inline
+   `<figure class="tip-media">` (GIF) or `<figure class="…-anim">` (CSS animation) at the
+   chosen `width`; bump frontmatter `version`.
+4. **Rebuild + verify** (`npm run build:content`): article shows inline media, no duplicate
+   top hero (build auto-skips it), `index.json` carries the GIF hero, other tips unaffected.
+5. **Deploy + verify live**: assets 200, article renders inline media, preview HTML 404.
+6. **Update the status table** above.
 
 ## How to read this
 
@@ -92,6 +122,7 @@ stage mid-fly-in). Capture `--start` is tuned so frame 1 is the settled/legible 
 
 ## Per-article recommendations
 
+<a id="rec-welcome"></a>
 ### 1. welcome — *"Welcome to Mental Health Wallet"* (feature; welcome, getting-started)
 - **Best asset:** **Lightweight animation** (concept, not a UI path) + a poster still for email.
 - **Why:** This is a warm intro, not a how-to. There's no single flow to demo; the job is tone + "a small toolkit ready when you need it."
@@ -99,6 +130,7 @@ stage mid-fly-in). Capture `--start` is tuned so frame 1 is the settled/legible 
 - **Fallback hero:** the settled end-frame (wallet with a few cards) as a static image.
 - **Alt text:** "A wallet filling with a few coping-tool cards."
 
+<a id="rec-emotion-based-session"></a>
 ### 2. emotion-based-session — *"Not sure what you need? Start from how you feel"* (feature; emotions, getting-started)
 - **Best asset:** **Screen-recorded video** (multi-step flow) — the flagship demo.
 - **Why:** This is a navigation flow with a clear payoff; motion sells it.
@@ -112,6 +144,7 @@ stage mid-fly-in). Capture `--start` is tuned so frame 1 is the settled/legible 
 - **Feed hero:** poster frame of the emotion picker mid-selection.
 - **Alt text:** "Tapping Start from how I feel, choosing an emotion, and getting suggested tools."
 
+<a id="rec-outcome-capture"></a>
 ### 3. outcome-capture — *"See which tools actually help you"* (feature; tracking, reflection)
 - **Best asset:** **Screen-recorded video** with a small **animated data reveal** at the end (hybrid).
 - **Why:** Two beats — the one-tap check-in (UI action) AND the payoff over time (concept). Video covers the action; a light chart/insight animation conveys "a picture forms."
@@ -122,6 +155,7 @@ stage mid-fly-in). Capture `--start` is tuned so frame 1 is the settled/legible 
 - **Feed hero:** poster of the 5-option check-in prompt (very recognizable, one-tap).
 - **Alt text:** "Answering how you feel after a tool, then seeing which tools help most."
 
+<a id="rec-personal-kpi-check-in"></a>
 ### 4. personal-kpi-check-in — *"Track the thing that matters to you"* (feature; tracking, goals)
 - **Best asset:** **Screen-recorded video** (short) OR **annotated screenshot** if budget is tight.
 - **Why:** Centers on one recognizable control — the seedling check-in button — plus a trend over time.
@@ -133,6 +167,7 @@ stage mid-fly-in). Capture `--start` is tuned so frame 1 is the settled/legible 
 - **Feed hero:** the seedling button in context with a subtle callout ring.
 - **Alt text:** "Tapping the seedling check-in and seeing your personal trend."
 
+<a id="rec-discover-third-party-apps"></a>
 ### 5. discover-third-party-apps — *"Keep the apps you already use, all in one place"* (feature; discovery, apps)
 - **Best asset:** **Screen-recorded video** (navigation flow) — note: capture on **both iOS and Android** given the recent store-link fix, or at least verify the launch looks right per platform.
 - **Why:** It's a discover→add→launch flow across screens; motion shows how the app cards live alongside the rest.
@@ -144,6 +179,7 @@ stage mid-fly-in). Capture `--start` is tuned so frame 1 is the settled/legible 
 - **Feed hero:** the library row of recognizable app logos (strong visual, brand-recognizable).
 - **Alt text:** "Adding a wellness app like Calm as a card and launching it from the wallet."
 
+<a id="rec-learn-more-evidence"></a>
 ### 6. learn-more-evidence — *"Why does this tool work? Tap Learn more"* (feature; trust, evidence)
 - **Best asset:** **Annotated screenshot** (points at one element) — with an optional 5s video of the sheet opening.
 - **Why:** The core message is "the Learn more link exists and here's what's behind it." That's a *location + reveal*, well served by a still with a callout; motion is a nice-to-have.
@@ -154,6 +190,7 @@ stage mid-fly-in). Capture `--start` is tuned so frame 1 is the settled/legible 
 - **Feed hero:** the rationale sheet with the evidence badge (communicates "trust/credibility").
 - **Alt text:** "The Learn more link on a tool and the evidence explanation it opens."
 
+<a id="rec-feeling-anxious"></a>
 ### 7. feeling-anxious — *"Feeling anxious right now? Try this"* (problem_solving; anxiety, grounding, in-the-moment)
 - **Best asset:** **Screen-recorded video** (in-the-moment flow) — reuse/trim the emotion-session capture, ending on a grounding exercise actually running.
 - **Why:** The promise is "don't decide, let the app point you," ending in relief. Motion + a running exercise conveys the calm payoff.
@@ -166,12 +203,28 @@ stage mid-fly-in). Capture `--start` is tuned so frame 1 is the settled/legible 
 - **Alt text:** "Choosing anxious and starting a short guided breathing exercise."
 - **Care note:** keep it soothing and slow; this audience is activated. No urgent/flashy motion.
 
+<a id="rec-come-back-reset"></a>
 ### 8. come-back-reset — *"Here whenever you need it"* (come_back; re-engagement, reminders)
 - **Best asset:** **Lightweight animation** or **static illustration** (concept, no UI path).
 - **Why:** A re-engagement nudge with an explicitly low-pressure, "no streak to protect" message. Showing UI steps would feel like a demand; a warm, calm visual matches the tone.
 - **Concept:** A single calm loop — e.g. one card gently glowing/breathing in an otherwise quiet wallet, or a soft "60 seconds" motif. Understated, no urgency.
 - **Fallback hero:** a calm still of the wallet with one inviting card.
 - **Alt text:** "A calm wallet with one tool waiting."
+
+<a id="rec-add-your-own-app"></a>
+### 9. add-your-own-app — *"Can't find your app? Add it yourself"* (feature; discovery, apps, customization)
+- **Best asset:** **Screen-recorded video** (Create Tool → Link Button flow). Pairs with discover-third-party-apps as the "it's not in the library" escape hatch.
+- **Why:** It's a multi-step build flow (menu → Create Tool → name it → Add block → Link Button → fill Label/Target URL → save → launch). Motion shows the sequence far better than prose, and it reassures users the builder isn't intimidating.
+- **Video steps (~10–14s, will be sped up + hold on payoff):**
+  1. Wallet → open the ⋮ menu → tap **Create Tool**.
+  2. Step 1: type a title, pick an icon (keep it quick).
+  3. Step 2: tap **Add block** → choose **Link Button**.
+  4. Fill **Label** ("Open my app") and **Target URL** (a website https://…); optionally a **Fallback URL**.
+  5. Preview & Save → the new card appears in the wallet.
+  6. End on the saved card in the wallet with its launch button (do NOT tap it — avoids the simulator dead-end / false "completed", same lesson as discover-third-party-apps).
+- **Feed hero:** the saved custom card in the wallet, or the Link Button config filled in.
+- **Alt text:** "Creating a custom tool with a Link Button that launches your own app."
+- **Note:** simulator can't actually open the app, so end on the saved card (don't show the launch tap). Capture on iPhone.
 
 ---
 

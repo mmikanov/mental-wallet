@@ -90,6 +90,10 @@ function parseTipFile(raw: string): Tip {
 function stripWebOnlyBlocks(body: string): string {
   return body
     .replace(/<figure[\s\S]*?<\/figure>/gi, '')
+    // Strip inline markdown emphasis markers (email renders body as plain text).
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/(^|[\s(])\*(\S(?:.*?\S)?)\*(?=[\s).,!?;:]|$)/g, '$1$2')
+    .replace(/(^|[\s(])_(\S(?:.*?\S)?)_(?=[\s).,!?;:]|$)/g, '$1$2')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
