@@ -180,10 +180,11 @@ function renderArticle(tip) {
   // The heroImage (a GIF/still) primarily serves EMAIL and the in-app FEED, which can't run
   // CSS animation. On the WEBSITE article we prefer the higher-fidelity inline animation when
   // the body embeds one — so skip the top hero if the body contains an inline animation
-  // figure, to avoid showing the same animation twice (hero + inline). Convention: tip
-  // animation blocks use a `*-anim` class (e.g. `tip-anim`, `come-back-anim`).
-  const bodyHasInlineAnim = /class="[^"]*\b[\w-]*-anim\b/.test(bodyHtml);
-  const hero = tip.heroImage && !bodyHasInlineAnim
+  // figure, to avoid showing the same media twice (hero + inline). Conventions: CSS
+  // animation blocks use a `*-anim` class (e.g. `tip-anim`, `come-back-anim`); inline
+  // GIF/still media (from a screen recording) uses `tip-media`.
+  const bodyHasInlineMedia = /class="[^"]*\b([\w-]*-anim|tip-media)\b/.test(bodyHtml);
+  const hero = tip.heroImage && !bodyHasInlineMedia
     ? `<img src="${escapeAttr(tip.heroImage)}" alt="" class="article-hero">`
     : '';
   // INTERIM CTA: one intent-labeled button. Its href defaults to the site's download

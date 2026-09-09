@@ -1,5 +1,23 @@
 [
   {
+    "slug": "add-your-own-app",
+    "title": "Can't find your app? Add it yourself",
+    "summary": "If an app you love isn't in the library, make your own card for it in a minute. Give it a name and a link, and launch it from your wallet like any other tool.",
+    "type": "feature",
+    "topics": [
+      "discovery",
+      "apps",
+      "customization"
+    ],
+    "heroImage": "",
+    "cta": {
+      "label": "Create your own tool",
+      "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+    },
+    "url": "/tips/add-your-own-app",
+    "publishedAt": "2026-09-09"
+  },
+  {
     "slug": "feeling-anxious",
     "title": "Feeling anxious right now? Try this",
     "summary": "When anxiety spikes, you don't have to figure out what to do. Open the app, tell it you're anxious, and it points you to tools that fit.",
@@ -60,7 +78,7 @@
       "discovery",
       "apps"
     ],
-    "heroImage": "",
+    "heroImage": "https://mentalhealthwallet.productsforgood.co/assets/tip-media/discover-third-party-apps.gif",
     "cta": {
       "label": "Browse app cards to add",
       "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
@@ -77,7 +95,7 @@
       "emotions",
       "getting-started"
     ],
-    "heroImage": "",
+    "heroImage": "https://mentalhealthwallet.productsforgood.co/assets/tip-media/emotion-based-session.gif",
     "cta": {
       "label": "Try Start from how I feel",
       "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
@@ -128,7 +146,7 @@
       "trust",
       "evidence"
     ],
-    "heroImage": "",
+    "heroImage": "https://mentalhealthwallet.productsforgood.co/assets/tip-media/learn-more-evidence.gif",
     "cta": {
       "label": "Open a tool and tap Learn more",
       "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
