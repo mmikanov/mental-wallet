@@ -488,7 +488,19 @@ async function sendTipEmail(
   const heroHtml = tip.heroImage
     ? `<img src="${escapeAttr(tip.heroImage)}" alt="" style="max-width:100%;border-radius:8px;margin:0 0 1rem" />`
     : '';
-  const bodyHtml = tip.body ? `<p>${escapeHtml(tip.body)}</p>` : '';
+  // Render the body as SEPARATE paragraphs so it doesn't collapse into one wall of text.
+  // Split on blank lines → one <p> per paragraph. Single newlines WITHIN a paragraph are
+  // just source-wrapping (the markdown wraps prose at ~90 chars), not intentional breaks, so
+  // collapse them to spaces to keep prose flowing. Still fully escaped (plain-text-safe) —
+  // no rich HTML in email (see the email-inline-media spec for the future richer path).
+  const bodyHtml = tip.body
+    ? tip.body
+        .split(/\n\s*\n/)
+        .map((para) => para.trim().replace(/\s*\n\s*/g, ' '))
+        .filter((para) => para.length > 0)
+        .map((para) => `<p>${escapeHtml(para)}</p>`)
+        .join('\n')
+    : '';
   const ctaHtml = tip.cta
     ? `<p style="margin:1.5rem 0"><a href="${escapeAttr(tip.cta.url!)}" style="display:inline-block;background:#4f46e5;color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px">${escapeHtml(tip.cta.label!)}</a></p>`
     : '';
@@ -510,7 +522,16 @@ You're receiving this because you subscribed to Mental Health Wallet updates.
 </body></html>`;
 
   const ctaText = tip.cta ? `\n\n${tip.cta.label}: ${tip.cta.url}` : '';
-  const bodyText = tip.body ? `\n\n${tip.body}` : '';
+  // Plain-text body: collapse source line-wrapping within each paragraph to spaces, keep
+  // blank lines between paragraphs.
+  const bodyTextClean = tip.body
+    ? tip.body
+        .split(/\n\s*\n/)
+        .map((para) => para.trim().replace(/\s*\n\s*/g, ' '))
+        .filter((para) => para.length > 0)
+        .join('\n\n')
+    : '';
+  const bodyText = bodyTextClean ? `\n\n${bodyTextClean}` : '';
   const signatureText = `\n\nCheers,\nMoshe\nProducts for Good`;
   const text = `${greeting}\n\n${tip.title}\n\n${tip.summary}${bodyText}${ctaText}${signatureText}\n\n---\nManage preferences: ${preferencesUrl}\nUnsubscribe: ${unsubscribeUrl}`;
 
