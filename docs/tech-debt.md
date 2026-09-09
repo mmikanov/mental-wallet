@@ -77,3 +77,34 @@ so we strip it for email.
 text) and hardcodes `heroImage` at the top. The interim `stripWebOnlyBlocks()` keeps email
 bodies clean, but authors can't place media mid-email. The spec covers rendering the body as
 sanitized HTML so a single authored tip can position media anywhere in both web and email.
+
+---
+
+## Email links should match the sending domain (deliverability polish)
+
+**Type:** Improvement / email deliverability
+**Priority:** Low
+**Discovered:** First real tip email batch — Resend's "Insights" flagged: "Ensure link URLs
+match sending domain. Mismatched URLs can trigger spam filters." The flagged link was the
+App Store URL (`https://apps.apple.com/app/mental-health-wallet/id6800036822`).
+
+**Assessment:** Low risk as-is. The mismatched link is the Apple App Store — a highly
+trusted domain — and it's the obvious CTA for an app's email, so it's unlikely to hurt
+placement. Sending domain (`productsforgood.co`) auth (SPF/DKIM/DMARC), list quality, and
+complaint rate matter far more. We chose to ship the batch without changing this.
+
+**Proposed improvement (when convenient):** Route email store links through our own domain so
+the link domain matches the sender. The website tip articles already do this — the article
+CTA uses `/#hero` + `app-cta.js` to redirect to the right store per platform. The email CTA
+and any in-body store links, however, use the raw `apps.apple.com` / Play Store URLs. Point
+the email CTA at a `https://mentalhealthwallet.productsforgood.co/…` download/redirect URL
+(reusing the same per-platform redirect logic) so all links share the sending domain. This
+removes the Resend warning and is marginally better for deliverability.
+
+**Files:**
+- `messaging-worker/src/index.ts` (tip email CTA + any store links)
+- `content/tips/*.md` (tip `cta.url` values point directly at stores today)
+- `website/app-cta.js` (existing per-platform redirect logic to reuse)
+
+**Risk if deferred:** Low — a cosmetic Resend warning; no known deliverability problem for a
+trusted store link.
