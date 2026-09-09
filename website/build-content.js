@@ -177,7 +177,12 @@ const EMBED_SCRIPT = `  <script>
 
 function renderArticle(tip) {
   const bodyHtml = marked.parse(tip.body);
-  const hero = tip.heroImage
+  // The heroImage (a GIF/still) primarily serves EMAIL and the in-app FEED, which can't run
+  // CSS animation. On the WEBSITE article we prefer the higher-fidelity inline animation when
+  // the body embeds one — so skip the top hero if the body already contains a `.tip-anim`
+  // block, to avoid showing the same animation twice (hero + inline).
+  const bodyHasInlineAnim = /class="[^"]*\btip-anim\b/.test(bodyHtml);
+  const hero = tip.heroImage && !bodyHasInlineAnim
     ? `<img src="${escapeAttr(tip.heroImage)}" alt="" class="article-hero">`
     : '';
   // INTERIM CTA: one intent-labeled button. Its href defaults to the site's download
@@ -317,7 +322,13 @@ function build() {
     process.exit(1);
   }
 
-  const files = fs.readdirSync(TIPS_DIR).filter((f) => f.endsWith('.md') && f !== 'README.md');
+  // Only *.md files that are actual tips. Doc files that live alongside the tips
+  // (README, MEDIA-PLAN, and any other UPPERCASE-named notes) are not tips and are
+  // skipped so they don't break the build with "no frontmatter".
+  const NON_TIP_DOCS = new Set(['README.md', 'MEDIA-PLAN.md']);
+  const files = fs
+    .readdirSync(TIPS_DIR)
+    .filter((f) => f.endsWith('.md') && !NON_TIP_DOCS.has(f) && !/^[A-Z0-9._-]+\.md$/.test(f));
   if (files.length === 0) {
     console.error('No tip markdown files found.');
     process.exit(1);

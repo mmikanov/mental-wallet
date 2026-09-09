@@ -89,11 +89,30 @@ function parseTipFile(raw: string): Tip {
     title: fields.title,
     summary: fields.summary,
   };
-  const trimmedBody = body.trim();
+  const trimmedBody = stripWebOnlyBlocks(body.trim());
   if (trimmedBody.length > 0) tip.body = trimmedBody;
   if (fields.heroImage && fields.heroImage.length > 0) tip.heroImage = fields.heroImage;
   if (cta.label && cta.url) tip.cta = { label: cta.label, url: cta.url };
   return tip;
+}
+
+/**
+ * Remove website-only HTML blocks from a tip body before it is sent by email.
+ *
+ * Tip bodies may embed rich HTML for the WEBSITE article (e.g. an inline
+ * `<figure class="tip-anim">…</figure>` CSS animation). The email renders the body as
+ * PLAIN TEXT (messaging-worker escapes it), so such HTML would otherwise appear as raw
+ * markup in the email. The animation is already represented in email by the GIF
+ * `heroImage`, so we strip these blocks here. (Until the `email-inline-media` spec lands,
+ * this keeps email bodies clean.)
+ */
+function stripWebOnlyBlocks(body: string): string {
+  return body
+    // Drop any <figure>…</figure> block (used for inline tip animations / media).
+    .replace(/<figure[\s\S]*?<\/figure>/gi, '')
+    // Collapse 3+ blank lines left behind into a single blank line.
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 function stripQuotes(s: string): string {

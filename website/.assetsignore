@@ -6,3 +6,6 @@ wrangler.toml
 .assetsignore
 .DS_Store
 build-content.js
+tools
+assets/tip-media/welcome-wallet.html
+assets/tip-media/welcome-email-preview.html

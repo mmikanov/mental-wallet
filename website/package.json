@@ -5,10 +5,12 @@
   "description": "Marketing landing page for Mental Health Wallet (Cloudflare Pages)",
   "scripts": {
     "build:content": "node build-content.js",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "capture:tip-gif": "node tools/capture-tip-gif.js"
   },
   "devDependencies": {
     "marked": "^12.0.2",
+    "puppeteer": "^23.11.1",
     "wrangler": "^3.90.0"
   }
 }

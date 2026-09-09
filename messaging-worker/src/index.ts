@@ -500,6 +500,7 @@ ${heroHtml}
 <p>${escapeHtml(tip.summary)}</p>
 ${bodyHtml}
 ${ctaHtml}
+<p style="margin:1.5rem 0 0">Cheers,<br>Moshe<br>Products for Good</p>
 <hr style="border:none;border-top:1px solid #eee;margin:2rem 0">
 <p style="font-size:12px;color:#888">
 You're receiving this because you subscribed to Mental Health Wallet updates.
@@ -510,7 +511,8 @@ You're receiving this because you subscribed to Mental Health Wallet updates.
 
   const ctaText = tip.cta ? `\n\n${tip.cta.label}: ${tip.cta.url}` : '';
   const bodyText = tip.body ? `\n\n${tip.body}` : '';
-  const text = `${greeting}\n\n${tip.title}\n\n${tip.summary}${bodyText}${ctaText}\n\n---\nManage preferences: ${preferencesUrl}\nUnsubscribe: ${unsubscribeUrl}`;
+  const signatureText = `\n\nCheers,\nMoshe\nProducts for Good`;
+  const text = `${greeting}\n\n${tip.title}\n\n${tip.summary}${bodyText}${ctaText}${signatureText}\n\n---\nManage preferences: ${preferencesUrl}\nUnsubscribe: ${unsubscribeUrl}`;
 
   return sendViaResend(env, {
     to: recipient.email,

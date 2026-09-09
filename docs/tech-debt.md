@@ -32,3 +32,48 @@ need to be added in one place.
 
 **Risk if deferred:** Low but recurring — each new onboarding flag risks the same
 reset-doesn't-clear-it bug until the reset paths are consolidated.
+
+---
+
+## Duplicated tip-frontmatter parser + web-only-block strip across send scripts
+
+**Type:** Refactor / DRY
+**Priority:** Low
+**Discovered:** During tip media work (adding email GIF + stripping the website-only
+`<figure class="tip-anim">` from email bodies).
+
+**Problem:** `messaging-worker/scripts/send-tip.ts` and `messaging-worker/scripts/run-campaign.ts`
+each carry their own copy of the tip frontmatter parser (`parseTipFile`) and now also their
+own copy of `stripWebOnlyBlocks()`. A third, slightly different parser exists in
+`website/build-content.js`. Any change to the tip schema or to what counts as "web-only"
+markup must be made in multiple places, which is error-prone.
+
+**Proposed fix:** Extract a single shared tip-parsing/normalization helper (frontmatter parse
++ `stripWebOnlyBlocks`) used by both messaging scripts (and ideally aligned with the website
+build's parser). Keep the "strip web-only blocks before email" rule in exactly one place.
+
+**Files:**
+- `messaging-worker/scripts/send-tip.ts`
+- `messaging-worker/scripts/run-campaign.ts`
+- `website/build-content.js` (parser alignment, optional)
+
+**Risk if deferred:** Low but recurring — schema/markup changes can silently diverge between
+the single-send and campaign paths (e.g. a new web-only block type stripped in one but not the
+other).
+
+---
+
+## Email body renders as plain text (no inline media/formatting)
+
+**Type:** Feature / limitation (spec'd)
+**Priority:** Medium (when inline email media is wanted)
+**Discovered:** Wiring the welcome tip — the website shows an inline animation, but the email
+can only show media via the top `heroImage` GIF; inline HTML in the body is escaped to text,
+so we strip it for email.
+
+**Status:** Requirements written — see `.kiro/specs/email-inline-media/requirements.md`.
+
+**Summary:** `messaging-worker/src/index.ts` renders the tip body with `escapeHtml` (plain
+text) and hardcodes `heroImage` at the top. The interim `stripWebOnlyBlocks()` keeps email
+bodies clean, but authors can't place media mid-email. The spec covers rendering the body as
+sanitized HTML so a single authored tip can position media anywhere in both web and email.
