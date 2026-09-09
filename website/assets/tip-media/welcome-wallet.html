@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Welcome animation — POC</title>
+<style>
+  /* Standalone preview only. The shippable piece is the .tip-anim-* block + CSS below,
+     which drops into the site (article body) or its own <figure>. Colors mirror the app:
+     brand sage #788d75 / #5a6b57 and the card palette from src/utils/cardColors.ts. */
+  :root {
+    --color-primary: #788d75;
+    --color-primary-dark: #5a6b57;
+    --color-bg: #f5f2eb;
+    --color-card: #ffffff;
+    --color-text: #2d2d2d;
+    --color-text-muted: #6b6b6b;
+    --color-border: #e0ddd6;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--color-bg);
+    color: var(--color-text);
+    margin: 0;
+    padding: 40px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+  h1 { font-size: 1.3rem; }
+  .note { color: var(--color-text-muted); max-width: 34rem; text-align: center; font-size: 0.95rem; line-height: 1.5; }
+
+  /* ============ SHIPPABLE PIECE START ============ */
+  .tip-anim {
+    width: 100%;
+    max-width: 360px;
+    margin: 1.5rem auto;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    padding: 28px 20px 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+  }
+  .tip-anim__stage {
+    position: relative;
+    width: 260px;
+    height: 210px;
+  }
+  /* Each card flies up + settles into a fanned stack */
+  /* LOOP: the whole sequence repeats — fly in, settle, hold, fade/reset, repeat.
+     One full cycle = 6s. Each card keeps its stagger via animation-delay. */
+  .tip-anim__card {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: 220px;
+    height: 132px;
+    margin-left: -110px;
+    border-radius: 16px;
+    box-shadow: 0 6px 18px rgba(45,45,45,0.12);
+    display: flex;
+    align-items: flex-start;
+    padding: 14px 16px;
+    box-sizing: border-box;
+    color: #1C1C1E;
+    font-weight: 600;
+    font-size: 15px;
+    opacity: 0;
+    transform: translateY(46px) scale(0.94);
+    animation: tipCardLoop 6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  }
+  .tip-anim__icon { font-size: 20px; margin-right: 8px; line-height: 1; }
+  /* Fanned final positions (bottom card most visible, others peeking above) */
+  .tip-anim__card--1 { background: #E8F5E9; --settle: -0px;   animation-delay: 0.15s; z-index: 4; }
+  .tip-anim__card--2 { background: #E3F2FD; --settle: -34px;  animation-delay: 0.5s;  z-index: 3; }
+  .tip-anim__card--3 { background: #EDE7F6; --settle: -66px;  animation-delay: 0.85s; z-index: 2; }
+  .tip-anim__card--4 { background: #FFF3E0; --settle: -96px;  animation-delay: 1.2s;  z-index: 1; }
+
+  /* Full-cycle keyframes: fly in (0-15%), settled hold (15-75%), fade out (75-90%),
+     stay reset (90-100%) so the next loop starts clean from below. */
+  @keyframes tipCardLoop {
+    0%   { opacity: 0; transform: translateY(46px) scale(0.94); }
+    12%  { opacity: 1; }
+    15%  { opacity: 1; transform: translateY(var(--settle)) scale(1); }
+    75%  { opacity: 1; transform: translateY(var(--settle)) scale(1); }
+    88%  { opacity: 0; transform: translateY(var(--settle)) scale(1); }
+    100% { opacity: 0; transform: translateY(46px) scale(0.94); }
+  }
+
+  /* Soft "breathing" glow on the front card while the stack is settled. */
+  .tip-anim__card--1 {
+    animation: tipCardLoop 6s cubic-bezier(0.22,1,0.36,1) 0.15s infinite,
+               tipGlow 3.2s ease-in-out infinite;
+  }
+  @keyframes tipGlow {
+    0%, 100% { box-shadow: 0 6px 18px rgba(45,45,45,0.12); }
+    50%      { box-shadow: 0 8px 26px rgba(120,141,117,0.45); }
+  }
+
+  .tip-anim__caption {
+    margin-top: 14px;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    text-align: center;
+  }
+
+  /* Respect reduced-motion: show the settled stack, no motion */
+  @media (prefers-reduced-motion: reduce) {
+    .tip-anim__card {
+      animation: none !important;
+      opacity: 1;
+      transform: translateY(var(--settle)) scale(1);
+    }
+  }
+  /* ============ SHIPPABLE PIECE END ============ */
+
+  .controls { display: flex; gap: 8px; }
+  button {
+    font: inherit; padding: 8px 14px; border-radius: 8px;
+    border: 1px solid var(--color-border); background: var(--color-card);
+    color: var(--color-text); cursor: pointer;
+  }
+</style>
+</head>
+<body>
+  <h1>Welcome tip — animation POC (web)</h1>
+  <p class="note">Concept: a few coping-tool cards fly up and settle into a calm Apple-Wallet-style
+  fanned stack, then the front card gently "breathes." Colors are the app's brand sage and card palette.</p>
+
+  <!-- This <figure> block is what would be embedded inline in the tip's markdown body. -->
+  <figure class="tip-anim" role="img"
+          aria-label="A few coping-tool cards settling into a wallet, then gently glowing.">
+    <div class="tip-anim__stage" id="stage">
+      <div class="tip-anim__card tip-anim__card--4"><span class="tip-anim__icon">🌿</span>Grounding</div>
+      <div class="tip-anim__card tip-anim__card--3"><span class="tip-anim__icon">💡</span>Reframe a thought</div>
+      <div class="tip-anim__card tip-anim__card--2"><span class="tip-anim__icon">🫁</span>Box breathing</div>
+      <div class="tip-anim__card tip-anim__card--1"><span class="tip-anim__icon">🌱</span>Daily check-in</div>
+    </div>
+    <figcaption class="tip-anim__caption">Your toolkit, ready when you need it.</figcaption>
+  </figure>
+
+  <div class="controls">
+    <button onclick="replay()">Replay</button>
+  </div>
+  <script>
+    // Preview helper only (not shipped): re-trigger the CSS animations.
+    function replay() {
+      const stage = document.getElementById('stage');
+      const clone = stage.cloneNode(true);
+      stage.parentNode.replaceChild(clone, stage);
+      clone.id = 'stage';
+    }
+  </script>
+</body>
+</html>

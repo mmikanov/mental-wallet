@@ -43,7 +43,7 @@
       "welcome",
       "getting-started"
     ],
-    "heroImage": "",
+    "heroImage": "https://mentalhealthwallet.productsforgood.co/assets/tip-media/welcome-wallet.gif",
     "cta": {
       "label": "Open the app and tap a card",
       "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"

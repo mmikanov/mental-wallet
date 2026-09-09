@@ -74,11 +74,24 @@ function parseTipFile(raw: string): Tip {
   }
   if (!fields.title || !fields.summary) throw new Error('Tip is missing required title/summary');
   const tip: Tip = { title: fields.title, summary: fields.summary };
-  const tb = body.trim();
+  const tb = stripWebOnlyBlocks(body.trim());
   if (tb.length > 0) tip.body = tb;
   if (fields.heroImage && fields.heroImage.length > 0) tip.heroImage = fields.heroImage;
   if (cta.label && cta.url) tip.cta = { label: cta.label, url: cta.url };
   return tip;
+}
+
+/**
+ * Remove website-only HTML blocks (e.g. inline `<figure class="tip-anim">` animations)
+ * from a tip body before emailing. The email renders the body as plain text, so such HTML
+ * would show as raw markup; the animation is already represented in email by the GIF
+ * heroImage. See send-tip.ts for the canonical note. (Interim until email-inline-media.)
+ */
+function stripWebOnlyBlocks(body: string): string {
+  return body
+    .replace(/<figure[\s\S]*?<\/figure>/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 const base = baseUrl.replace(/\/$/, '');

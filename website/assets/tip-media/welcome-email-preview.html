@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<!--
+  welcome-email-preview.html — faithful preview of the WELCOME tip EMAIL with the animated
+  GIF wired in as heroImage. Dev/preview only; not deployed, not sent.
+
+  The markup below the "EMAIL BODY (mirrors messaging-worker)" marker is a byte-for-byte
+  reproduction of what messaging-worker/src/index.ts generates for a tip email (greeting →
+  heroImage <img> → title → summary → body → CTA → footer), so what you see here is what
+  recipients get — except:
+    - Real sends must use an ABSOLUTE https heroImage URL (deployed site), e.g.
+      https://mentalhealthwallet.productsforgood.co/assets/tip-media/welcome-wallet.gif
+      Here we use the local relative path so the GIF plays in your browser.
+    - Outlook (desktop) will show only the GIF's FIRST FRAME (welcome-wallet.png equivalent).
+      Toggle "Show static fallback" below to preview that case.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Welcome email preview</title>
+<style>
+  body { margin: 0; background: #e9e9ec; font-family: -apple-system, system-ui, sans-serif; }
+  .harness { max-width: 680px; margin: 24px auto; padding: 0 16px; }
+  .harness__bar {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px;
+    font-size: 14px; color: #444;
+  }
+  .harness__bar strong { color: #1a1a1a; }
+  .harness__client { padding: 6px 10px; border: 1px solid #ccc; border-radius: 8px; background:#fff; cursor:pointer; }
+  .email-frame {
+    background: #fff; border: 1px solid #ddd; border-radius: 10px; overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  }
+  .email-meta {
+    padding: 12px 16px; border-bottom: 1px solid #eee; font-size: 13px; color: #666; background:#fafafa;
+  }
+  .email-meta div { margin: 2px 0; }
+  /* When previewing "Outlook", swap the animated gif for the static poster. */
+  body.static-fallback .hero-gif { display: none; }
+  body:not(.static-fallback) .hero-static { display: none; }
+</style>
+</head>
+<body>
+  <div class="harness">
+    <div class="harness__bar">
+      <strong>Welcome email preview</strong>
+      <span>— exactly what messaging-worker renders, with the animated heroImage.</span>
+      <button class="harness__client" onclick="document.body.classList.toggle('static-fallback')">
+        Toggle: animated GIF ⇄ Outlook static frame
+      </button>
+    </div>
+
+    <div class="email-frame">
+      <div class="email-meta">
+        <div><strong>Subject:</strong> Welcome to Mental Health Wallet</div>
+        <div><strong>From:</strong> Mental Health Wallet &lt;hello@…&gt;</div>
+        <div><strong>To:</strong> you@example.com</div>
+      </div>
+
+      <!-- ================= EMAIL BODY (mirrors messaging-worker) ================= -->
+      <div style="font-family:-apple-system,system-ui,sans-serif;color:#1a1a1a;line-height:1.5;max-width:36rem;margin:0 auto;padding:1rem">
+        <p>Hi there,</p>
+
+        <!-- heroImage <img>. Real send: absolute https URL. Outlook shows frame 1 only.
+             Explicit width= keeps the animated GIF and the static poster the SAME size in
+             every client (Outlook ignores max-width and would otherwise render at intrinsic
+             pixel size). 300px matches the captured asset width. -->
+        <img class="hero-gif" src="welcome-wallet.gif" width="300" alt="A few coping-tool cards settling into a wallet, then gently glowing."
+             style="width:300px;max-width:100%;height:auto;border-radius:8px;margin:0 0 1rem" />
+        <img class="hero-static" src="welcome-wallet.png" width="300" alt="A few coping-tool cards settled into a wallet."
+             style="width:300px;max-width:100%;height:auto;border-radius:8px;margin:0 0 1rem" />
+
+        <h2 style="font-size:1.2rem;margin:0 0 .5rem">Welcome to Mental Health Wallet</h2>
+        <p>Glad you're here. Here's what to expect from these emails, and one small thing to try first.</p>
+        <p>Thanks for signing up. Glad to have you. Every now and then I'll send a short, practical tip to help you get more out of the app, and, if you asked for them, the occasional gentle reminder to come back. No spam, no pressure.</p>
+
+        <p style="margin:1.5rem 0">
+          <a href="#" style="display:inline-block;background:#4f46e5;color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px">Open the app and tap a card</a>
+        </p>
+
+        <hr style="border:none;border-top:1px solid #eee;margin:2rem 0">
+        <p style="font-size:12px;color:#888">
+          You're receiving this because you subscribed to Mental Health Wallet updates.
+          <a href="#">Manage preferences</a> &middot;
+          <a href="#">Unsubscribe</a>
+        </p>
+      </div>
+      <!-- ================= /EMAIL BODY ================= -->
+    </div>
+  </div>
+</body>
+</html>

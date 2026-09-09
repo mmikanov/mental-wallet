@@ -755,3 +755,92 @@ a.btn-primary:hover {
   color: var(--color-text-muted);
   padding: var(--space-lg) 0;
 }
+
+/* --- Tip animations (embedded inline in article bodies) ---
+   Reusable, self-contained CSS animations for tip articles. Each tip's markdown body
+   includes a <figure class="tip-anim">…</figure> block; this styles + animates it.
+   Colors use the site tokens (brand sage) + the app's card palette. Honors reduce-motion.
+   Web-only: email uses a GIF derived from this via tools/capture-tip-gif.js. */
+.tip-anim {
+  width: 100%;
+  max-width: 360px;
+  margin: var(--space-lg) auto;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  padding: 28px 20px 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+}
+.tip-anim__stage {
+  position: relative;
+  width: 260px;
+  height: 210px;
+}
+.tip-anim__card {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 220px;
+  height: 132px;
+  margin-left: -110px;
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(45, 45, 45, 0.12);
+  display: flex;
+  align-items: flex-start;
+  padding: 14px 16px;
+  box-sizing: border-box;
+  color: #1c1c1e;
+  font-weight: 600;
+  font-size: 15px;
+  opacity: 0;
+  transform: translateY(46px) scale(0.94);
+  animation: tipCardLoop 6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+.tip-anim__icon {
+  font-size: 20px;
+  margin-right: 8px;
+  line-height: 1;
+}
+.tip-anim__card--1 { background: #e8f5e9; --settle: 0px;    animation-delay: 0.15s; z-index: 4; }
+.tip-anim__card--2 { background: #e3f2fd; --settle: -34px;  animation-delay: 0.5s;  z-index: 3; }
+.tip-anim__card--3 { background: #ede7f6; --settle: -66px;  animation-delay: 0.85s; z-index: 2; }
+.tip-anim__card--4 { background: #fff3e0; --settle: -96px;  animation-delay: 1.2s;  z-index: 1; }
+
+@keyframes tipCardLoop {
+  0%   { opacity: 0; transform: translateY(46px) scale(0.94); }
+  12%  { opacity: 1; }
+  15%  { opacity: 1; transform: translateY(var(--settle)) scale(1); }
+  75%  { opacity: 1; transform: translateY(var(--settle)) scale(1); }
+  88%  { opacity: 0; transform: translateY(var(--settle)) scale(1); }
+  100% { opacity: 0; transform: translateY(46px) scale(0.94); }
+}
+
+/* Front card also breathes a soft brand-sage glow while settled. */
+.tip-anim__card--1 {
+  animation: tipCardLoop 6s cubic-bezier(0.22, 1, 0.36, 1) 0.15s infinite,
+             tipGlow 3.2s ease-in-out infinite;
+}
+@keyframes tipGlow {
+  0%, 100% { box-shadow: 0 6px 18px rgba(45, 45, 45, 0.12); }
+  50%      { box-shadow: 0 8px 26px rgba(120, 141, 117, 0.45); }
+}
+
+.tip-anim__caption {
+  margin-top: 14px;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* Reduced motion: show the settled stack, no motion. */
+@media (prefers-reduced-motion: reduce) {
+  .tip-anim__card {
+    animation: none !important;
+    opacity: 1;
+    transform: translateY(var(--settle)) scale(1);
+  }
+}
