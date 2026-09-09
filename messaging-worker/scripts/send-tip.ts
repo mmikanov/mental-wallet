@@ -110,6 +110,13 @@ function stripWebOnlyBlocks(body: string): string {
   return body
     // Drop any <figure>…</figure> block (used for inline tip animations / media).
     .replace(/<figure[\s\S]*?<\/figure>/gi, '')
+    // Strip inline markdown emphasis markers. The email renders the body as PLAIN TEXT
+    // (escaped), so **bold** / *italic* / _italic_ would otherwise show their literal
+    // asterisks/underscores. Keep the words, drop the markers. (The website renders the
+    // same markdown properly; full rich email is tracked in the email-inline-media spec.)
+    .replace(/\*\*(.+?)\*\*/g, '$1')   // **bold**
+    .replace(/(^|[\s(])\*(\S(?:.*?\S)?)\*(?=[\s).,!?;:]|$)/g, '$1$2')  // *italic*
+    .replace(/(^|[\s(])_(\S(?:.*?\S)?)_(?=[\s).,!?;:]|$)/g, '$1$2')    // _italic_
     // Collapse 3+ blank lines left behind into a single blank line.
     .replace(/\n{3,}/g, '\n\n')
     .trim();
