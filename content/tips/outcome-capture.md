@@ -4,12 +4,12 @@ summary: "After you use a tool, the app asks how you feel. Over time it shows yo
 slug: "outcome-capture"
 type: "feature"
 topics: ["tracking", "reflection"]
-heroImage: ""
+heroImage: "https://mentalhealthwallet.productsforgood.co/assets/tip-media/outcome-capture.gif"
 cta:
   label: "Use a tool and check in"
   url: "https://apps.apple.com/app/mental-health-wallet/id6800036822"
 publishedAt: "2026-09-04"
-version: 1
+version: 2
 ---
 
 It's easy to collect coping tools. It's harder to know which ones are actually doing
@@ -21,6 +21,11 @@ calmer, clearer, hopeful, same, or worse. That's it, one tap.
 Do that a few times and a picture starts to form. The app shows you which tools tend to
 leave you feeling better, and which ones don't seem to land for you. Instead of guessing,
 you get to lean on the tools that genuinely help, and quietly retire the ones that don't.
+
+<figure class="tip-media">
+  <img src="https://mentalhealthwallet.productsforgood.co/assets/tip-media/outcome-capture.gif" width="240" alt="Finishing a tool, tapping how you feel, then opening Insights to see which tools help most." />
+  <figcaption>Check in after a tool, then open Insights to see which tools actually help.</figcaption>
+</figure>
 
 Next time you use a tool, take the extra second to answer the check-in. Future you will
 have real data to work with.

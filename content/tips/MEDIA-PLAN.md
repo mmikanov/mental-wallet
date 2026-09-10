@@ -16,7 +16,7 @@ wraps/annotates and wires them in.
 | --- | --- | --- | --- |
 | [welcome](#rec-welcome) | Animation (cards fan into a wallet) | **Agent** | ✅ Done — live (web anim + email GIF + feed) |
 | [come-back-reset](#rec-come-back-reset) | Animation (calm breathing card) | **Agent** | ✅ Done — live (web anim + email GIF + feed) |
-| [outcome-capture](#rec-outcome-capture) | Screen video + data-reveal animation | **You** (video) + **Agent** (data-reveal anim) | ⬜ Not started |
+| [outcome-capture](#rec-outcome-capture) | Screen video (check-in → Insights payoff) | **You** (recording, seed data first) + **Agent** (clean/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero). Full flow: complete a tool → "How do you feel" check-in → Calmer selected → ⋮ menu → Insights → staggered Best Tools/Outcome Trends reveal. |
 | [feeling-anxious](#rec-feeling-anxious) | Screen video ending on a breathing pacer | **You** (video) + **Agent** (breathing-pacer anim) | ⬜ Not started |
 | [emotion-based-session](#rec-emotion-based-session) | Screen-recorded video (flagship flow) | **You** (recording) + **Agent** (clean/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero) |
 | [discover-third-party-apps](#rec-discover-third-party-apps) | Screen video (iOS) | **You** (recording) + **Agent** (clean/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero). Ends on "Open in Headspace / Link opened" (store-launch not simulator-demoable). |
@@ -32,9 +32,11 @@ wraps/annotates and wires them in.
 - ❌ Cannot record app screen video or capture production-quality real screenshots.
 - ❌ Cannot produce photorealistic/brand artwork.
 
-**Split-asset tips (outcome-capture, feeling-anxious):** the flow is your screen recording, but
-the *animated beat* (the data-reveal chart; the breathing pacer) is a CSS animation Kiro can
-build and drop in — so these are a collaboration.
+**Split-asset tip (feeling-anxious):** the flow is your screen recording, but the *animated
+beat* (a breathing pacer) is a CSS animation Kiro can build and drop in — so it's a
+collaboration. (Note: outcome-capture was initially planned as a split asset with an
+"animated data reveal," but its payoff — the Insights "Best Tools" ranking — is a real app
+screen, so it's a straight recording. See its per-tip entry for the required seeding prep.)
 
 ## Standard workflow for each asset (agent)
 
@@ -146,14 +148,32 @@ stage mid-fly-in). Capture `--start` is tuned so frame 1 is the settled/legible 
 
 <a id="rec-outcome-capture"></a>
 ### 3. outcome-capture — *"See which tools actually help you"* (feature; tracking, reflection)
-- **Best asset:** **Screen-recorded video** with a small **animated data reveal** at the end (hybrid).
-- **Why:** Two beats — the one-tap check-in (UI action) AND the payoff over time (concept). Video covers the action; a light chart/insight animation conveys "a picture forms."
-- **Video steps (8–10s):**
+- **Best asset:** **Screen-recorded video** (straight recording — no fabricated animation). The
+  "payoff" (step 3) is a REAL app screen: Insights → "Best Tools for You" ranked list. Same
+  pipeline as emotion-based-session / discover (clean → speed → hold on the payoff).
+- **Why:** Two beats — the one-tap check-in (UI action) AND the payoff (Insights shows which
+  tools help most). Both are real screens, so we record, not animate.
+- **⚠️ Recording prep (required — the payoff is empty on a fresh account):** the Insights
+  "Best Tools" ranking only populates at the **confident** tier (~14+ check-ins, 10+ tool uses,
+  2+ distinct tools). So on a **dev build + demo account**:
+  1. Wallet has 3+ distinct tools (add a couple if needed).
+  2. Settings → Developer → **"🧪 Insights Mock Data"** → enter `60` → **Seed Mock Data**
+     (seeds ~60 days of correlated data → confident tier). NOTE: this WIPES existing
+     completions/KPI/outcome data — demo account only, never a real one.
+  3. In Insights, set the time-period selector to **"All"** so no "not enough activity in this
+     range" empty state shows.
+  (Seeder is `__DEV__`-only; reveal the Developer section via triple-tap on the Settings
+  header if hidden. Source: `SeedInsightsButton` / `devInsightsMockData.ts`.)
+- **Video steps (~10–14s, one continuous take; agent trims/speeds/holds):**
   1. Finish a tool → the "How do you feel now?" prompt appears (calmer / clearer / hopeful / same / worse).
   2. One tap on "Calmer".
-  3. Cut/dissolve to a simple insights view where a few tools show which tend to help (animate bars/labels filling in).
-- **Feed hero:** poster of the 5-option check-in prompt (very recognizable, one-tap).
+  3. Wallet → ⋯ menu → **Insights** → land on **"Best Tools for You"** (numbered ranked list).
+     Optionally scroll a touch to the "Outcome Trends" chart. Hold on the ranking (the payoff).
+- **Feed hero:** poster of the 5-option check-in prompt (very recognizable, one-tap), OR the
+  Best Tools ranking — pick whichever reads best as a still.
 - **Alt text:** "Answering how you feel after a tool, then seeing which tools help most."
+- **Note:** the "Best Tools" payoff is a numbered ranked list (not bar charts), so no
+  agent-built data animation is needed — recording the real screen is better and simpler.
 
 <a id="rec-personal-kpi-check-in"></a>
 ### 4. personal-kpi-check-in — *"Track the thing that matters to you"* (feature; tracking, goals)
