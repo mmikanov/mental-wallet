@@ -10,3 +10,7 @@ tools
 # Tip-media source/POC HTML (animation sources + email previews) are dev-only — never
 # deployed. Only the generated GIF/PNG assets in this folder are served publicly.
 assets/tip-media/*.html
+# Regen-only source images (screenshot slices + composited backgrounds used to build the
+# GIFs). Kept in the repo so animations can be rebuilt, but not served publicly.
+assets/tip-media/oc-slice*.png
+assets/tip-media/lme-*-bg.png
