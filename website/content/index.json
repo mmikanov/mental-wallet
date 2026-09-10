@@ -1,5 +1,23 @@
 [
   {
+    "slug": "add-your-own-tool",
+    "title": "Build your own tool, exactly how you want it",
+    "summary": "The library not quite right? Create your own coping tool from scratch. Mix text prompts, a mood slider, a checklist, and more into a card you actually use inside the app.",
+    "type": "feature",
+    "topics": [
+      "customization",
+      "tools",
+      "journaling"
+    ],
+    "heroImage": "",
+    "cta": {
+      "label": "Create your own tool",
+      "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+    },
+    "url": "/tips/add-your-own-tool",
+    "publishedAt": "2026-09-10"
+  },
+  {
     "slug": "add-your-own-app",
     "title": "Can't find your app? Add it yourself",
     "summary": "If an app you love isn't in the library, make your own card for it in a minute. Give it a name and a link, and launch it from your wallet like any other tool.",

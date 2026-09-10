@@ -20,9 +20,10 @@ wraps/annotates and wires them in.
 | [feeling-anxious](#rec-feeling-anxious) | Screen video (real app flow — no fabricated pacer) | **You** (video) + **Agent** (clean/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero). Option 1 (real flow, no fabricated pacer): held wallet → amber pulse-ring tap on "Start from how I feel" → Anxious → amber pulse-ring tap on 5-4-3-2-1 Grounding → land in the tool (held) → fill SEE + TOUCH → fade out. | `7e5dc61d-9039-4fcd-bbbb-445adf245a13` (draft) |
 | [emotion-based-session](#rec-emotion-based-session) | Screen-recorded video (flagship flow) | **You** (recording) + **Agent** (clean/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero) | `3c8bb564-402c-4354-b092-39772bb13a8c` (draft) |
 | [discover-third-party-apps](#rec-discover-third-party-apps) | Screen video (iOS) | **You** (recording) + **Agent** (clean/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero). Ends on "Open in Headspace / Link opened" (store-launch not simulator-demoable). | `96a6931f-c862-4321-bae4-e84765c470fb` (draft) |
-| [personal-kpi-check-in](#rec-personal-kpi-check-in) | Short screen video or screenshot | **You** (recording) + **Agent** (clean/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero). Held wallet → amber pulse on 🌱 seedling → Daily check-in → rate 8/10 → note + Save → amber pulse on ⋮ kebab → Card actions → amber pulse on Insights → Insights payoff (Daily Check-In Impact + Outcome Trends) → fade out. | — (no campaign yet) |
+| [personal-kpi-check-in](#rec-personal-kpi-check-in) | Short screen video or screenshot | **You** (recording) + **Agent** (clean/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero). Held wallet → amber pulse on 🌱 seedling → Daily check-in → rate 8/10 → note + Save → amber pulse on ⋮ kebab → Card actions → amber pulse on Insights → Insights payoff (Daily Check-In Impact + Outcome Trends) → fade out. | `a1ba2d2d-933b-4876-979f-a778321d877e` (draft) |
 | [learn-more-evidence](#rec-learn-more-evidence) | Animated 2-beat (screenshot + pulse highlight → sheet) | **You** (screenshots) + **Agent** (animate/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero). Card w/ pulse ring on "Learn more" → cross-fades to the rationale sheet. | `b237f76e-5d42-4515-bb26-a252410dffb4` (draft) |
 | [add-your-own-app](#rec-add-your-own-app) | Screen-recorded video (Create Tool → Link Button flow) | **You** (recording) + **Agent** (clean/GIF/wire) | ⬜ Not started — tip text live, needs recording | — |
+| [add-your-own-tool](#rec-add-your-own-tool) | Screen video (Create Tool → input blocks → use it) | **You** (recording) + **Agent** (clean/GIF/wire) | ⬜ Not started — tip text drafted (needs review), needs recording. Most complex flow. | — |
 
 **What "Agent can do" means precisely:**
 - ✅ Hand-authored CSS/SVG animations (concept/feeling pieces) — web + derived email GIF + poster.
@@ -255,6 +256,21 @@ stage mid-fly-in). Capture `--start` is tuned so frame 1 is the settled/legible 
 - **Feed hero:** the saved custom card in the wallet, or the Link Button config filled in.
 - **Alt text:** "Creating a custom tool with a Link Button that launches your own app."
 - **Note:** simulator can't actually open the app, so end on the saved card (don't show the launch tap). Capture on iPhone.
+
+<a id="rec-add-your-own-tool"></a>
+### 10. add-your-own-tool — *"Build your own tool, exactly how you want it"* (feature; customization, tools, journaling)
+- **Best asset:** **Screen-recorded video** (Create Tool → add input blocks → save → use it). The most complex flow of the set — a real builder walkthrough.
+- **Why:** This is the app's deepest differentiator (build a self-contained coping tool from controls, used *inside* the app). Distinct from add-your-own-app, which builds a **Link Button launcher** for an external app. Motion is essential to show the block-stacking and that the result is a usable in-app card.
+- **Video steps (~12–16s, will be sped up + hold on payoff):**
+  1. Wallet → ⋮ menu → **Create Tool** (amber pulse-ring on the menu / Create Tool, house style).
+  2. Step 1 (Shell): type a title + pick an icon (keep quick).
+  3. Step 2 (Controls): tap **Add block** → add a couple of INPUT blocks (e.g. **Mood Slider**, **Text Area**, **Checkbox**) — NOT a Link Button (that's the other tip). Fill a label or two so it reads.
+  4. Preview & Save → the new card appears in the wallet.
+  5. **Open the saved card and fill it in** (the payoff — this is a tool you USE in-app, so show it being used, unlike add-your-own-app which ends on the launcher card). Hold on the filled tool.
+- **⚠️ Complexity note:** this flow has the most steps of any tip. Expect heavy speed-up on the typing/config, pulse-ring highlights on the key taps (Create Tool, Add block), and possibly a jump-cut past the slowest config to keep it ~13–15s. Same discipline as feeling-anxious/personal-kpi.
+- **Feed hero:** the finished custom tool card in the wallet (its stacked controls visible), or the Step 2 block list mid-build.
+- **Alt text:** "Building a custom coping tool from blocks and using it inside the app."
+- **Distinction to preserve:** add-your-own-**app** = Link Button that launches an external app; add-your-own-**tool** = input controls you use in-app. Keep the two assets visually different (this one shows filling in the tool; that one ends on a launcher card).
 
 ---
 
