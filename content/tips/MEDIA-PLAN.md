@@ -12,17 +12,17 @@ stands. "Agent" = hand-authored CSS animation + generated GIF/poster via
 screenshots of the app (Kiro can't record the simulator to production quality); Kiro then
 wraps/annotates and wires them in.
 
-| Tip | Ideal asset | Who produces | Status |
-| --- | --- | --- | --- |
-| [welcome](#rec-welcome) | Animation (cards fan into a wallet) | **Agent** | ✅ Done — live (web anim + email GIF + feed) |
-| [come-back-reset](#rec-come-back-reset) | Animation (calm breathing card) | **Agent** | ✅ Done — live (web anim + email GIF + feed) |
-| [outcome-capture](#rec-outcome-capture) | Screen video (check-in → Insights payoff) | **You** (recording, seed data first) + **Agent** (clean/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero). Full flow: complete a tool → "How do you feel" check-in → Calmer selected → ⋮ menu → Insights → staggered Best Tools/Outcome Trends reveal. |
-| [feeling-anxious](#rec-feeling-anxious) | Screen video ending on a breathing pacer | **You** (video) + **Agent** (breathing-pacer anim) | ⬜ Not started |
-| [emotion-based-session](#rec-emotion-based-session) | Screen-recorded video (flagship flow) | **You** (recording) + **Agent** (clean/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero) |
-| [discover-third-party-apps](#rec-discover-third-party-apps) | Screen video (iOS) | **You** (recording) + **Agent** (clean/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero). Ends on "Open in Headspace / Link opened" (store-launch not simulator-demoable). |
-| [personal-kpi-check-in](#rec-personal-kpi-check-in) | Short screen video or screenshot | **You** (Agent can annotate) | ⬜ Not started |
-| [learn-more-evidence](#rec-learn-more-evidence) | Animated 2-beat (screenshot + pulse highlight → sheet) | **You** (screenshots) + **Agent** (animate/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero). Card w/ pulse ring on "Learn more" → cross-fades to the rationale sheet. |
-| [add-your-own-app](#rec-add-your-own-app) | Screen-recorded video (Create Tool → Link Button flow) | **You** (recording) + **Agent** (clean/GIF/wire) | ⬜ Not started |
+| Tip | Ideal asset | Who produces | Status | Campaign ID (status) |
+| --- | --- | --- | --- | --- |
+| [welcome](#rec-welcome) | Animation (cards fan into a wallet) | **Agent** | ✅ Done — live (web anim + email GIF + feed) | `0d9c7f07-d16d-437d-878e-b06fbd4989e8` (sent) |
+| [come-back-reset](#rec-come-back-reset) | Animation (calm breathing card) | **Agent** | ✅ Done — live (web anim + email GIF + feed) | `b204b503-5b02-47c8-b401-c302825ce1f9` (draft · reminders scope) |
+| [outcome-capture](#rec-outcome-capture) | Screen video (check-in → Insights payoff) | **You** (recording, seed data first) + **Agent** (clean/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero). Full flow: complete a tool → "How do you feel" check-in → Calmer selected → ⋮ menu → Insights → staggered Best Tools/Outcome Trends reveal. | `dcb6f7db-6876-46c0-ba0e-343e187c47fb` (draft) |
+| [feeling-anxious](#rec-feeling-anxious) | Screen video (real app flow — no fabricated pacer) | **You** (video) + **Agent** (clean/GIF/wire) | ⬜ Not started — Option 1 chosen (record the real flow; pacer parked) | — |
+| [emotion-based-session](#rec-emotion-based-session) | Screen-recorded video (flagship flow) | **You** (recording) + **Agent** (clean/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero) | `3c8bb564-402c-4354-b092-39772bb13a8c` (draft) |
+| [discover-third-party-apps](#rec-discover-third-party-apps) | Screen video (iOS) | **You** (recording) + **Agent** (clean/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero). Ends on "Open in Headspace / Link opened" (store-launch not simulator-demoable). | `96a6931f-c862-4321-bae4-e84765c470fb` (draft) |
+| [personal-kpi-check-in](#rec-personal-kpi-check-in) | Short screen video or screenshot | **You** (Agent can annotate) | ⬜ Not started | — |
+| [learn-more-evidence](#rec-learn-more-evidence) | Animated 2-beat (screenshot + pulse highlight → sheet) | **You** (screenshots) + **Agent** (animate/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero). Card w/ pulse ring on "Learn more" → cross-fades to the rationale sheet. | `b237f76e-5d42-4515-bb26-a252410dffb4` (draft) |
+| [add-your-own-app](#rec-add-your-own-app) | Screen-recorded video (Create Tool → Link Button flow) | **You** (recording) + **Agent** (clean/GIF/wire) | ⬜ Not started — tip text live, needs recording | — |
 
 **What "Agent can do" means precisely:**
 - ✅ Hand-authored CSS/SVG animations (concept/feeling pieces) — web + derived email GIF + poster.
@@ -212,16 +212,26 @@ stage mid-fly-in). Capture `--start` is tuned so frame 1 is the settled/legible 
 
 <a id="rec-feeling-anxious"></a>
 ### 7. feeling-anxious — *"Feeling anxious right now? Try this"* (problem_solving; anxiety, grounding, in-the-moment)
-- **Best asset:** **Screen-recorded video** (in-the-moment flow) — reuse/trim the emotion-session capture, ending on a grounding exercise actually running.
-- **Why:** The promise is "don't decide, let the app point you," ending in relief. Motion + a running exercise conveys the calm payoff.
+- **Best asset:** **Screen-recorded video** (in-the-moment flow) — reuse/trim the emotion-session capture, ending on the suggested tool the app actually shows today.
+- **Why:** The promise is "don't decide, let the app point you," ending in relief. Motion through the flow conveys the "you don't have to figure it out" payoff.
+- **⚠️ Decision (resolved): record the REAL app, no fabricated pacer.** The original plan
+  ended on "the exercise animates (a breathing pacer expanding/contracting)." **That pacer
+  does not exist in the app** — Box Breathing and every anxious-tagged tool are static
+  instruction text (no animated/timer control type exists). A pacer GIF would promise
+  behavior the app doesn't do, and the tips feed can't be gated to an app release (it's
+  read at runtime by all installs), so the mismatch would hit most users. Chose **Option 1**:
+  record what the app genuinely does today.
 - **Video steps (8–12s):**
   1. Tap "Start from how I feel".
   2. Choose "Anxious".
-  3. Open a suggested short grounding/breathing tool.
-  4. The exercise animates (e.g. a breathing pacer expanding/contracting) for a couple of cycles — end on calm.
-- **Feed hero:** the breathing/grounding exercise mid-animation (calming, on-brand).
-- **Alt text:** "Choosing anxious and starting a short guided breathing exercise."
+  3. Open a suggested short grounding tool (pick whichever reads best as a still/end frame).
+  4. Land on the real tool card. End calm — optionally a subtle on-brand highlight, NOT a fake animated pacer.
+- **Feed hero:** the emotion picker mid-selection, or the suggested-tools list (calming, on-brand).
+- **Alt text:** "Choosing anxious and opening a suggested grounding tool."
 - **Care note:** keep it soothing and slow; this audience is activated. No urgent/flashy motion.
+- **Future (parked, not blocking this tip):** if/when a real **breathing-pacer control** ships
+  in the app (see Parking Lot below), re-record step 3–4 to end on the live pacer. Gate that
+  re-record on adoption or a `minAppVersion` tip field (also parked).
 
 <a id="rec-come-back-reset"></a>
 ### 8. come-back-reset — *"Here whenever you need it"* (come_back; re-engagement, reminders)
@@ -312,3 +322,32 @@ degrades to frame 1 in Outlook.
 - **welcome** — web CSS animation built: `website/assets/tip-media/welcome-wallet.html`
   (loops; reduced-motion aware; brand palette). Email GIF POC pending: run the capture tool
   once `puppeteer` + `ffmpeg` are available, then wire the GIF as `welcome`'s `heroImage`.
+---
+
+## Parking lot (future, not blocking any current tip)
+
+These came up while working on **feeling-anxious** (tip #7). Neither is prioritized yet.
+
+### 1. Real breathing-pacer control in the app
+- **Idea:** Add a genuine animated breathing pacer (an expanding/contracting square or circle
+  guiding inhale/hold/exhale/hold), so tools like **Box Breathing** actually pace the user
+  instead of just showing static 4-4-4-4 text. Visual reference the user likes:
+  the Healthy Monday "square breathing" GIF —
+  https://healthymonday.com/wp-content/uploads/2024/01/healthy-monday-SU-square-breathing.gif
+- **Why parked:** it's a real product feature, not a marketing asset. Scope: new
+  `breathing_pacer` control type = TS union + config interface (`src/types/index.ts`), new
+  `BreathingPacerControl.tsx` renderer (Reanimated already a dep), a case in
+  `ControlRenderer.tsx`, a SQLite CHECK-constraint **table-rebuild migration** for the
+  `controls` table (template exists: `runIconTypeCheckMigration` in `migrations.ts`), and
+  creator-UI wiring (`Step2Controls.tsx`). Then swap `lib-box-breathing`'s `static_text` for it.
+- **Payoff if built:** better in-app experience for everyone AND lets feeling-anxious (tip #7)
+  end on a live pacer instead of static text.
+
+### 2. `minAppVersion` field on tips
+- **Idea:** Add an optional `minAppVersion` to tip frontmatter so the in-app feed can hide
+  version-specific tips from older installs. Tips currently ship continuously (feed reads
+  `index.json` at runtime, no release gate), so a tip can reference a feature a user's build
+  doesn't have yet.
+- **Why it matters:** it's the general fix for "a tip describes behavior that only exists in
+  newer builds" — exactly the mismatch that blocked showing a breathing pacer in feeling-anxious.
+- **Why parked:** no immediate need; resurface when a tip must reference a build-gated feature.
