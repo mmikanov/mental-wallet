@@ -160,6 +160,21 @@ npm run run:campaign -- --id CAMPAIGN_ID --mode production
 - **Send ONE message first, then observe** (per `docs/message-release-plan.md`) rather than
   a backlog dump.
 
+**Same-day fatigue guard (always on):** a campaign automatically **excludes anyone who
+already received an email from us today**, across ALL tips/campaigns — not just this one. So
+if you run two different campaigns on the same day, no recipient gets both; whoever got the
+first is skipped by the second and rolls into a later run. Details:
+
+- "Today" is the **UTC** calendar date (matches how send times are stored).
+- Only actually-**sent** emails count. A `pending`/`failed` attempt does NOT shield a
+  recipient.
+- The **dry-run already reflects this** — the previewed list and count are the post-guard
+  audience, so what you see is what will send.
+- Excluded-only-by-the-guard recipients are **deferred, not marked** as having received this
+  tip; running the campaign again on a later day reaches them.
+- It's always on (a politeness rule), and layers on top of consent + per-tip dedupe. There's
+  no bypass flag today.
+
 ---
 
 ## Seeding
