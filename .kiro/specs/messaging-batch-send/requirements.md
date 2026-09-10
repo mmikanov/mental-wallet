@@ -254,6 +254,41 @@ queries.
 6. THE dashboard SHOULD reuse the messaging worker's existing endpoints (campaigns list,
    campaign detail, send records) rather than adding parallel query logic.
 
+### Requirement 10: Same-day send fatigue guard (at most one email per recipient per day)
+
+**User Story:** As the operator, I want a recipient who already received any email from us
+today to be excluded from a new campaign, so that no one gets two emails from us on the same
+day even when I run different campaigns (different tips) back to back.
+
+#### Acceptance Criteria
+
+1. WHEN selecting a campaign's audience, THE system SHALL additionally exclude any recipient
+   who has ALREADY received an email from us **today**, regardless of which tip/campaign that
+   earlier email belonged to. This is a cross-tip guard, distinct from the per-tip dedupe of
+   Requirement 4/5 (which only excludes prior sends of the *same* tip).
+2. "Received an email today" SHALL be determined from the send record: a recipient is
+   excluded IF there exists a send row for that email with `status = 'sent'` whose send time
+   falls on today's date. Only **`sent`** rows count — a `pending` (in-doubt) or `failed` row
+   SHALL NOT trigger the same-day guard (a stuck/failed attempt must not permanently shield a
+   recipient from all future campaigns).
+3. "Today" SHALL be evaluated in **UTC**, matching how send timestamps are stored (ISO
+   `sent_at`). The comparison SHALL be the calendar date portion of `sent_at` equal to the
+   current UTC date.
+4. THE guard SHALL be **always on** for campaign audience selection — it is a politeness/
+   fatigue rule, not an opt-in. (No flag is required to enable it. A future escape hatch to
+   deliberately bypass it MAY be added, but is out of scope here.)
+5. THE guard SHALL apply consistently to all three places audience is computed: the dry-run
+   preview list, the dry-run counts (`wouldSend` / new-only count), and the actual
+   per-recipient send loop. The dry-run SHALL therefore show the already-reduced audience, so
+   the operator sees the true post-guard list before sending.
+6. A recipient excluded ONLY by the same-day guard (i.e. they have not yet received THIS
+   tip) SHALL remain eligible for this campaign on a later run — the guard defers them, it
+   does not mark them as having received this tip. Running the campaign again on a later day
+   SHALL reach them.
+7. THE same-day guard SHALL compose with the existing consent (Requirement 3), per-tip
+   dedupe (Requirement 4/5), and mode (new-only / resend-all) rules — it is an additional
+   exclusion layered on top, never a replacement for any of them.
+
 ## Open Questions (design)
 
 - Where the send record lives: a new D1 table in the messaging worker (e.g.

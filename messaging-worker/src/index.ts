@@ -826,8 +826,26 @@ async function handleDeleteCampaign(request: Request, env: Env, id: string): Pro
 // --- Audience selection ---
 
 /**
+ * Today's calendar date in UTC as `YYYY-MM-DD`, matching the date portion of the ISO
+ * `sent_at` timestamps stored in tip_sends. Used by the same-day fatigue guard.
+ */
+function utcToday(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/**
+ * Same-day fatigue guard (Requirement 10): exclude any recipient who already received an
+ * email from us TODAY (UTC), regardless of which tip. Cross-tip — distinct from the per-tip
+ * dedupe. Only `sent` rows count (a pending/failed attempt must not permanently shield a
+ * recipient). The bind parameter is today's UTC date (`YYYY-MM-DD`).
+ */
+const SAME_DAY_CLAUSE =
+  `AND s.email NOT IN (SELECT email FROM tip_sends WHERE status = 'sent' AND substr(sent_at, 1, 10) = ?)`;
+
+/**
  * Recipients for a campaign, per scope + mode, excluding those already sent this tip
- * (new_only) or including all opted-in (resend_all). Returns up to `limit` not-yet-sent
+ * (new_only) or including all opted-in (resend_all), AND excluding anyone who already got
+ * an email today (same-day fatigue guard, Requirement 10). Returns up to `limit` eligible
  * subscribers, plus the total counts for reporting.
  */
 async function selectAudience(
@@ -836,6 +854,7 @@ async function selectAudience(
   limit: number
 ): Promise<{ recipients: SubscriberRow[]; newCount: number; fullCount: number }> {
   const scopeCol = campaign.scope === 'reminders' ? 'scope_reminders' : 'scope_tips';
+  const today = utcToday();
 
   // Full opted-in count for this scope.
   const fullRow = await env.DB.prepare(
@@ -851,14 +870,16 @@ async function selectAudience(
   const notYetClause =
     `AND s.email NOT IN (SELECT email FROM tip_sends WHERE tip_slug = ? AND status IN ('sent','pending'))`;
 
+  // Both counts and the recipient list also honor the same-day guard, so dry-run reflects
+  // the true post-guard audience (Requirement 10.5). Bind order: tip_slug, then today.
   const newRow = await env.DB.prepare(
-    `SELECT COUNT(*) as c FROM subscribers s WHERE s.${scopeCol} = 1 ${notYetClause}`
-  ).bind(campaign.tip_slug).first<{ c: number }>();
+    `SELECT COUNT(*) as c FROM subscribers s WHERE s.${scopeCol} = 1 ${notYetClause} ${SAME_DAY_CLAUSE}`
+  ).bind(campaign.tip_slug, today).first<{ c: number }>();
   const newCount = newRow?.c || 0;
 
   const result = await env.DB.prepare(
-    `SELECT * FROM subscribers s WHERE s.${scopeCol} = 1 ${notYetClause} ORDER BY s.created_at ASC LIMIT ?`
-  ).bind(campaign.tip_slug, limit).all<SubscriberRow>();
+    `SELECT * FROM subscribers s WHERE s.${scopeCol} = 1 ${notYetClause} ${SAME_DAY_CLAUSE} ORDER BY s.created_at ASC LIMIT ?`
+  ).bind(campaign.tip_slug, today, limit).all<SubscriberRow>();
 
   return { recipients: result.results, newCount, fullCount };
 }
@@ -898,20 +919,34 @@ async function handleExecuteCampaign(request: Request, env: Env, id: string): Pr
     // emails (PII) here is consistent with /subscribers.
     const PREVIEW_CAP = 500;
     const scopeCol = campaign.scope === 'reminders' ? 'scope_reminders' : 'scope_tips';
+    const today = utcToday();
     // new_only previews those not-yet-sent; resend_all previews ALL opted-in (it clears the
-    // tip's history at run start, so everyone requalifies).
+    // tip's history at run start, so everyone requalifies). BOTH also honor the same-day
+    // fatigue guard (Requirement 10.5) so the preview matches what will actually send.
     const previewRows = await (
       campaign.mode === 'new_only'
         ? env.DB.prepare(
             `SELECT s.email FROM subscribers s WHERE s.${scopeCol} = 1
              AND s.email NOT IN (SELECT email FROM tip_sends WHERE tip_slug = ? AND status IN ('sent','pending'))
+             ${SAME_DAY_CLAUSE}
              ORDER BY s.created_at ASC LIMIT ?`
-          ).bind(campaign.tip_slug, PREVIEW_CAP)
+          ).bind(campaign.tip_slug, today, PREVIEW_CAP)
         : env.DB.prepare(
-            `SELECT s.email FROM subscribers s WHERE s.${scopeCol} = 1 ORDER BY s.created_at ASC LIMIT ?`
-          ).bind(PREVIEW_CAP)
+            `SELECT s.email FROM subscribers s WHERE s.${scopeCol} = 1
+             ${SAME_DAY_CLAUSE}
+             ORDER BY s.created_at ASC LIMIT ?`
+          ).bind(today, PREVIEW_CAP)
     ).all<{ email: string }>();
-    const wouldSend = campaign.mode === 'new_only' ? newCount : fullCount;
+    // For resend_all, fullCount is the raw opted-in total; subtract those already emailed
+    // today so wouldSend reflects the post-guard audience.
+    let resendAllWouldSend = fullCount;
+    if (campaign.mode === 'resend_all') {
+      const guardedRow = await env.DB.prepare(
+        `SELECT COUNT(*) as c FROM subscribers s WHERE s.${scopeCol} = 1 ${SAME_DAY_CLAUSE}`
+      ).bind(today).first<{ c: number }>();
+      resendAllWouldSend = guardedRow?.c ?? fullCount;
+    }
+    const wouldSend = campaign.mode === 'new_only' ? newCount : resendAllWouldSend;
     const recipientEmails = previewRows.results.map((r) => r.email);
 
     return jsonResponse(env, {
@@ -967,6 +1002,18 @@ async function handleExecuteCampaign(request: Request, env: Env, id: string): Pr
       `SELECT status FROM tip_sends WHERE tip_slug = ? AND email = ?`
     ).bind(campaign.tip_slug, recipient.email).first<{ status: string }>();
     if (already && (already.status === 'sent' || already.status === 'pending')) {
+      skipped++;
+      continue;
+    }
+
+    // Same-day fatigue guard (Requirement 10): re-check at send time so a recipient who got
+    // any email from us today (e.g. via a concurrent campaign after the list was selected)
+    // is skipped, not double-emailed. Only 'sent' rows count; deferred, not marked for this
+    // tip, so they requalify on a later day.
+    const sentToday = await env.DB.prepare(
+      `SELECT 1 FROM tip_sends WHERE email = ? AND status = 'sent' AND substr(sent_at, 1, 10) = ? LIMIT 1`
+    ).bind(recipient.email, utcToday()).first<{ 1: number }>();
+    if (sentToday) {
       skipped++;
       continue;
     }
