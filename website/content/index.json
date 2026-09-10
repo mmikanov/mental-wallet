@@ -18,6 +18,40 @@
     "publishedAt": "2026-09-10"
   },
   {
+    "slug": "reorder-tools",
+    "title": "Put your go-to tools right on top",
+    "summary": "Your most-used tools should be the easiest to reach. Rearrange your wallet in seconds so the cards you lean on most are always at the top.",
+    "type": "feature",
+    "topics": [
+      "customization",
+      "organization"
+    ],
+    "heroImage": "",
+    "cta": {
+      "label": "Reorder your wallet",
+      "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+    },
+    "url": "/tips/reorder-tools",
+    "publishedAt": "2026-09-10"
+  },
+  {
+    "slug": "archive-restore-tools",
+    "title": "Tidy your wallet without losing anything",
+    "summary": "Not using a tool right now? Archive it to clear the clutter. It's tucked safely away with all its history, ready to restore whenever you want it back.",
+    "type": "feature",
+    "topics": [
+      "customization",
+      "organization"
+    ],
+    "heroImage": "",
+    "cta": {
+      "label": "Tidy up your wallet",
+      "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+    },
+    "url": "/tips/archive-restore-tools",
+    "publishedAt": "2026-09-10"
+  },
+  {
     "slug": "add-your-own-app",
     "title": "Can't find your app? Add it yourself",
     "summary": "If an app you love isn't in the library, make your own card for it in a minute. Give it a name and a link, and launch it from your wallet like any other tool.",

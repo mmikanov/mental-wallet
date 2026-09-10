@@ -24,6 +24,8 @@ wraps/annotates and wires them in.
 | [learn-more-evidence](#rec-learn-more-evidence) | Animated 2-beat (screenshot + pulse highlight → sheet) | **You** (screenshots) + **Agent** (animate/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero). Card w/ pulse ring on "Learn more" → cross-fades to the rationale sheet. | `b237f76e-5d42-4515-bb26-a252410dffb4` (draft) |
 | [add-your-own-app](#rec-add-your-own-app) | Screen-recorded video (Create Tool → Link Button flow) | **You** (recording) + **Agent** (clean/GIF/wire) | ⬜ Not started — tip text live, needs recording | — |
 | [add-your-own-tool](#rec-add-your-own-tool) | Screen video (Create Tool → input blocks → use it) | **You** (recording) + **Agent** (clean/GIF/wire) | ⬜ Not started — tip text drafted (needs review), needs recording. Most complex flow. | — |
+| [reorder-tools](#rec-reorder-tools) | Short screen video (long-press → Reorder Cards → ▲/▼ → Done) | **You** (recording) + **Agent** (clean/GIF/wire) | ⬜ Not started — tip text live, needs recording | — |
+| [archive-restore-tools](#rec-archive-restore-tools) | Screen video (⋮ → Archive card → Archive screen → Restore) | **You** (recording) + **Agent** (clean/GIF/wire) | ⬜ Not started — tip text live, needs recording | — |
 
 **What "Agent can do" means precisely:**
 - ✅ Hand-authored CSS/SVG animations (concept/feeling pieces) — web + derived email GIF + poster.
@@ -271,6 +273,32 @@ stage mid-fly-in). Capture `--start` is tuned so frame 1 is the settled/legible 
 - **Feed hero:** the finished custom tool card in the wallet (its stacked controls visible), or the Step 2 block list mid-build.
 - **Alt text:** "Building a custom coping tool from blocks and using it inside the app."
 - **Distinction to preserve:** add-your-own-**app** = Link Button that launches an external app; add-your-own-**tool** = input controls you use in-app. Keep the two assets visually different (this one shows filling in the tool; that one ends on a launcher card).
+
+<a id="rec-reorder-tools"></a>
+### 11. reorder-tools — *"Put your go-to tools right on top"* (feature; customization, organization)
+- **Best asset:** **Short screen-recorded video** — the reorder interaction is quick and satisfying to watch.
+- **Why:** Shows a small, delightful bit of control most users won't discover on their own (it's a long-press, no visible button).
+- **⚠️ Accuracy (code-verified):** reordering is **NOT drag-and-drop**. Entry is a **long-press (~500ms) on a card** → opens a **"Reorder Cards"** panel → move each tool with **▲/▼ arrow buttons** → tap **Done** to save (tap outside = cancel). The ☰ icon in the panel is decorative, not draggable. Do not depict dragging.
+- **Video steps (~7–10s):**
+  1. Wallet (held a beat). Long-press a card — optionally an amber pulse-ring hint on a card first, house style.
+  2. "Reorder Cards" panel opens.
+  3. Tap ▲/▲ on a lower card to move a favorite toward the top (a couple of moves, each with the brief row "lift").
+  4. Tap **Done** → back on the wallet with the new order.
+- **Feed hero:** the "Reorder Cards" panel mid-move, or the reordered wallet.
+- **Alt text:** "Long-pressing a card, moving it up with the arrows, and saving the new order."
+
+<a id="rec-archive-restore-tools"></a>
+### 12. archive-restore-tools — *"Tidy your wallet without losing anything"* (feature; customization, organization)
+- **Best asset:** **Screen-recorded video** covering both halves (archive, then restore) — the reassurance is "it's reversible."
+- **Why:** Encourages tidying by making clear archive is safe/reversible and distinct from delete. Two beats (hide, then bring back).
+- **⚠️ Accuracy (code-verified labels):** tap a card to focus → **⋮** → **"Archive card"** (red) → confirm **Archive**. Archived cards live in the **Archive** screen, reached via the wallet's **top-right ⋮ → Archive**. Restore via **"Restore to Wallet"** → confirm **Restore**. Archive preserves history; only the separate **Delete** on the Archive screen is permanent — do NOT show Delete (avoid implying data loss).
+- **Video steps (~10–14s):**
+  1. Focus a card → ⋮ (amber pulse-ring on ⋮, house style) → **Archive card** → confirm. Card leaves the wallet.
+  2. Wallet top-right ⋮ → **Archive** (pulse-ring on the Archive menu item).
+  3. Archive screen → tap **Restore to Wallet** on that card → confirm **Restore**.
+  4. Back on the wallet with the card returned. Hold on the payoff.
+- **Feed hero:** the Archive screen with a card's "Restore to Wallet" button, or the ⋮ "Card actions" sheet showing "Archive card".
+- **Alt text:** "Archiving a tool from its menu, then restoring it from the Archive screen."
 
 ---
 
