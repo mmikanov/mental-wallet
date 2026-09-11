@@ -73,8 +73,8 @@ right in-app destination, with the store as fallback.
 3. THE app-store links SHALL remain as the **fallback** for when the app is not installed
    (what the Universal/App Link resolves to when it can't open the app), not the primary
    action.
-4. THE CTA copy and destination SHALL match (e.g. "Start from how I feel" → seedling
-   check-in; "why does this tool work?" → Learn more walkthrough).
+4. THE CTA copy and destination SHALL match (e.g. "Start from how I feel" → the "Start from
+   how I feel" card / emotion session; "why does this tool work?" → Learn more walkthrough).
 5. THE change SHALL be limited to CTA URLs in `content/tips/*.md` plus the CTA rendering in
    `website/build-content.js`, plus a content rebuild and deploy; no email/worker change
    required.
@@ -84,8 +84,8 @@ right in-app destination, with the store as fallback.
 | Tip | Intended destination |
 |-----|----------------------|
 | `welcome` | Wallet |
-| `emotion-based-session` | Seedling "how I feel" check-in |
-| `feeling-anxious` | Seedling "how I feel" check-in |
+| `emotion-based-session` | "Start from how I feel" card (emotion session) |
+| `feeling-anxious` | "Start from how I feel" card (emotion session) |
 | `outcome-capture` | Wallet (use a tool → outcome check-in) |
 | `personal-kpi-check-in` | Wallet (seedling daily check-in) |
 | `discover-third-party-apps` | Add-tool / library |
