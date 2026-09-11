@@ -14,6 +14,7 @@ The bugs and their root causes (established from the code):
 | 1. RTL layout mirrors on Android | No `I18nManager` lock; `AndroidManifest.xml` has `android:supportsRtl="true"`. RN mirrors all physical `left/right` styles under an RTL locale. | `App.tsx` (JS lock), `AndroidManifest.xml` (native lock), `textAlign="auto"` on user free-text inputs. |
 | 2. Android "Open app" opens Apple store | The rendered button (`LinkButtonControl`) opens a hardcoded `apps.apple.com` `fallbackUrl` with no platform branch. The correct `playStoreId` exists in card data but is unused. | `LinkButtonControl` + a small platform-aware store resolver; `externalAppCards.ts` data. |
 | 3a. KPI single-select unclear | Only a small subheading conveys "choose one". | `KpiSelectionScreen.tsx` copy + a11y hint. |
+| 3c. Keyboard hides custom KPI input on "Other" | Screen uses a plain `ScrollView` with no keyboard avoidance; the "Other" input sits below all options and the keyboard covers it. | `KpiSelectionScreen.tsx` — wrap in `KeyboardAvoidingView` + scroll input into view. |
 | 3b. Missing Back on Privacy Notice | Screen has no Back control; other steps do. | `PrivacyNoticeScreen.tsx`. |
 | 4a. Collapsed stack hard to see on Android | `focusedCardArea` is `flex:1`; collapsed stack is intrinsically ~52px. No platform branch. | `CollapsedStack.tsx` sizing (Android). |
 | 4b. Users don't know where cards went | No hint exists. | New one-time Android hint reusing `TooltipOverlay` + a persisted flag in `onboardingStore`. |
@@ -208,6 +209,36 @@ Copy + accessibility, no behavior change:
 - VoiceOver/TalkBack announces the single-select hint on options.
 - Selecting a predefined option still advances immediately; "Other" still shows the input;
   "I'll decide later" still seeds the default.
+
+---
+
+## Bug 3c: Keyboard hides the custom KPI input on "Other" (Requirements 7)
+
+### Root cause
+`KpiSelectionScreen` renders its content in a plain `ScrollView` with no keyboard handling.
+The "Other" custom `TextInput` (and its Continue button) sit below all seven options, so when
+the keyboard opens it covers them — the reported bug.
+
+### Approach
+Layout/keyboard only, no behavior change:
+- Wrap the ScrollView in a `KeyboardAvoidingView` (`behavior="padding"` on iOS, `"height"` on
+  Android), reusing the same pattern as `Step2Controls.tsx` / `FocusedCardView.tsx` (Req 7.2).
+- Add a `ScrollView` ref and call `scrollToEnd({ animated: true })` when "Other" is selected
+  (alongside focusing the input) and on the input's `onFocus`, so the input + Continue button
+  scroll above the keyboard whether reached by tapping "Other" or the field directly
+  (Req 7.1, 7.3).
+- Do not change `KPI_OPTIONS`, single-select, the "I'll decide later" default, validation, or
+  downstream storage/use (Req 7.4).
+
+### Files
+- `src/screens/onboarding/KpiSelectionScreen.tsx` — `KeyboardAvoidingView` wrap + ScrollView
+  ref + `scrollToEnd` on select/focus.
+
+### Verification
+- Simulator with software keyboard on (hardware keyboard disconnected): tap "Other" → the
+  input and Continue button stay visible above the keyboard while typing; also works when
+  tapping the field directly. iOS and Android. (Confirmed working by operator.)
+- Typecheck clean for the file.
 
 ---
 
