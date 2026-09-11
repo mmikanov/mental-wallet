@@ -118,7 +118,7 @@ Universal Link per the requirements' mapping table:
 | feeling-anxious | `.../app/how-i-feel` | Start from how I feel |
 | outcome-capture | `.../app/wallet` | Use a tool |
 | personal-kpi-check-in | `.../app/checkin` | Daily seedling check-in |
-| discover-third-party-apps | `.../app/add-tool` | Browse the library |
+| discover-third-party-apps | `.../app/add-tool?filter=apps` | Browse mental health apps |
 | learn-more-evidence | `.../app/learn-more-tour` | See why a tool works |
 | come-back-reset | `.../app/wallet` | Open the wallet |
 | add-your-own-app | `.../app/add-tool` | Add your own |
