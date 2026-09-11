@@ -38,7 +38,7 @@
 ## Task 5: Document and end-to-end verify
 
 - [x] Add a "Send a tip" section to `messaging-worker/README.md` (endpoint + script usage)
-- [ ] Operator end-to-end: send one batch tip to a subscribed address and confirm it
+- [x] Operator end-to-end: send one batch tip to a subscribed address and confirm it
       renders correctly in the inbox (needs deploy + real send — your step)
 - _Requirements: 3.5, 4.1_
 
