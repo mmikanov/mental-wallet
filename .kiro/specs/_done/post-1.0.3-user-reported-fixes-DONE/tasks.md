@@ -86,11 +86,11 @@ steps in `docs/rtl-testing.md` (RTL) and the per-bug notes below.
 
 ## Bug 3a — Clarify KPI single-select in onboarding (Req 3)
 
-- [ ] 3.1 Reproduce/confirm the ambiguity (baseline)
+- [x] 3.1 Reproduce/confirm the ambiguity (baseline)
   - View the KPI step; confirm the only single-select hint is the small subheading.
   - _Req: 3.1_
 
-- [ ] 3.2 Strengthen instruction copy + a11y hint
+- [x] 3.2 Strengthen instruction copy + a11y hint
   - Make single-select prominent near the options; add an `accessibilityHint` conveying one
     selection. Do not change options, the "I'll decide later" default, or downstream storage.
   - _Req: 3.1, 3.2, 3.3, 3.4_
