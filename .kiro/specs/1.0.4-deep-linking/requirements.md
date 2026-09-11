@@ -14,8 +14,8 @@ emails/pages, and from reminder notifications) land precisely and reliably:
 2. **Reminder notification → focus the specific tool, expanded** — the concrete 1.0.4 goal.
 3. **Universal Links / App Links** — an `https://mentalhealthwallet.productsforgood.co/...`
    URL that opens the app when installed and falls back to the web page when not.
-4. **New deep-link routes** so specific destinations (seedling "how I feel" check-in, a
-   "Learn more" guided walkthrough, add-tool/library) can be targeted.
+4. **New deep-link routes** so specific destinations ("Start from how I feel" emotion session,
+   seedling KPI check-in, top-card "Learn more" landing, add-tool/library) can be targeted.
 
 **Split note:** the *consumption* of these routes by external communication, namely
 **upgrading tip CTAs** and the **in-app email opt-in**, lives in the sibling spec
@@ -109,15 +109,19 @@ in-app screen, so that a CTA can land precisely (consumed by the sibling CTA-upg
 #### Acceptance Criteria
 
 1. THE app SHALL expose deep-link routes covering the current tip destinations:
-   - wallet (exists), the **seedling "how I feel" check-in**, a **"Learn more" guided
-     walkthrough**, and an **add-tool / library** route.
-2. **Seedling "how I feel" route:** opens the seedling check-in flow (the same flow the
-   wallet's seedling button starts), landing on the check-in entry, not merely the wallet.
-3. **"Learn more" guided walkthrough route:** launches an in-app tooltip/coach-mark tour
-   that points out the "Learn more" entry point on a card the user actually has; it degrades
-   gracefully if the wallet has no card with a Learn more entry, is dismissible, and does not
-   block normal use. It SHALL reuse the app's existing coachmark/tooltip mechanism
-   (`TooltipOverlay`) rather than introduce a new pattern.
+   - wallet (exists), the **"Start from how I feel"** emotion-session card, the **seedling KPI
+     daily check-in** card, a **"Learn more" destination** (opens the top stack card so its
+     Learn more link is visible), and an **add-tool / library** route.
+2. **"Start from how I feel" / seedling routes:** each opens (focuses + expands) its specific
+   card, the `session-launcher` card for "Start from how I feel", and the KPI daily check-in
+   card for the seedling, landing on that card's own entry, not merely the wallet.
+3. **"Learn more" route (SIMPLIFIED):** the app has no "Learn more" guided walkthrough today,
+   and building a coach-mark tour is out of scope for 1.0.4. Instead, this route SHALL open the
+   wallet's **top stack card, focused + expanded**, so the card's own "Learn more"
+   (rationale/evidence) link is visible for the user to tap. It SHALL skip the "Start from how I
+   feel" session-launcher card (pick the first regular stack card) and degrade gracefully if
+   there is no qualifying card (land on the wallet, no error). A richer guided tour is parked as
+   a future enhancement.
 4. EACH route SHALL be reachable via both the `mentalwallet://` scheme and a Universal/App
    Link path (per Requirement 3).
 5. WHERE a tip destination has no dedicated screen, THE design SHALL either add one or
@@ -133,10 +137,10 @@ in-app screen, so that a CTA can land precisely (consumed by the sibling CTA-upg
 
 - URL path space for Universal/App Links (e.g. `/app/wallet`, `/app/checkin`,
   `/app/learn-more-tour`) and how those map to both web fallback pages and app routes.
-- Whether the seedling check-in and the emotion-session are the same entry or distinct
-  (confirm against the actual wallet UI) so Requirement 4.2 targets the right screen.
-- Walkthrough implementation approach (reuse `TooltipOverlay`) and how it selects the
-  example card.
+- RESOLVED: the emotion-session ("Start from how I feel", `session-launcher`) and the seedling
+  KPI check-in are DISTINCT cards; each has its own route (`/app/how-i-feel`, `/app/checkin`).
+- RESOLVED: no "Learn more" walkthrough is built for 1.0.4; the route opens the top stack card
+  (skipping the session-launcher) so its Learn more link is visible. A guided tour is deferred.
 - iOS Universal Links require the associated-domains entitlement + AASA file; Android App
   Links require `assetlinks.json` + verified domain. Confirm signing/domain details.
 - Notification payload shape for Requirement 2 (card id + an "expanded" flag) and whether

@@ -74,12 +74,15 @@ Links → walkthrough UI → verify.
     with `sourceLibraryId === 'lib-personal-kpi'` and `focusCard(it.id); expandCard()`. Degrade if
     the KPI card was removed. Param, not literal `focusCardId` (per-install id).
   - _Req: 4.1, 4.2_
-- [ ] 3.4 Learn-more guided walkthrough route + UI
-  - Add `Wallet` param `startLearnMoreTour?: boolean`, map `learn-more-tour` → it. Add
-    `src/hooks/useLearnMoreTour.ts` (steps `idle → point_at_learn_more → complete`, mirroring
-    `useMicroTutorial`). On trigger: pick a wallet card that HAS a rationale/"Learn more" entry
-    (e.g. Box Breathing), focus it, measure the Learn more control, render `TooltipOverlay`
-    pointing at it (dismissible, non-blocking). If no qualifying card, skip silently.
+- [ ] 3.4 Learn-more route → open the top stack card (SIMPLIFIED, no walkthrough)
+  - No guided tour is built (operator decision; the app has none today and it's disproportionate
+    for one tip). Add `Wallet` param `openTopCard?: boolean`, map `learn-more-tour` → it, and a
+    `WalletScreen` effect that focuses + expands the FIRST `stackCards` entry whose id is NOT
+    `session-launcher` (top of deck = `stackCards[0]`; KPI is already excluded from `stackCards`).
+    The card's own "Learn more" link is then visible. Reuse the same `focusCard(id);
+    expandCard()` + consume-once / cards-load guard as Req 2/4.2. Degrade gracefully if there's no
+    qualifying card (empty stack or only the session-launcher) → just land on the wallet. NO
+    `TooltipOverlay`, NO `useLearnMoreTour` hook.
   - _Req: 4.1, 4.3_
 
 ## Task 4: Universal Links / App Links (Req 3, website-dependent)
@@ -112,14 +115,14 @@ Links → walkthrough UI → verify.
   - `linking.ts`: `mentalwallet://wallet?focusCardId=X` and
     `https://.../app/wallet?focusCardId=X` both resolve to `Wallet` with the param; `add-tool`,
     `how-i-feel`, `checkin`, `learn-more-tour`, `add-tool` (and `add-tool?filter=apps` →
-    `initialFilter: 'apps'`) resolve. `WalletScreen` effect (mocked store): existing card →
+    `initialFilter: 'apps'`) all resolve. `WalletScreen` effect (mocked store): existing card →
     `focusCard`+`expandCard`; missing/archived → neither + no throw (Req 2.3); consume-once and
     distinct-second-link behavior via `lastHandledFocusCardId`. `LibraryBrowser` initializes
     `selectedCategory` to `'apps'` when `initialFilter='apps'`, else `ALL_FILTER`.
   - _Req: 1.2, 2.1, 2.3, 4.1, 4.4_
-- [ ] 5.2 Component test — Learn-more tour
-  - Renders `TooltipOverlay` when a qualifying card exists; no-ops (no overlay, no crash) when
-    none does.
+- [ ] 5.2 `openTopCard` effect test
+  - Focuses + expands the first non-`session-launcher` stack card; when the only stack card is
+    the session-launcher (or the stack is empty), does nothing and doesn't throw.
   - _Req: 4.3_
 - [ ] 5.3 Verify + checkpoint
   - `npm run typecheck` clean for touched files. MANUAL, both platforms:
@@ -128,7 +131,8 @@ Links → walkthrough UI → verify.
     - Req 3: installed `/app/wallet` https link opens app; uninstalled opens web page; AASA +
       assetlinks fetched/verified.
     - Req 4: `/app/how-i-feel` (session-launcher card), `/app/checkin` (KPI card),
-      `/app/learn-more-tour`, `/app/add-tool` land correctly via BOTH `mentalwallet://` and https.
+      `/app/learn-more-tour` (top non-session stack card focused+expanded), `/app/add-tool`
+      (+ `?filter=apps`) land correctly via BOTH `mentalwallet://` and https.
   - _Req: 1.2, 2.4, 3.2, 3.3, 4.4_
 
 ## Task Dependency Graph
@@ -143,6 +147,6 @@ Links → walkthrough UI → verify.
     { "wave": 5, "tasks": ["4.1", "4.2", "4.3", "4.4"] },
     { "wave": 6, "tasks": ["5.1", "5.2", "5.3"] }
   ],
-  "notes": "Scheme registration (1.x) is the prerequisite for everything. 1.4 verifies it before building on top. Consuming focusCardId (2.1/2.2) delivers the concrete 1.0.4 goal and only depends on the scheme; 2.3 is its manual cross-state verification. New routes (3.x) extend the config once the scheme works: 3.2 = the 'Start from how I feel' session-launcher card, 3.3 = the DISTINCT seedling KPI check-in card (both operator-confirmed), 3.4 adds the walkthrough UI. Universal/App Links (4.x) layer https on top and carry the external website dependency (4.4), so they come after the custom-scheme routes and can ship in a later cut if the association files aren't ready. 5.x closes out automated + manual verification. Req 1+2 (waves 1-4 minus the https bits) form a shippable slice with no website dependency."
+  "notes": "Scheme registration (1.x) is the prerequisite for everything. 1.4 verifies it before building on top. Consuming focusCardId (2.1/2.2) delivers the concrete 1.0.4 goal and only depends on the scheme; 2.3 is its manual cross-state verification. New routes (3.x) extend the config once the scheme works: 3.2 = the 'Start from how I feel' session-launcher card, 3.3 = the DISTINCT seedling KPI check-in card (both operator-confirmed), 3.4 = the learn-more route (opens the top non-session stack card, no walkthrough built). Universal/App Links (4.x) layer https on top and carry the external website dependency (4.4), so they come after the custom-scheme routes and can ship in a later cut if the association files aren't ready. 5.x closes out automated + manual verification. Req 1+2 (waves 1-4 minus the https bits) form a shippable slice with no website dependency."
 }
 ```
