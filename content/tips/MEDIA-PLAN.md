@@ -25,7 +25,7 @@ wraps/annotates and wires them in.
 | [add-your-own-app](#rec-add-your-own-app) | Screen-recorded video (Create Tool → Link Button flow) | **You** (recording) + **Agent** (clean/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero). Finch example: wallet → ⋮ (pulse) → Create Tool (pulse) → Step 1 shell → Step 2 empty → +Add block (pulse) → Link Button (pulse) → URLs → Step 3 Preview → Save → wallet with new card → expanded card + Open button (pulse) → fade. | — |
 | [add-your-own-tool](#rec-add-your-own-tool) | Screen video (Create Tool → input blocks → use it) | **You** (recording) + **Agent** (clean/GIF/wire) | ⬜ Not started — tip text drafted (needs review), needs recording. Most complex flow. | — |
 | [reorder-tools](#rec-reorder-tools) | Short screen video (long-press → Reorder Cards → ▲/▼ → Done) | **You** (recording) + **Agent** (clean/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero). Wallet (amber pulse hint on top card) → Reorder Cards panel → ▲/▼ moves → Done → wallet with new order → fade. | — |
-| [archive-restore-tools](#rec-archive-restore-tools) | Screen video (⋮ → Archive card → Archive screen → Restore) | **You** (recording) + **Agent** (clean/GIF/wire) | ⬜ Not started — tip text live, needs recording | — |
+| [archive-restore-tools](#rec-archive-restore-tools) | Screen video (⋮ → Archive card → Archive screen → Restore) | **You** (recording) + **Agent** (clean/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero). Minimal edit of the real recording (trim+speed+fade); single amber pulse on Archive in the wallet ⋮ menu (the only hard-to-see tap). Focus card → ⋮ → Archive card → confirm → wallet → ⋮ → Archive → Archive screen → Restore to Wallet → confirm → wallet with card back. | — |
 
 **What "Agent can do" means precisely:**
 - ✅ Hand-authored CSS/SVG animations (concept/feeling pieces) — web + derived email GIF + poster.
@@ -49,26 +49,33 @@ Follow these steps for every new tip asset so review is consistent:
    frame ~2s** (`tpad`) so the ending is readable before the loop; scale to ~300px source,
    ~12fps; emit GIF + first-frame poster PNG.
 
-   **House style for highlights:** when you need to point at a specific UI element (a small
-   link, a button), use a **subtle pulsing ring** around it (amber `#E6A700`, ~2.4s pulse) —
-   NOT a cartoon hand/pointer (too playful, clashes with the clean screen-recording tips).
-   Position the ring over the target and verify centering with a frozen-frame capture before
-   generating the GIF (coordinates are px against the stage's authored width, so capture at
-   that same `--width`). For a "tap X → see Y" story, use a **2-beat** animation: highlight
-   the element, then cross-fade to what it opens and hold. Set the GIF **poster** to a frame
-   where the ring is fully visible (the default first frame can catch it mid-pulse).
+   **⚠️ EDITING RULES — keep it minimal (the recording is already good; lightly clean it,
+   don't re-direct it).** Over-editing (many pulses, redrawn/recolored UI, spliced clips,
+   multi-segment restructuring) made later videos worse and burned credits. Defaults:
+   1. **Trim + speed only.** Cut head/tail (incl. black frames), speed up slow stretches,
+      hold the final real frame ~1.5s, fade out. That is usually the entire job.
+   2. **At most ONE highlight per video**, and ONLY when it's genuinely hard to see that the
+      user tapped something. Prefer zero. Highlight = the amber pulse ring (`#E6A700`,
+      ~2.4s) positioned over the target; verify centering with one frozen-frame capture.
+   3. **Never redraw, recolor, or cover UI.** If an item looks greyed from a tap-fade, LEAVE
+      it — that's how the app really looks mid-tap. (This intentionally reverses the old
+      "redraw the greyed item" rule, which caused over-editing.)
+   4. **Never fabricate/splice** transitions or stitch in separate recordings. Use only the
+      single recording, in its real order.
+   5. **No multi-segment restructuring.** One continuous pass with light speed changes beats
+      many stitched clips.
+   6. **One preview, one round.** Build → show the preview page → expect ONE round of
+      feedback. If it needs more than one substantive fix, the recording should be redone,
+      not endlessly patched.
 
-   **⚠️ No greyed-out items (mandatory check).** When a beat shows a menu, list, or picker
-   (e.g. the wallet ⋮ menu, or the Create Tool "Choose Control Type" list), the item being
-   highlighted/tapped must appear in the **same full color as the other items** — never
-   greyed. This happens because a still frame can catch the tapped row mid **press-highlight
-   fade** (a transient opacity dip, NOT an app bug — menu/picker rows share one style in
-   code). Fix by using a **clean frame from before the tap** (menu just opened, all items
-   full-dark); if no clean frame exists (the fade persists across the whole open window),
-   **redraw the item crisply in the overlay** (white cover strip + matching dark label). Both
-   greyed-item cases in add-your-own-app (Create Tool, Link Button) were fixed this way.
-   Verify every menu/picker frame in the final GIF before shipping — all options must read at
-   full color.
+   **⚠️ BUDGET RULES (stop burning credits):**
+   7. **Cap frame-sampling:** ~6 thumbnails to map the flow, build the GIF, ~3 frames to
+      sanity-check. No exhaustive frame-by-frame hunting.
+   8. **If two attempts don't land it, STOP** and ask a specific question rather than
+      iterating blindly.
+
+   Set the GIF **poster** to a frame that reads well on its own (if a pulse is used, one
+   where the ring is visible).
 2. **Always build a review preview page** (`assets/tip-media/<slug>-preview.html`, dev-only,
    excluded from deploy by the `*.html` glob) showing: the asset at a few **candidate display
    widths** (200/240/300) AND **rendered inside the real email layout** (greeting → media →

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<!-- Dev preview only (excluded from deploy via *.html glob). Candidate widths + email layout. -->
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>archive-restore-tools — GIF preview</title>
+<style>
+  body { font-family:-apple-system,system-ui,sans-serif; background:#e9e9ec; color:#1a1a1a; margin:0; padding:24px 16px; }
+  .wrap { max-width:720px; margin:0 auto; display:flex; flex-direction:column; gap:24px; }
+  .panel { background:#fff; border:1px solid #ddd; border-radius:12px; padding:20px; }
+  h2 { font-size:1rem; margin:0 0 12px; }
+  .sizes { display:flex; gap:28px; align-items:flex-start; flex-wrap:wrap; }
+  .sizes figure { margin:0; text-align:center; }
+  .sizes figcaption { font-size:12px; color:#666; margin-top:6px; }
+  img.gif { display:block; border-radius:14px; box-shadow:0 4px 14px rgba(0,0,0,.12); }
+  .email { max-width:36rem; margin:0 auto; line-height:1.5; }
+  .email img { display:block; border-radius:10px; margin:0 auto 1rem; }
+  .cap { text-align:center; color:#6b6b6b; font-size:.9rem; margin:0 auto 1rem; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <h2>Candidate display widths (same file, different rendered size)</h2>
+      <div class="sizes">
+        <figure><img class="gif" src="archive-restore-tools.gif" width="200"><figcaption>200px</figcaption></figure>
+        <figure><img class="gif" src="archive-restore-tools.gif" width="240"><figcaption>240px (proposed)</figcaption></figure>
+        <figure><img class="gif" src="archive-restore-tools.gif" width="300"><figcaption>300px</figcaption></figure>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>In the email layout (at 240px, centered)</h2>
+      <div class="email">
+        <p>Hi there,</p>
+        <img src="archive-restore-tools.gif" width="240" alt="Archiving a tool from its menu, then restoring it from the Archive screen.">
+        <p class="cap">Archive a tool to tidy up, then restore it any time — nothing is lost.</p>
+        <h3 style="font-size:1.2rem;margin:0 0 .5rem">Tidy your wallet without losing anything</h3>
+        <p>Not using a tool right now? Archive it to clear the clutter. It's tucked safely away with all its history, ready to restore whenever you want it back.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
