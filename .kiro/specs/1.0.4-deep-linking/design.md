@@ -133,6 +133,7 @@ path has a natural web fallback:
 | `/app/checkin` | seedling 🌱 KPI daily check-in card (Req 4.2) | relevant tip/article |
 | `/app/learn-more-tour` | Learn-more guided walkthrough (Req 4.3) | relevant tip/article |
 | `/app/add-tool` | Library browser (Req 4) | library/tips page |
+| `/app/add-tool?filter=apps` | Library browser, Apps filter pre-selected (Req 4) | library/tips page |
 
 Add the `https://mentalhealthwallet.productsforgood.co` prefix (scoped to `/app`) to
 `linking.prefixes`, and extend `linking.config.screens` so both the custom scheme and the
@@ -211,11 +212,31 @@ pattern, per Req 4.3).
 - Implementation note: this is the largest net-new UI. A new `useLearnMoreTour` hook mirroring
   `useMicroTutorial` (steps: `idle → point_at_learn_more → complete`) keeps it consistent.
 
-### 4 add-tool / library route
+### 4 add-tool / library route (with optional Apps filter)
 
 `/app/add-tool` (and `mentalwallet://add-tool`) → navigate to `LibraryBrowser` (a
 RootStack screen presented modally). Add `LibraryBrowser: 'add-tool'` (or `'library'`) to
 `linking.config.screens`. No new screen needed.
+
+**Apps-filter deep link (for `discover-third-party-apps`):** the Library browser ALREADY
+supports an "Apps" filter, an `APPS_FILTER = 'apps'` pill that filters
+`libraryCards.filter(c => !!c.externalApp)`, but it's driven purely by internal
+`selectedCategory` state today (`LibraryBrowser: undefined`, initializes to `ALL_FILTER`). To
+open the library pre-focused on Apps:
+
+- Add a param: `LibraryBrowser: { initialFilter?: string } | undefined`.
+- Initialize `useState(route.params?.initialFilter ?? ALL_FILTER)` so the Apps pill is
+  pre-selected when `initialFilter === 'apps'`. (Reuses the existing filter value; no filter
+  logic change.)
+- Route it as `/app/add-tool?filter=apps` (query param maps to `initialFilter`), so
+  `discover-third-party-apps` lands on the Apps-filtered library while a bare `/app/add-tool`
+  still opens the full library. Both `mentalwallet://add-tool?filter=apps` and the https form
+  resolve identically.
+- Degrade gracefully: an unknown/absent `filter` just falls back to `ALL_FILTER` (the existing
+  default), so a stale link never breaks.
+
+This is a small, low-risk addition since the Apps filter already exists and works; the deep
+link only sets its initial value.
 
 ### 4.4 both transports
 
@@ -233,9 +254,12 @@ the shared `linking.config.screens`, so it's reachable via `mentalwallet://...` 
 - `src/navigation/linking.ts` — add https prefix, extend `config.screens` (add-tool,
   how-i-feel, checkin, learn-more-tour), keep the notification URL builder.
 - `src/navigation/types.ts` — extend `MainTabParamList.Wallet` with `openHowIFeel?`,
-  `openKpiCheckin?`, `startLearnMoreTour?` (and keep `focusCardId?`).
+  `openKpiCheckin?`, `startLearnMoreTour?` (and keep `focusCardId?`); extend `LibraryBrowser`
+  with `{ initialFilter?: string }`.
 - `src/screens/WalletScreen.tsx` — consume `focusCardId` (Req 2), `openHowIFeel` (4.2),
   `openKpiCheckin` (4.2), `startLearnMoreTour` (4.3).
+- `src/screens/LibraryBrowserScreen.tsx` — initialize `selectedCategory` from
+  `route.params?.initialFilter` (Apps filter deep link).
 - New: `src/hooks/useLearnMoreTour.ts` (+ wiring) for the walkthrough.
 - Optional cleanup: remove dead `handleNotificationTap` / navigation-handler in
   `notificationService.ts`.
@@ -288,4 +312,4 @@ the shared `linking.config.screens`, so it's reachable via `mentalwallet://...` 
 | 4.2 feel-oriented destinations | `openHowIFeel` → session-launcher; `openKpiCheckin` → KPI card (both focus+expand) |
 | 4.3 learn-more tour | `TooltipOverlay` + `useLearnMoreTour`, graceful degrade |
 | 4.4 both transports | shared `linking.config.screens` |
-| 4.5 no-screen destinations | add-tool → existing LibraryBrowser |
+| 4.5 no-screen destinations | add-tool → existing LibraryBrowser (optional `?filter=apps` pre-selects the Apps pill) |

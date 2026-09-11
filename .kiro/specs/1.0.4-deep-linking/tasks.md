@@ -51,9 +51,15 @@ Links → walkthrough UI → verify.
 
 ## Task 3: New deep-link routes (Req 4, custom scheme first)
 
-- [ ] 3.1 add-tool / library route
+- [ ] 3.1 add-tool / library route (with optional Apps filter)
   - Add `LibraryBrowser: 'add-tool'` to `linking.config.screens`; confirm
     `mentalwallet://add-tool` opens the (modal) Library browser. No new screen.
+  - For `discover-third-party-apps`: extend the route type to `LibraryBrowser: { initialFilter?:
+    string } | undefined`, initialize `selectedCategory` from `route.params?.initialFilter ??
+    ALL_FILTER`, and map `add-tool?filter=apps` → `initialFilter` so the existing Apps pill
+    (`APPS_FILTER = 'apps'`, already filters `!!c.externalApp`) is pre-selected. Unknown/absent
+    filter falls back to `ALL_FILTER` (no breakage). Reuses the existing filter; no filter-logic
+    change.
   - _Req: 4.1, 4.5_
 - [ ] 3.2 "Start from how I feel" route (session-launcher card)
   - Add `Wallet` param `openHowIFeel?: boolean`, map `how-i-feel` → it in `linking.config`, and a
@@ -81,8 +87,8 @@ Links → walkthrough UI → verify.
 - [ ] 4.1 Add the https prefix + shared route config in `linking.ts`
   - Add `https://mentalhealthwallet.productsforgood.co` (scoped to `/app`) to
     `linking.prefixes`; map `/app/wallet`, `/app/wallet?focusCardId=`, `/app/how-i-feel`,
-    `/app/checkin`, `/app/learn-more-tour`, `/app/add-tool` in `config.screens` so both prefixes
-    resolve to the same routes. Keep `mentalwallet://` working (Req 3.5).
+    `/app/checkin`, `/app/learn-more-tour`, `/app/add-tool` (+ `?filter=apps`) in `config.screens`
+    so both prefixes resolve to the same routes. Keep `mentalwallet://` working (Req 3.5).
   - _Req: 3.1, 3.5, 4.4_
 - [ ] 4.2 iOS associated domains
   - Add `applinks:mentalhealthwallet.productsforgood.co` to `app.json` `ios.associatedDomains`
@@ -105,9 +111,11 @@ Links → walkthrough UI → verify.
 - [ ] 5.1 Unit tests
   - `linking.ts`: `mentalwallet://wallet?focusCardId=X` and
     `https://.../app/wallet?focusCardId=X` both resolve to `Wallet` with the param; `add-tool`,
-    `how-i-feel`, `checkin`, `learn-more-tour` resolve. `WalletScreen` effect (mocked store): existing card →
+    `how-i-feel`, `checkin`, `learn-more-tour`, `add-tool` (and `add-tool?filter=apps` →
+    `initialFilter: 'apps'`) resolve. `WalletScreen` effect (mocked store): existing card →
     `focusCard`+`expandCard`; missing/archived → neither + no throw (Req 2.3); consume-once and
-    distinct-second-link behavior via `lastHandledFocusCardId`.
+    distinct-second-link behavior via `lastHandledFocusCardId`. `LibraryBrowser` initializes
+    `selectedCategory` to `'apps'` when `initialFilter='apps'`, else `ALL_FILTER`.
   - _Req: 1.2, 2.1, 2.3, 4.1, 4.4_
 - [ ] 5.2 Component test — Learn-more tour
   - Renders `TooltipOverlay` when a qualifying card exists; no-ops (no overlay, no crash) when

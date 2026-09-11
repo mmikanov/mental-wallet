@@ -88,7 +88,7 @@ right in-app destination, with the store as fallback.
 | `feeling-anxious` | "Start from how I feel" card (emotion session) |
 | `outcome-capture` | Wallet (use a tool → outcome check-in) |
 | `personal-kpi-check-in` | Seedling 🌱 daily check-in card (KPI card, focused + expanded) |
-| `discover-third-party-apps` | Add-tool / library |
+| `discover-third-party-apps` | Add-tool / library, Apps filter pre-selected |
 | `learn-more-evidence` | Learn more guided walkthrough |
 | `come-back-reset` | Wallet |
 | `add-your-own-app` | Add-tool / Create Tool |

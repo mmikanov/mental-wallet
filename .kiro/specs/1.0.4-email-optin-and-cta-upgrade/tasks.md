@@ -72,9 +72,10 @@ a link-out to the website subscribe page.
     mapping: welcome/come-back/reorder/archive-restore/outcome-capture → `/app/wallet`;
     emotion-based-session/feeling-anxious → `/app/how-i-feel` (the "Start from how I feel"
     session-launcher card); personal-kpi-check-in → `/app/checkin` (the seedling 🌱 KPI
-    check-in card); discover-third-party-apps/add-your-own-app/add-your-own-tool →
-    `/app/add-tool`; learn-more-evidence → `/app/learn-more-tour`. NOTE: `/app/how-i-feel` and
-    `/app/checkin` are DISTINCT destinations (emotion session vs KPI card).
+    check-in card); discover-third-party-apps → `/app/add-tool?filter=apps` (library pre-focused
+    on the Apps filter); add-your-own-app/add-your-own-tool → `/app/add-tool`; learn-more-evidence
+    → `/app/learn-more-tour`. NOTE: `/app/how-i-feel` and `/app/checkin` are DISTINCT
+    destinations (emotion session vs KPI card).
   - _Req: 2.1, 2.4_
 - [ ] 5.2 Render a single real CTA + fallback
   - `website/build-content.js` `renderArticle()`: use `tip.cta.url` as the href (stop
