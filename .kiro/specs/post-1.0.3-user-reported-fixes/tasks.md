@@ -86,11 +86,11 @@ steps in `docs/rtl-testing.md` (RTL) and the per-bug notes below.
 
 ## Bug 3a — Clarify KPI single-select in onboarding (Req 3)
 
-- [x] 3.1 Reproduce/confirm the ambiguity (baseline)
+- [ ] 3.1 Reproduce/confirm the ambiguity (baseline)
   - View the KPI step; confirm the only single-select hint is the small subheading.
   - _Req: 3.1_
 
-- [x] 3.2 Strengthen instruction copy + a11y hint
+- [ ] 3.2 Strengthen instruction copy + a11y hint
   - Make single-select prominent near the options; add an `accessibilityHint` conveying one
     selection. Do not change options, the "I'll decide later" default, or downstream storage.
   - _Req: 3.1, 3.2, 3.3, 3.4_
@@ -100,6 +100,31 @@ steps in `docs/rtl-testing.md` (RTL) and the per-bug notes below.
   - MANUAL (fresh onboarding): confirm the "Pick one" pill shows above the options; predefined
     tap still advances; "Other" still reveals the input; TalkBack/VoiceOver reads the hint.
   - _Req: 3.1, 3.2, 3.3_
+
+---
+
+## Bug 3c — Keyboard hides the custom KPI input on "Other" (Req 7)
+
+- [x] 3c.1 Reproduce/confirm the keyboard covering the input (baseline)
+  - Fresh onboarding → KPI step → tap "Other (write your own)"; with the simulator's
+    software keyboard on (I/O → Keyboard, hardware keyboard disconnected), confirm the
+    keyboard covers the custom input / Continue button.
+  - _Req: 7.1_
+
+- [x] 3c.2 Add keyboard avoidance + scroll-into-view
+  - Wrap the screen's ScrollView in a `KeyboardAvoidingView` (`behavior="padding"` iOS /
+    `"height"` Android, per `Step2Controls`/`FocusedCardView`); add a ScrollView ref and
+    `scrollToEnd` when "Other" is selected and on the input's `onFocus`. Layout/keyboard
+    only — no change to options, single-select, "I'll decide later", validation, or storage.
+  - _Req: 7.1, 7.2, 7.3, 7.4_
+
+- [x] 3c.3 Verify + checkpoint
+  - Typecheck clean for `KpiSelectionScreen.tsx` (only pre-existing test-file jest-type
+    errors remain, in untouched files).
+  - MANUAL (simulator, software keyboard on): tap "Other" → input + Continue button stay
+    visible above the keyboard while typing; also works when tapping the field directly.
+    Confirmed working by operator.
+  - _Req: 7.1, 7.2, 7.3_
 
 ---
 

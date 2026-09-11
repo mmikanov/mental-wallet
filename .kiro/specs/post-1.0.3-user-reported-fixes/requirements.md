@@ -176,6 +176,26 @@ where my other cards went, so that I understand the collapsed stack at the botto
 6. THE hint SHALL be shown on **Android only**. On iOS it SHALL NOT appear, since iOS users
    are already familiar with this collapsed-stack interaction from Apple Wallet.
 
+### Requirement 7: Keyboard must not cover the custom KPI input in onboarding (Bug 3c)
+
+**User Story:** As a user choosing "Other (write your own)" for my personal KPI during
+onboarding, I want to see the text box and its Continue button while I type, so that the
+keyboard doesn't hide what I'm entering.
+
+#### Acceptance Criteria
+
+1. WHEN the user selects "Other (write your own)" on the KPI selection step and the custom
+   text input receives focus, THE on-screen keyboard SHALL NOT cover the input or its
+   Continue button; both SHALL remain visible while typing.
+2. THE screen SHALL use the app's existing keyboard-avoidance pattern (a
+   `KeyboardAvoidingView` with `behavior="padding"` on iOS and `"height"` on Android, as
+   used elsewhere in the app) and SHALL scroll the custom input into view when it is focused.
+3. THE fix SHALL hold whether the input is reached by tapping "Other" (auto-focus) or by
+   tapping the field directly, and SHALL behave correctly on both iOS and Android.
+4. THE fix SHALL be layout/keyboard-behavior only: it SHALL NOT change the KPI options, the
+   single-select behavior, the "I'll decide later" default, validation, or where the KPI is
+   stored/used downstream.
+
 ## Out of Scope
 
 - Making tips/reminders richer with images, video, or animation (separate spec).
@@ -194,6 +214,9 @@ where my other cards went, so that I understand the collapsed stack at the botto
   platform-aware logic that already exists but is not wired to the button);
   `src/data/externalAppCards.ts` (`externalApp.appStoreId` / `playStoreId` per card).
 - Bug 3a: `src/screens/onboarding/KpiSelectionScreen.tsx` (single-select; subheading copy).
+- Bug 3c: `src/screens/onboarding/KpiSelectionScreen.tsx` (`KeyboardAvoidingView` wrap +
+  ScrollView ref + `scrollToEnd` on "Other" select / input focus so the keyboard doesn't
+  cover the custom input; pattern mirrors `Step2Controls.tsx` / `FocusedCardView.tsx`).
 - Bug 3b: `src/screens/onboarding/PrivacyNoticeScreen.tsx` (missing Back);
   reference pattern in `IntentSelectionScreen.tsx` / `KpiSelectionScreen.tsx`.
 - Bug 4a: `src/components/wallet/CollapsedStack.tsx` (`EDGE_HEIGHT`, `TOP_CARD_HEIGHT`);

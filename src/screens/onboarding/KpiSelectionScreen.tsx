@@ -18,6 +18,8 @@ import {
   Pressable,
   ScrollView,
   TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CommonActions, useNavigation } from '@react-navigation/native';
@@ -63,6 +65,7 @@ export default function KpiSelectionScreen() {
   }, []);
 
   const textInputRef = useRef<TextInput>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const trimmedCustomText = customText.trim();
   const nonWhitespaceCount = trimmedCustomText.replace(/\s/g, '').length;
@@ -126,9 +129,12 @@ export default function KpiSelectionScreen() {
     setValidationError('');
 
     if (index === OTHER_INDEX) {
-      // Focus the text input when "Other" is selected
+      // Focus the text input when "Other" is selected, and scroll it (plus the
+      // Continue button) into view so the keyboard doesn't cover it (Bug: keyboard
+      // hides the custom input on "Other").
       setTimeout(() => {
         textInputRef.current?.focus();
+        scrollViewRef.current?.scrollToEnd({ animated: true });
       }, 100);
     } else {
       // Predefined option: immediately persist and navigate
@@ -167,7 +173,12 @@ export default function KpiSelectionScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoiding}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
       <ScrollView
+        ref={scrollViewRef}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -233,6 +244,10 @@ export default function KpiSelectionScreen() {
               placeholderTextColor="#9CA3AF"
               maxLength={MAX_CUSTOM_LENGTH}
               autoFocus={false}
+              onFocus={() => {
+                // Ensure the input + Continue button stay visible above the keyboard.
+                setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+              }}
               accessibilityLabel="Enter what matters most to you"
               accessibilityHint={`Maximum ${MAX_CUSTOM_LENGTH} characters`}
             />
@@ -283,6 +298,7 @@ export default function KpiSelectionScreen() {
           <Text style={styles.skipButtonText}>I'll decide later</Text>
         </Pressable>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -291,6 +307,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  keyboardAvoiding: {
+    flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
