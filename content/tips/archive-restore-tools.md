@@ -4,12 +4,12 @@ summary: "Not using a tool right now? Archive it to clear the clutter. It's tuck
 slug: "archive-restore-tools"
 type: "feature"
 topics: ["customization", "organization"]
-heroImage: ""
+heroImage: "https://mentalhealthwallet.productsforgood.co/assets/tip-media/archive-restore-tools.gif"
 cta:
   label: "Tidy up your wallet"
   url: "https://apps.apple.com/app/mental-health-wallet/id6800036822"
 publishedAt: "2026-09-10"
-version: 1
+version: 2
 ---
 
 Your needs change over time, and your wallet can change with them. A tool that helped last
@@ -22,6 +22,11 @@ your usage history, streaks, and past entries all stay intact.
 When you want it back, open the **⋮** menu at the top of your wallet and tap **Archive**.
 There you'll find everything you've set aside. Tap **Restore to Wallet** on any card and it
 returns, right where it was.
+
+<figure class="tip-media">
+  <img src="https://mentalhealthwallet.productsforgood.co/assets/tip-media/archive-restore-tools.gif" width="240" alt="Archiving a tool from its menu, then restoring it from the Archive screen." />
+  <figcaption>Archive a tool to tidy up, then restore it any time — nothing is lost.</figcaption>
+</figure>
 
 Archiving is always reversible, so there's no pressure. Clear the space you need today, and
 bring tools back the moment they're useful again.
