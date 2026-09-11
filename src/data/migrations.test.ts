@@ -13,6 +13,8 @@ describe('runMigrations', () => {
       runAsync: jest.fn().mockResolvedValue(undefined),
     };
 
+    (mockDb as any).getFirstAsync = jest.fn().mockResolvedValue(null);
+
     await runMigrations(mockDb as any);
 
     // First call is SCHEMA_SQL, second is EMOTION_SCHEMA_SQL
@@ -36,6 +38,8 @@ describe('runMigrations', () => {
       getAllAsync: jest.fn().mockResolvedValue([]),
       runAsync: jest.fn().mockResolvedValue(undefined),
     };
+
+    (mockDb as any).getFirstAsync = jest.fn().mockResolvedValue(null);
 
     await runMigrations(mockDb as any);
 
