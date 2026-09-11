@@ -70,9 +70,11 @@ a link-out to the website subscribe page.
 - [ ] 5.1 Point each tip's `cta.url` at its Universal Link
   - Update `cta.url` (+ label copy to match, Req 2.4) in each `content/tips/*.md` per the
     mapping: welcome/come-back/reorder/archive-restore/outcome-capture → `/app/wallet`;
-    emotion-based-session/feeling-anxious/personal-kpi-check-in → `/app/checkin` (seedling KPI
-    check-in, confirmed); discover-third-party-apps/add-your-own-app/add-your-own-tool →
-    `/app/add-tool`; learn-more-evidence → `/app/learn-more-tour`.
+    emotion-based-session/feeling-anxious → `/app/how-i-feel` (the "Start from how I feel"
+    session-launcher card); personal-kpi-check-in → `/app/checkin` (the seedling 🌱 KPI
+    check-in card); discover-third-party-apps/add-your-own-app/add-your-own-tool →
+    `/app/add-tool`; learn-more-evidence → `/app/learn-more-tour`. NOTE: `/app/how-i-feel` and
+    `/app/checkin` are DISTINCT destinations (emotion session vs KPI card).
   - _Req: 2.1, 2.4_
 - [ ] 5.2 Render a single real CTA + fallback
   - `website/build-content.js` `renderArticle()`: use `tip.cta.url` as the href (stop

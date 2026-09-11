@@ -114,10 +114,10 @@ Universal Link per the requirements' mapping table:
 | Tip | `cta.url` (Universal Link) | Label intent |
 |---|---|---|
 | welcome | `.../app/wallet` | Open the wallet |
-| emotion-based-session | `.../app/checkin` | Start from how I feel |
-| feeling-anxious | `.../app/checkin` | Start from how I feel |
+| emotion-based-session | `.../app/how-i-feel` | Start from how I feel |
+| feeling-anxious | `.../app/how-i-feel` | Start from how I feel |
 | outcome-capture | `.../app/wallet` | Use a tool |
-| personal-kpi-check-in | `.../app/checkin` | Daily check-in |
+| personal-kpi-check-in | `.../app/checkin` | Daily seedling check-in |
 | discover-third-party-apps | `.../app/add-tool` | Browse the library |
 | learn-more-evidence | `.../app/learn-more-tour` | See why a tool works |
 | come-back-reset | `.../app/wallet` | Open the wallet |
@@ -126,9 +126,14 @@ Universal Link per the requirements' mapping table:
 | reorder-tools | `.../app/wallet` | Open the wallet |
 | archive-restore-tools | `.../app/wallet` | Open the wallet |
 
-(`checkin` = seedling KPI check-in, confirmed with the operator. `.../` =
-`https://mentalhealthwallet.productsforgood.co`.) Labels already exist in frontmatter; adjust
-copy so it matches the destination (Req 2.4).
+Two DISTINCT destinations (do not conflate):
+- `/app/how-i-feel` → the **"Start from how I feel" card** (the `session-launcher` card, emotion
+  picker → recommendations). This is what the emotion-session tips want.
+- `/app/checkin` → the **seedling 🌱 daily KPI check-in card** (`lib-personal-kpi`). Only the
+  `personal-kpi-check-in` tip wants this.
+
+(`.../` = `https://mentalhealthwallet.productsforgood.co`.) Labels already exist in frontmatter;
+adjust copy so it matches the destination (Req 2.4).
 
 ### 2b. Render a single real CTA using `cta.url` (Req 2.2, 2.5)
 
