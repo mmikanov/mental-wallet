@@ -26,7 +26,8 @@ import {
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
+import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
 import { SEED_CATEGORIES } from '@/data/seeds';
@@ -63,6 +64,7 @@ type LibraryNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function LibraryBrowserScreen() {
   const navigation = useNavigation<LibraryNavigationProp>();
+  const route = useRoute<RouteProp<RootStackParamList, 'LibraryBrowser'>>();
   const { cards, loadCards } = useWalletStore();
   const isAdminMode = useAdminStore((s) => s.isAdminMode);
   const toggleAdmin = useAdminStore((s) => s.toggleAdmin);
@@ -90,7 +92,11 @@ export default function LibraryBrowserScreen() {
   }, [toggleAdmin]);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>(ALL_FILTER);
+  // Deep link /app/add-tool?filter=apps pre-selects the Apps filter pill; any
+  // unknown/absent filter falls back to ALL_FILTER (1.0.4-deep-linking Req 4).
+  const [selectedCategory, setSelectedCategory] = useState<string>(
+    route.params?.initialFilter ?? ALL_FILTER
+  );
   const [sortMode, setSortMode] = useState<SortMode>('category');
   const [addingCardId, setAddingCardId] = useState<string | null>(null);
   const [restoringCardId, setRestoringCardId] = useState<string | null>(null);
