@@ -22,7 +22,7 @@ wraps/annotates and wires them in.
 | [discover-third-party-apps](#rec-discover-third-party-apps) | Screen video (iOS) | **You** (recording) + **Agent** (clean/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero). Ends on "Open in Headspace / Link opened" (store-launch not simulator-demoable). | `96a6931f-c862-4321-bae4-e84765c470fb` (draft) |
 | [personal-kpi-check-in](#rec-personal-kpi-check-in) | Short screen video or screenshot | **You** (recording) + **Agent** (clean/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero). Held wallet → amber pulse on 🌱 seedling → Daily check-in → rate 8/10 → note + Save → amber pulse on ⋮ kebab → Card actions → amber pulse on Insights → Insights payoff (Daily Check-In Impact + Outcome Trends) → fade out. | `a1ba2d2d-933b-4876-979f-a778321d877e` (draft) |
 | [learn-more-evidence](#rec-learn-more-evidence) | Animated 2-beat (screenshot + pulse highlight → sheet) | **You** (screenshots) + **Agent** (animate/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero). Card w/ pulse ring on "Learn more" → cross-fades to the rationale sheet. | `b237f76e-5d42-4515-bb26-a252410dffb4` (draft) |
-| [add-your-own-app](#rec-add-your-own-app) | Screen-recorded video (Create Tool → Link Button flow) | **You** (recording) + **Agent** (clean/GIF/wire) | ⬜ Not started — tip text live, needs recording | — |
+| [add-your-own-app](#rec-add-your-own-app) | Screen-recorded video (Create Tool → Link Button flow) | **You** (recording) + **Agent** (clean/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero). Finch example: wallet → ⋮ (pulse) → Create Tool (pulse) → Step 1 shell → Step 2 empty → +Add block (pulse) → Link Button (pulse) → URLs → Step 3 Preview → Save → wallet with new card → expanded card + Open button (pulse) → fade. | — |
 | [add-your-own-tool](#rec-add-your-own-tool) | Screen video (Create Tool → input blocks → use it) | **You** (recording) + **Agent** (clean/GIF/wire) | ⬜ Not started — tip text drafted (needs review), needs recording. Most complex flow. | — |
 | [reorder-tools](#rec-reorder-tools) | Short screen video (long-press → Reorder Cards → ▲/▼ → Done) | **You** (recording) + **Agent** (clean/GIF/wire) | ⬜ Not started — tip text live, needs recording | — |
 | [archive-restore-tools](#rec-archive-restore-tools) | Screen video (⋮ → Archive card → Archive screen → Restore) | **You** (recording) + **Agent** (clean/GIF/wire) | ⬜ Not started — tip text live, needs recording | — |
@@ -248,6 +248,23 @@ stage mid-fly-in). Capture `--start` is tuned so frame 1 is the settled/legible 
 ### 9. add-your-own-app — *"Can't find your app? Add it yourself"* (feature; discovery, apps, customization)
 - **Best asset:** **Screen-recorded video** (Create Tool → Link Button flow). Pairs with discover-third-party-apps as the "it's not in the library" escape hatch.
 - **Why:** It's a multi-step build flow (menu → Create Tool → name it → Add block → Link Button → fill Label/Target URL → save → launch). Motion shows the sequence far better than prose, and it reassures users the builder isn't intimidating.
+- **Example app to use (recommended): Finch** (the self-care pet app). It's recognizable as a
+  mental-health app, warm/non-clinical (matches the brand tone), and is **NOT already in the
+  library** (library apps: Headspace, Calm, Talkspace, BetterHelp, Wysa, Mindfulness.com,
+  Insight Timer) — so the "can't find your app" premise stays honest. Target URL:
+  `https://finchcare.com` (or its App Store link as fallback). Alternatives if preferred:
+  Daylio, Sanvello, I Am, Moshi.
+- **Custom icon (optional, advanced):** you *can* paste a URL to the app's logo for the icon,
+  but that's a fiddly step for most users (they'd have to go find the image URL). Fine to show
+  for a polished demo; skip it if it slows the video down. (Future: an AI setup assistant could
+  fetch the logo + fill these fields automatically — see Parking Lot.)
+- **Finch details for the demo (verified via iTunes lookup):**
+  - App name: "Finch: Self-Care Pet"
+  - **Stable icon URL** (App Store CDN, no expiry — use this, NOT a LinkedIn `media.licdn.com`
+    URL which carries an expiry token and will go blank later):
+    `https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/9d/82/5c/9d825ca0-6344-d476-d716-eb7c9d699da9/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/512x512bb.jpg`
+  - Target/website: `https://finchcare.com`; App Store fallback:
+    `https://apps.apple.com/us/app/finch-self-care-pet/id1528595748`
 - **Video steps (~10–14s, will be sped up + hold on payoff):**
   1. Wallet → open the ⋮ menu → tap **Create Tool**.
   2. Step 1: type a title, pick an icon (keep it quick).
@@ -370,7 +387,7 @@ degrades to frame 1 in Outlook.
 
 ## Parking lot (future, not blocking any current tip)
 
-These came up while working on **feeling-anxious** (tip #7). Neither is prioritized yet.
+These came up while working on the tips. None are prioritized yet.
 
 ### 1. Real breathing-pacer control in the app
 - **Idea:** Add a genuine animated breathing pacer (an expanding/contracting square or circle
@@ -395,3 +412,45 @@ These came up while working on **feeling-anxious** (tip #7). Neither is prioriti
 - **Why it matters:** it's the general fix for "a tip describes behavior that only exists in
   newer builds" — exactly the mismatch that blocked showing a breathing pacer in feeling-anxious.
 - **Why parked:** no immediate need; resurface when a tip must reference a build-gated feature.
+
+### 3. Store-lookup prefill in Create Tool (the pre-AI step)
+- **Idea:** A "Fetch from App Store" button in the Create Tool flow (external-app path). The
+  user types an app name or picks a result, and the app pre-fills the card fields — name,
+  icon, description, and store/launch URLs — instead of the user hunting for a logo URL and
+  typing everything by hand.
+- **Feasibility (verified):**
+  - **iOS: easy.** Apple's **iTunes Search/Lookup API** is free, public, no key. Search by name
+    (`https://itunes.apple.com/search?term=<app>&entity=software`) or lookup by id
+    (`https://itunes.apple.com/lookup?id=<id>`). Returns `trackName`, `description`,
+    `artworkUrl512` (icon), `trackViewUrl` (store URL), etc. (This is the exact API used to get
+    Finch's stable icon for the add-your-own-app demo.)
+  - **Android: no clean equivalent.** Google Play has **no official public lookup API** (the
+    Play Developer API only manages *your own* apps). Options are scraping the Play page
+    (fragile, against ToS) or a paid third-party service. So Android-side lookup is NOT
+    reliably doable the same way.
+  - **Cross-platform payoff anyway:** the created card is platform-agnostic — name/icon/
+    description are just display data and the launch is a URL. So an **iOS-only lookup still
+    benefits Android users**: the fetched icon/name display correctly on both platforms once
+    the card exists. Per-platform launch already handled via `appStoreId`/`playStoreId` in
+    `externalAppCards`.
+- **Why it's the right first step (before AI):** it's deterministic and small — a button, one
+  API call, prefill logic, and a graceful fallback to manual entry. It de-risks the eventual
+  AI assistant (which would orchestrate this same fetch plus reasoning). Do this first.
+- **Scope note:** Create Tool is currently fully offline/local. This adds the builder's first
+  outbound network call — handle loading/error/offline states and never block tool creation if
+  the lookup fails (fall back to manual entry).
+- **Why parked:** not urgent; strong candidate once we invest in the Create Tool experience.
+
+### 4. AI-assisted tool/app setup
+- **Idea:** An in-app AI helper that sets up a new tool or external-app card *for* the user,
+  instead of making them fill the builder out by hand. The user says what they want (e.g. "add
+  Finch" or "make me a nightly wind-down journal"), and the assistant fetches the details
+  (app website/deep link, logo/icon URL, sensible controls) and pre-fills the Create Tool
+  flow — user just reviews and saves.
+- **Why it matters:** the manual Create Tool flow (especially finding a logo URL or the right
+  deep link for an external app) is the fiddly part that only more sophisticated users will
+  bother with. An AI setup step would make add-your-own-app / add-your-own-tool approachable
+  for everyone, and is a natural differentiator.
+- **Why parked:** larger feature (LLM integration, fetching/validating third-party metadata,
+  review UX). Surfaced while choosing the add-your-own-app demo (custom icon URL is too fiddly
+  for most users). Resurface when investing in onboarding/customization depth.
