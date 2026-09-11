@@ -24,7 +24,7 @@ wraps/annotates and wires them in.
 | [learn-more-evidence](#rec-learn-more-evidence) | Animated 2-beat (screenshot + pulse highlight → sheet) | **You** (screenshots) + **Agent** (animate/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero). Card w/ pulse ring on "Learn more" → cross-fades to the rationale sheet. | `b237f76e-5d42-4515-bb26-a252410dffb4` (draft) |
 | [add-your-own-app](#rec-add-your-own-app) | Screen-recorded video (Create Tool → Link Button flow) | **You** (recording) + **Agent** (clean/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero). Finch example: wallet → ⋮ (pulse) → Create Tool (pulse) → Step 1 shell → Step 2 empty → +Add block (pulse) → Link Button (pulse) → URLs → Step 3 Preview → Save → wallet with new card → expanded card + Open button (pulse) → fade. | — |
 | [add-your-own-tool](#rec-add-your-own-tool) | Screen video (Create Tool → input blocks → use it) | **You** (recording) + **Agent** (clean/GIF/wire) | ⬜ Not started — tip text drafted (needs review), needs recording. Most complex flow. | — |
-| [reorder-tools](#rec-reorder-tools) | Short screen video (long-press → Reorder Cards → ▲/▼ → Done) | **You** (recording) + **Agent** (clean/GIF/wire) | ⬜ Not started — tip text live, needs recording | — |
+| [reorder-tools](#rec-reorder-tools) | Short screen video (long-press → Reorder Cards → ▲/▼ → Done) | **You** (recording) + **Agent** (clean/GIF/wire) | ✅ Done — live (web inline GIF + email/feed hero). Wallet (amber pulse hint on top card) → Reorder Cards panel → ▲/▼ moves → Done → wallet with new order → fade. | — |
 | [archive-restore-tools](#rec-archive-restore-tools) | Screen video (⋮ → Archive card → Archive screen → Restore) | **You** (recording) + **Agent** (clean/GIF/wire) | ⬜ Not started — tip text live, needs recording | — |
 
 **What "Agent can do" means precisely:**
@@ -57,6 +57,18 @@ Follow these steps for every new tip asset so review is consistent:
    that same `--width`). For a "tap X → see Y" story, use a **2-beat** animation: highlight
    the element, then cross-fade to what it opens and hold. Set the GIF **poster** to a frame
    where the ring is fully visible (the default first frame can catch it mid-pulse).
+
+   **⚠️ No greyed-out items (mandatory check).** When a beat shows a menu, list, or picker
+   (e.g. the wallet ⋮ menu, or the Create Tool "Choose Control Type" list), the item being
+   highlighted/tapped must appear in the **same full color as the other items** — never
+   greyed. This happens because a still frame can catch the tapped row mid **press-highlight
+   fade** (a transient opacity dip, NOT an app bug — menu/picker rows share one style in
+   code). Fix by using a **clean frame from before the tap** (menu just opened, all items
+   full-dark); if no clean frame exists (the fade persists across the whole open window),
+   **redraw the item crisply in the overlay** (white cover strip + matching dark label). Both
+   greyed-item cases in add-your-own-app (Create Tool, Link Button) were fixed this way.
+   Verify every menu/picker frame in the final GIF before shipping — all options must read at
+   full color.
 2. **Always build a review preview page** (`assets/tip-media/<slug>-preview.html`, dev-only,
    excluded from deploy by the `*.html` glob) showing: the asset at a few **candidate display
    widths** (200/240/300) AND **rendered inside the real email layout** (greeting → media →
