@@ -4,12 +4,12 @@ summary: "The library not quite right? Create your own coping tool from scratch.
 slug: "add-your-own-tool"
 type: "feature"
 topics: ["customization", "tools", "journaling"]
-heroImage: ""
+heroImage: "https://mentalhealthwallet.productsforgood.co/assets/tip-media/add-your-own-tool.gif"
 cta:
   label: "Create your own tool"
   url: "https://apps.apple.com/app/mental-health-wallet/id6800036822"
 publishedAt: "2026-09-10"
-version: 1
+version: 2
 ---
 
 The curated library is a starting point, not a limit. If the tool you want doesn't exist,
@@ -26,6 +26,11 @@ Say you want a nightly wind-down: add a Mood Slider ("How wound up are you?"), a
 ("What's on your mind?"), and a Checkbox ("Screens off"). Save it, and it sits in your
 wallet like any other card. When you open it, you fill it in right there, and every entry is
 logged, so it feeds your streaks and Insights just like the built-in tools.
+
+<figure class="tip-media">
+  <img src="https://mentalhealthwallet.productsforgood.co/assets/tip-media/add-your-own-tool.gif" width="240" alt="Building a custom coping tool from blocks and using it inside the app." />
+  <figcaption>Stack the blocks you want into your own tool, then use it right in the app.</figcaption>
+</figure>
 
 This is different from adding an app you launch elsewhere. This tool is yours, and you use
 it in the moment, inside the app. Start with one block and add from there. Whatever helps
