@@ -4,12 +4,12 @@ summary: "If an app you love isn't in the library, make your own card for it in 
 slug: "add-your-own-app"
 type: "feature"
 topics: ["discovery", "apps", "customization"]
-heroImage: ""
+heroImage: "https://mentalhealthwallet.productsforgood.co/assets/tip-media/add-your-own-app.gif"
 cta:
   label: "Create your own tool"
   url: "https://apps.apple.com/app/mental-health-wallet/id6800036822"
 publishedAt: "2026-09-09"
-version: 1
+version: 2
 ---
 
 The library has cards for a lot of popular apps, but it can't cover everything. If the app
@@ -23,6 +23,11 @@ Fill in three things: a Label for the button (like "Open my app"), a Target URL,
 optional Fallback URL. For the target, use the app's website (starting with https://), or
 its link if you know it. Set the fallback to somewhere useful, like the app's website, so
 you still land somewhere if the app isn't installed. Then preview and save.
+
+<figure class="tip-media">
+  <img src="https://mentalhealthwallet.productsforgood.co/assets/tip-media/add-your-own-app.gif" width="240" alt="Creating a Link Button card for an app and saving it to the wallet." />
+  <figcaption>Add a Link Button, give it a name and a link, and it lands in your wallet.</figcaption>
+</figure>
 
 Now that card lives in your wallet alongside everything else, and tapping its button opens
 your app. Your whole toolkit stays in one place, even the parts we didn't think of.
