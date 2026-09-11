@@ -17,6 +17,13 @@ export const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com
 export const PRIVACY_POLICY_URL = 'https://mentalhealthwallet.productsforgood.co/privacy';
 export const TERMS_OF_SERVICE_URL = 'https://mentalhealthwallet.productsforgood.co/terms';
 
+/**
+ * Website subscribe page for email tips/reminders. The app links out here (no PII
+ * collected in-app); the website handles the email + consent. See spec
+ * 1.0.4-email-optin-and-cta-upgrade.
+ */
+export const SUBSCRIBE_URL = 'https://mentalhealthwallet.productsforgood.co/subscribe';
+
 /** Marketing site origin — used to resolve site-relative tip article URLs. */
 export const SITE_ORIGIN = 'https://mentalhealthwallet.productsforgood.co';
 

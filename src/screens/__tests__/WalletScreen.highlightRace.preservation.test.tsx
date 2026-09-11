@@ -204,6 +204,7 @@ jest.mock('@/components/wallet/BackgroundCustomizerSheet', () => 'BackgroundCust
 jest.mock('@/components/session/SessionLauncherContent', () => 'SessionLauncherContent');
 jest.mock('@/components/session/SessionActiveBanner', () => 'SessionActiveBanner');
 jest.mock('@/components/onboarding/OnboardingBanner', () => 'OnboardingBanner');
+jest.mock('@/components/onboarding/EmailOptInPrompt', () => 'EmailOptInPrompt');
 jest.mock('@/components/onboarding/TooltipOverlay', () => 'TooltipOverlay');
 jest.mock('@/components/onboarding/FirstActionChecklist', () => 'FirstActionChecklist');
 
@@ -231,11 +232,26 @@ jest.mock('react-native-reanimated', () => {
     useSharedValue: (val: any) => ({ value: val }),
     useAnimatedStyle: (fn: () => any) => fn(),
     withSpring: (val: any) => val,
+    withTiming: (val: any, _cfg?: any, cb?: (f: boolean) => void) => {
+      if (cb) cb(true);
+      return val;
+    },
+    Easing: { inOut: () => () => 0, ease: () => 0, in: () => () => 0, out: () => () => 0 },
+    runOnJS: (fn: any) => fn,
     default: {
       View: (props: any) => React.createElement('View', props, props.children),
     },
   };
 });
+
+jest.mock('@/services/settingsService', () => ({
+  getEmailOptInPromptSeen: jest.fn().mockResolvedValue(true),
+  setEmailOptInPromptSeen: jest.fn().mockResolvedValue(undefined),
+}));
+jest.mock('expo-web-browser', () => ({
+  openBrowserAsync: jest.fn().mockResolvedValue(undefined),
+  WebBrowserPresentationStyle: { PAGE_SHEET: 'pageSheet' },
+}));
 
 // --- Mock react-native-safe-area-context ---
 jest.mock('react-native-safe-area-context', () => {

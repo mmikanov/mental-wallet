@@ -31,7 +31,7 @@ import { AdminKpiBadgeTools } from '@/components/settings/AdminKpiBadgeTools';
 import { SeedInsightsButton } from '@/components/settings/SeedInsightsButton';
 import { getFlushIntervalMs, setFlushIntervalMs } from '@/config/analytics';
 import * as WebBrowser from 'expo-web-browser';
-import { APP_NAME, PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from '@/config/appInfo';
+import { APP_NAME, PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL, SUBSCRIBE_URL } from '@/config/appInfo';
 import { requestAppReview, shareApp, contactSupport, sendFeedback } from '@/services/appActionsService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
@@ -436,6 +436,28 @@ export default function SettingsScreen({ navigation }: Props) {
           >
             <Text style={styles.menuItemIcon}>📄</Text>
             <Text style={styles.menuItemText}>Terms of Service</Text>
+            <Text style={styles.menuItemChevron}>›</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() =>
+              WebBrowser.openBrowserAsync(SUBSCRIBE_URL, {
+                presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
+                controlsColor: '#4A90D9',
+                toolbarColor: '#FFFFFF',
+              })
+            }
+            accessibilityLabel="Email updates"
+            accessibilityRole="button"
+          >
+            <Text style={styles.menuItemIcon}>✉️</Text>
+            <View style={styles.menuItemContent}>
+              <Text style={styles.menuItemText}>Email updates</Text>
+              <Text style={styles.menuItemSubtitle}>
+                Occasional tips and reminders. Change or stop anytime. No account needed.
+              </Text>
+            </View>
             <Text style={styles.menuItemChevron}>›</Text>
           </TouchableOpacity>
 

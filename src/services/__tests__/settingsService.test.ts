@@ -1,4 +1,4 @@
-import { getStartMode, setStartMode, getLastUsedMode, setLastUsedMode, hasStartMode } from '../settingsService';
+import { getStartMode, setStartMode, getLastUsedMode, setLastUsedMode, hasStartMode, getEmailOptInPromptSeen, setEmailOptInPromptSeen } from '../settingsService';
 import { AppError, ErrorCode } from '../../types/errors';
 
 // Mock the database module
@@ -241,6 +241,36 @@ describe('settingsService', () => {
       const result = await hasStartMode();
 
       expect(result).toBe(false);
+    });
+  });
+
+  describe('emailOptInPromptSeen', () => {
+    it('defaults to false when no row exists', async () => {
+      mockDb.getFirstAsync.mockResolvedValue(null);
+      expect(await getEmailOptInPromptSeen()).toBe(false);
+    });
+
+    it('returns true when stored value is "true"', async () => {
+      mockDb.getFirstAsync.mockResolvedValue({ value: 'true' });
+      expect(await getEmailOptInPromptSeen()).toBe(true);
+    });
+
+    it('returns false when stored value is "false"', async () => {
+      mockDb.getFirstAsync.mockResolvedValue({ value: 'false' });
+      expect(await getEmailOptInPromptSeen()).toBe(false);
+    });
+
+    it('defaults to false on DB error (never nags)', async () => {
+      mockDb.getFirstAsync.mockRejectedValue(new Error('db down'));
+      expect(await getEmailOptInPromptSeen()).toBe(false);
+    });
+
+    it('persists the seen flag as "true"', async () => {
+      await setEmailOptInPromptSeen(true);
+      expect(mockDb.runAsync).toHaveBeenCalledWith(
+        'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+        ['email_opt_in_prompt_seen', 'true']
+      );
     });
   });
 });
