@@ -119,7 +119,7 @@ Universal Link per the requirements' mapping table:
 | outcome-capture | `.../app/wallet` | Use a tool |
 | personal-kpi-check-in | `.../app/checkin` | Daily seedling check-in |
 | discover-third-party-apps | `.../app/add-tool?filter=apps` | Browse mental health apps |
-| learn-more-evidence | `.../app/learn-more-tour` | See why a tool works |
+| learn-more-evidence | `.../app/learn-more-tour` | See why a tool works (opens top card; its Learn more link is visible) |
 | come-back-reset | `.../app/wallet` | Open the wallet |
 | add-your-own-app | `.../app/add-tool` | Add your own |
 | add-your-own-tool | `.../app/add-tool` (Create Tool lives in the library/creator) | Create a tool |

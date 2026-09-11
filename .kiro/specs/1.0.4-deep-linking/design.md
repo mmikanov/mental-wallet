@@ -131,7 +131,7 @@ path has a natural web fallback:
 | `/app/wallet?focusCardId=<id>` | Wallet, focus+expand card | wallet page |
 | `/app/how-i-feel` | "Start from how I feel" session-launcher card (Req 4.2) | relevant tip/article |
 | `/app/checkin` | seedling 🌱 KPI daily check-in card (Req 4.2) | relevant tip/article |
-| `/app/learn-more-tour` | Learn-more guided walkthrough (Req 4.3) | relevant tip/article |
+| `/app/learn-more-tour` | Wallet, top stack card focused+expanded (its Learn more link is visible; Req 4.3) | relevant tip/article |
 | `/app/add-tool` | Library browser (Req 4) | library/tips page |
 | `/app/add-tool?filter=apps` | Library browser, Apps filter pre-selected (Req 4) | library/tips page |
 
@@ -193,24 +193,27 @@ consumer (Req 2). Neither needs to drive the session/checkin store directly, foc
 expanding the card lands the user on the same entry point a tap would (the card's own UI takes
 over from there).
 
-### 4.3 "Learn more" guided walkthrough — reuse `TooltipOverlay`
+### 4.3 "Learn more" destination — open the top stack card (SIMPLIFIED, no walkthrough)
 
-Build a small walkthrough that spotlights the "Learn more" entry point on a card the user
-actually has, reusing `TooltipOverlay` + a `useMicroTutorial`-style state machine (no new
-pattern, per Req 4.3).
+**Decision (operator-confirmed):** the app has NO "Learn more" guided walkthrough today, and
+building a new coach-mark tour is disproportionate for one tip in 1.0.4. Instead of a tour,
+`/app/learn-more-tour` simply **opens the wallet's top stack card, focused + expanded**, so the
+card's own "Learn more" (rationale/evidence) link is right there for the user to tap. No new
+walkthrough UI. A richer guided tour is parked as a future enhancement.
 
-- New `Wallet` param `startLearnMoreTour?: boolean` (set via `/app/learn-more-tour`).
-- On trigger: pick an example card that HAS a rationale/"Learn more" entry (curated cards with
-  `rationale`, e.g. Box Breathing). Resolve from the user's wallet cards; prefer the frontmost
-  card with a Learn more entry.
-- Focus that card (so the Learn more entry is on screen), measure the Learn more control's
-  layout, render `TooltipOverlay` pointing at it with copy like "Tap Learn more to see the
-  science behind a tool." Dismissible (Skip), does not block normal use.
-- **Graceful degrade (Req 4.3):** if no wallet card has a Learn more entry, skip the tour
-  silently (land on the wallet). A single-step tour is fine; reuse the overlay, not the full
-  micro-tutorial sequencing.
-- Implementation note: this is the largest net-new UI. A new `useLearnMoreTour` hook mirroring
-  `useMicroTutorial` (steps: `idle → point_at_learn_more → complete`) keeps it consistent.
+- New `Wallet` param `openTopCard?: boolean` (set via `/app/learn-more-tour`). (Named for what
+  it does, not "tour", since there is no tour.)
+- On trigger: focus + expand the **top card of the stack**, i.e. the first entry of `stackCards`
+  (index 0 is the top of the deck; `StackedCardList` reverses for rendering). Reuses the same
+  `focusCard(id); expandCard()` + consume-once / cards-load guard as Req 2 and 4.2.
+- **Skip the "Start from how I feel" session-launcher card:** pick the first `stackCards` entry
+  whose id is NOT `session-launcher`. (The KPI card is already excluded from `stackCards`, it's
+  FAB-only, so no extra guard needed for it.) These aren't regular tools and have no Learn more
+  entry, so they're not a useful landing for this tip.
+- **Graceful degrade:** if there is no qualifying card (empty stack, or the only stack card is
+  the session-launcher), do nothing beyond landing on the wallet, no error.
+- No `TooltipOverlay`, no `useLearnMoreTour` hook, no new UI. This makes the route a thin
+  variant of the Req 2 / 4.2 focus-and-expand mechanism.
 
 ### 4 add-tool / library route (with optional Apps filter)
 
@@ -254,13 +257,13 @@ the shared `linking.config.screens`, so it's reachable via `mentalwallet://...` 
 - `src/navigation/linking.ts` — add https prefix, extend `config.screens` (add-tool,
   how-i-feel, checkin, learn-more-tour), keep the notification URL builder.
 - `src/navigation/types.ts` — extend `MainTabParamList.Wallet` with `openHowIFeel?`,
-  `openKpiCheckin?`, `startLearnMoreTour?` (and keep `focusCardId?`); extend `LibraryBrowser`
+  `openKpiCheckin?`, `openTopCard?` (and keep `focusCardId?`); extend `LibraryBrowser`
   with `{ initialFilter?: string }`.
 - `src/screens/WalletScreen.tsx` — consume `focusCardId` (Req 2), `openHowIFeel` (4.2),
-  `openKpiCheckin` (4.2), `startLearnMoreTour` (4.3).
+  `openKpiCheckin` (4.2), `openTopCard` (4.3, top non-session stack card).
 - `src/screens/LibraryBrowserScreen.tsx` — initialize `selectedCategory` from
   `route.params?.initialFilter` (Apps filter deep link).
-- New: `src/hooks/useLearnMoreTour.ts` (+ wiring) for the walkthrough.
+- (No new walkthrough component/hook, the Learn-more route reuses focus+expand.)
 - Optional cleanup: remove dead `handleNotificationTap` / navigation-handler in
   `notificationService.ts`.
 
@@ -280,8 +283,9 @@ the shared `linking.config.screens`, so it's reachable via `mentalwallet://...` 
   mocked store) that `focusCardId` for an existing card calls `focusCard` then `expandCard`,
   and that a missing/archived id does neither and doesn't throw (Req 2.3). Consume-once /
   distinct-second-link behavior via the `lastHandledFocusCardId` ref.
-- **Component:** the Learn-more tour renders `TooltipOverlay` when a qualifying card exists and
-  no-ops when none does.
+- **`openTopCard` effect (mocked store):** focuses + expands the first non-`session-launcher`
+  stack card; when the only stack card is the session-launcher (or the stack is empty) it does
+  nothing and doesn't throw.
 - **MANUAL, both platforms (the association layer can't be unit-tested):**
   - Req 1/2: schedule a reminder, tap the notification from cold start, background, and
     foreground → app opens with that card focused AND expanded; deleted/archived card → wallet,
@@ -310,6 +314,6 @@ the shared `linking.config.screens`, so it's reachable via `mentalwallet://...` 
 | 3.5 custom scheme still works | https added as an extra prefix |
 | 4.1 routes for destinations | wallet, how-i-feel, checkin, learn-more-tour, add-tool |
 | 4.2 feel-oriented destinations | `openHowIFeel` → session-launcher; `openKpiCheckin` → KPI card (both focus+expand) |
-| 4.3 learn-more tour | `TooltipOverlay` + `useLearnMoreTour`, graceful degrade |
+| 4.3 learn-more destination | `openTopCard` → focus+expand top non-session stack card (its Learn more link is visible); no walkthrough built |
 | 4.4 both transports | shared `linking.config.screens` |
 | 4.5 no-screen destinations | add-tool → existing LibraryBrowser (optional `?filter=apps` pre-selects the Apps pill) |

@@ -74,7 +74,8 @@ right in-app destination, with the store as fallback.
    (what the Universal/App Link resolves to when it can't open the app), not the primary
    action.
 4. THE CTA copy and destination SHALL match (e.g. "Start from how I feel" → the "Start from
-   how I feel" card / emotion session; "why does this tool work?" → Learn more walkthrough).
+   how I feel" card / emotion session; "why does this tool work?" → the top card opened so its
+   "Learn more" link is visible).
 5. THE change SHALL be limited to CTA URLs in `content/tips/*.md` plus the CTA rendering in
    `website/build-content.js`, plus a content rebuild and deploy; no email/worker change
    required.
@@ -89,7 +90,7 @@ right in-app destination, with the store as fallback.
 | `outcome-capture` | Wallet (use a tool → outcome check-in) |
 | `personal-kpi-check-in` | Seedling 🌱 daily check-in card (KPI card, focused + expanded) |
 | `discover-third-party-apps` | Add-tool / library, Apps filter pre-selected |
-| `learn-more-evidence` | Learn more guided walkthrough |
+| `learn-more-evidence` | Top stack card, focused + expanded (its "Learn more" link is visible) |
 | `come-back-reset` | Wallet |
 | `add-your-own-app` | Add-tool / Create Tool |
 | `add-your-own-tool` | Create Tool |
@@ -99,7 +100,7 @@ right in-app destination, with the store as fallback.
 ## Out of Scope
 
 - The deep-linking foundation itself (scheme fix, Universal/App Links, routes, notification
-  focus, walkthrough) — see `1.0.4-deep-linking`.
+  focus) — see `1.0.4-deep-linking`.
 - Any messaging-worker change (CTA upgrade is content + website build only).
 
 ## Open Questions (design)
