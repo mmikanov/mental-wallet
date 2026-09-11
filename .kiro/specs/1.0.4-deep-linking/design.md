@@ -129,7 +129,8 @@ path has a natural web fallback:
 |---|---|---|
 | `/app/wallet` | Wallet | wallet marketing/explainer page |
 | `/app/wallet?focusCardId=<id>` | Wallet, focus+expand card | wallet page |
-| `/app/checkin` | seedling KPI check-in (Req 4.2) | relevant tip/article |
+| `/app/how-i-feel` | "Start from how I feel" session-launcher card (Req 4.2) | relevant tip/article |
+| `/app/checkin` | seedling 🌱 KPI daily check-in card (Req 4.2) | relevant tip/article |
 | `/app/learn-more-tour` | Learn-more guided walkthrough (Req 4.3) | relevant tip/article |
 | `/app/add-tool` | Library browser (Req 4) | library/tips page |
 
@@ -164,26 +165,32 @@ prefixes).
 
 ## Requirement 4: New routes for tip destinations
 
-### 4.2 Seedling "how I feel" check-in — OPEN DECISION
+### 4.2 Two distinct "feel"-oriented destinations (RESOLVED)
 
-The requirement says "the same flow the wallet's seedling button starts." Verified: the 🌱
-seedling FAB focuses the **KPI daily check-in card** (`lib-personal-kpi`), NOT the emotion
-session. The requirement text also says "check-in flow," which is ambiguous between the two.
+There are TWO separate cards, and tip CTAs target different ones. Do not conflate them:
 
-**Design choice:** target the seedling FAB's ACTUAL behavior, focus + expand the KPI
-check-in card, via the same `focusCardId` mechanism (route `/app/checkin` →
-`focusCardId=<kpi card id>`), OR a dedicated boolean param `openKpiCheckin`. Recommend a
-dedicated param because the KPI card's wallet-instance id is per-install (it's seeded per
-device), so a literal `focusCardId` can't be hardcoded in a tip URL. `/app/checkin` should map
-to a param the wallet resolves to "the KPI card, whatever its local id is."
+1. **"Start from how I feel" card** = the `session-launcher` card (title "Start from how I
+   feel"; emotion picker → recommendations, renders `SessionLauncherContent` when focused +
+   expanded). The `emotion-based-session` and `feeling-anxious` tips target THIS.
+2. **Seedling 🌱 daily check-in** = the KPI card (`sourceLibraryId === 'lib-personal-kpi'`),
+   what the 🌱 FAB (`handleKpiFabPress`) opens. The `personal-kpi-check-in` tip targets THIS.
+   (Operator confirmed the seedling = KPI check-in card.)
 
-- Add `Wallet` param `openKpiCheckin?: boolean`. Effect: find the card with
+Both are just "focus + expand a specific card," so both reuse the same mechanism as Req 2, but
+each card's wallet-instance id is per-install (seeded per device), so a literal `focusCardId`
+can't be hardcoded in a tip URL. Use dedicated boolean params the wallet resolves locally:
+
+- **`/app/how-i-feel`** → `Wallet` param `openHowIFeel?: boolean`. Effect: find the
+  `session-launcher` card, `focusCard(it.id); expandCard()` (this is exactly what the existing
+  `handleReturnToSession` does). Degrade gracefully if the card is missing.
+- **`/app/checkin`** → `Wallet` param `openKpiCheckin?: boolean`. Effect: find the card with
   `sourceLibraryId === 'lib-personal-kpi'`, `focusCard(it.id); expandCard()`. Degrade
   gracefully if the user removed the KPI card.
-- FLAG FOR CONFIRMATION: if the operator actually meant the **emotion session** guided
-  check-in (session-launcher → `startCheckin()`), the route would instead focus+expand
-  `session-launcher` and drive `useCheckinStore.getState().startCheckin()`. This is a small
-  swap; confirm intent before building.
+
+Both effects follow the same consume-once / cards-load-guard pattern as the `focusCardId`
+consumer (Req 2). Neither needs to drive the session/checkin store directly, focusing +
+expanding the card lands the user on the same entry point a tap would (the card's own UI takes
+over from there).
 
 ### 4.3 "Learn more" guided walkthrough — reuse `TooltipOverlay`
 
@@ -223,12 +230,12 @@ the shared `linking.config.screens`, so it's reachable via `mentalwallet://...` 
   associated domains.
 - `android/app/src/main/AndroidManifest.xml` — `mentalwallet` scheme filter + `autoVerify`
   https App Links filter.
-- `src/navigation/linking.ts` — add https prefix, extend `config.screens` (add-tool, checkin,
-  learn-more-tour), keep the notification URL builder.
-- `src/navigation/types.ts` — extend `MainTabParamList.Wallet` with `openKpiCheckin?`,
-  `startLearnMoreTour?` (and keep `focusCardId?`).
-- `src/screens/WalletScreen.tsx` — consume `focusCardId` (Req 2), `openKpiCheckin` (4.2),
-  `startLearnMoreTour` (4.3).
+- `src/navigation/linking.ts` — add https prefix, extend `config.screens` (add-tool,
+  how-i-feel, checkin, learn-more-tour), keep the notification URL builder.
+- `src/navigation/types.ts` — extend `MainTabParamList.Wallet` with `openHowIFeel?`,
+  `openKpiCheckin?`, `startLearnMoreTour?` (and keep `focusCardId?`).
+- `src/screens/WalletScreen.tsx` — consume `focusCardId` (Req 2), `openHowIFeel` (4.2),
+  `openKpiCheckin` (4.2), `startLearnMoreTour` (4.3).
 - New: `src/hooks/useLearnMoreTour.ts` (+ wiring) for the walkthrough.
 - Optional cleanup: remove dead `handleNotificationTap` / navigation-handler in
   `notificationService.ts`.
@@ -245,7 +252,7 @@ the shared `linking.config.screens`, so it's reachable via `mentalwallet://...` 
 
 - **Unit:** `linking.ts` route parsing, `mentalwallet://wallet?focusCardId=X` and
   `https://.../app/wallet?focusCardId=X` both resolve to `Wallet` with the param; new routes
-  (`add-tool`, `checkin`, `learn-more-tour`) resolve. A `WalletScreen` effect test (with a
+  (`add-tool`, `how-i-feel`, `checkin`, `learn-more-tour`) resolve. A `WalletScreen` effect test (with a
   mocked store) that `focusCardId` for an existing card calls `focusCard` then `expandCard`,
   and that a missing/archived id does neither and doesn't throw (Req 2.3). Consume-once /
   distinct-second-link behavior via the `lastHandledFocusCardId` ref.
@@ -258,8 +265,8 @@ the shared `linking.config.screens`, so it's reachable via `mentalwallet://...` 
   - Req 3: with app installed, a `/app/wallet` https link opens the app; uninstalled, it opens
     the web page. Verify AASA/assetlinks are fetched (Apple's CDN cache + Android App Links
     verification).
-  - Req 4: `/app/checkin`, `/app/learn-more-tour`, `/app/add-tool` land correctly via both the
-    custom scheme and https.
+  - Req 4: `/app/how-i-feel` (session-launcher card), `/app/checkin` (KPI card),
+    `/app/learn-more-tour`, `/app/add-tool` land correctly via both the custom scheme and https.
 
 ## Requirements coverage
 
@@ -277,8 +284,8 @@ the shared `linking.config.screens`, so it's reachable via `mentalwallet://...` 
 | 3.3 web fallback | inherent to UL/AL; website page dependency |
 | 3.4 association files | defined here; website serves them |
 | 3.5 custom scheme still works | https added as an extra prefix |
-| 4.1 routes for destinations | wallet, checkin, learn-more-tour, add-tool |
-| 4.2 seedling check-in | `openKpiCheckin` → KPI card focus+expand (see open decision) |
+| 4.1 routes for destinations | wallet, how-i-feel, checkin, learn-more-tour, add-tool |
+| 4.2 feel-oriented destinations | `openHowIFeel` → session-launcher; `openKpiCheckin` → KPI card (both focus+expand) |
 | 4.3 learn-more tour | `TooltipOverlay` + `useLearnMoreTour`, graceful degrade |
 | 4.4 both transports | shared `linking.config.screens` |
 | 4.5 no-screen destinations | add-tool → existing LibraryBrowser |

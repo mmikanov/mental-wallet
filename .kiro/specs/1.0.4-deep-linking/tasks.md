@@ -55,15 +55,20 @@ Links → walkthrough UI → verify.
   - Add `LibraryBrowser: 'add-tool'` to `linking.config.screens`; confirm
     `mentalwallet://add-tool` opens the (modal) Library browser. No new screen.
   - _Req: 4.1, 4.5_
-- [ ] 3.2 Seedling KPI check-in route
-  - CONFIRM INTENT FIRST (design open decision): the 🌱 seedling FAB focuses the KPI card
-    (`lib-personal-kpi`), not the emotion session. Add `Wallet` param `openKpiCheckin?: boolean`,
-    map `checkin` → it in `linking.config`, and a `WalletScreen` effect that finds the card with
-    `sourceLibraryId === 'lib-personal-kpi'` and `focusCard(it.id); expandCard()`. Degrade if the
-    KPI card was removed. (Use a param, not a literal `focusCardId`, because the KPI card's id is
-    per-install.)
+- [ ] 3.2 "Start from how I feel" route (session-launcher card)
+  - Add `Wallet` param `openHowIFeel?: boolean`, map `how-i-feel` → it in `linking.config`, and a
+    `WalletScreen` effect that finds the `session-launcher` card and `focusCard(it.id);
+    expandCard()` (exactly what `handleReturnToSession` already does). Degrade if missing. Use a
+    param, not a literal `focusCardId`, because the card's id is per-install.
   - _Req: 4.1, 4.2_
-- [ ] 3.3 Learn-more guided walkthrough route + UI
+- [ ] 3.3 Seedling KPI check-in route (KPI card — DISTINCT from 3.2)
+  - The 🌱 seedling FAB focuses the KPI card (`lib-personal-kpi`), operator-confirmed; this is a
+    DIFFERENT destination from the "Start from how I feel" session card in 3.2. Add `Wallet` param
+    `openKpiCheckin?: boolean`, map `checkin` → it, and a `WalletScreen` effect that finds the card
+    with `sourceLibraryId === 'lib-personal-kpi'` and `focusCard(it.id); expandCard()`. Degrade if
+    the KPI card was removed. Param, not literal `focusCardId` (per-install id).
+  - _Req: 4.1, 4.2_
+- [ ] 3.4 Learn-more guided walkthrough route + UI
   - Add `Wallet` param `startLearnMoreTour?: boolean`, map `learn-more-tour` → it. Add
     `src/hooks/useLearnMoreTour.ts` (steps `idle → point_at_learn_more → complete`, mirroring
     `useMicroTutorial`). On trigger: pick a wallet card that HAS a rationale/"Learn more" entry
@@ -75,9 +80,9 @@ Links → walkthrough UI → verify.
 
 - [ ] 4.1 Add the https prefix + shared route config in `linking.ts`
   - Add `https://mentalhealthwallet.productsforgood.co` (scoped to `/app`) to
-    `linking.prefixes`; map `/app/wallet`, `/app/wallet?focusCardId=`, `/app/checkin`,
-    `/app/learn-more-tour`, `/app/add-tool` in `config.screens` so both prefixes resolve to the
-    same routes. Keep `mentalwallet://` working (Req 3.5).
+    `linking.prefixes`; map `/app/wallet`, `/app/wallet?focusCardId=`, `/app/how-i-feel`,
+    `/app/checkin`, `/app/learn-more-tour`, `/app/add-tool` in `config.screens` so both prefixes
+    resolve to the same routes. Keep `mentalwallet://` working (Req 3.5).
   - _Req: 3.1, 3.5, 4.4_
 - [ ] 4.2 iOS associated domains
   - Add `applinks:mentalhealthwallet.productsforgood.co` to `app.json` `ios.associatedDomains`
@@ -100,7 +105,7 @@ Links → walkthrough UI → verify.
 - [ ] 5.1 Unit tests
   - `linking.ts`: `mentalwallet://wallet?focusCardId=X` and
     `https://.../app/wallet?focusCardId=X` both resolve to `Wallet` with the param; `add-tool`,
-    `checkin`, `learn-more-tour` resolve. `WalletScreen` effect (mocked store): existing card →
+    `how-i-feel`, `checkin`, `learn-more-tour` resolve. `WalletScreen` effect (mocked store): existing card →
     `focusCard`+`expandCard`; missing/archived → neither + no throw (Req 2.3); consume-once and
     distinct-second-link behavior via `lastHandledFocusCardId`.
   - _Req: 1.2, 2.1, 2.3, 4.1, 4.4_
@@ -114,8 +119,8 @@ Links → walkthrough UI → verify.
       deleted/archived → wallet, no error.
     - Req 3: installed `/app/wallet` https link opens app; uninstalled opens web page; AASA +
       assetlinks fetched/verified.
-    - Req 4: `/app/checkin`, `/app/learn-more-tour`, `/app/add-tool` land correctly via BOTH
-      `mentalwallet://` and https.
+    - Req 4: `/app/how-i-feel` (session-launcher card), `/app/checkin` (KPI card),
+      `/app/learn-more-tour`, `/app/add-tool` land correctly via BOTH `mentalwallet://` and https.
   - _Req: 1.2, 2.4, 3.2, 3.3, 4.4_
 
 ## Task Dependency Graph
@@ -126,10 +131,10 @@ Links → walkthrough UI → verify.
     { "wave": 1, "tasks": ["1.1", "1.2", "1.3"] },
     { "wave": 2, "tasks": ["1.4"] },
     { "wave": 3, "tasks": ["2.1", "2.2"] },
-    { "wave": 4, "tasks": ["2.3", "3.1", "3.2", "3.3"] },
+    { "wave": 4, "tasks": ["2.3", "3.1", "3.2", "3.3", "3.4"] },
     { "wave": 5, "tasks": ["4.1", "4.2", "4.3", "4.4"] },
     { "wave": 6, "tasks": ["5.1", "5.2", "5.3"] }
   ],
-  "notes": "Scheme registration (1.x) is the prerequisite for everything. 1.4 verifies it before building on top. Consuming focusCardId (2.1/2.2) delivers the concrete 1.0.4 goal and only depends on the scheme; 2.3 is its manual cross-state verification. New routes (3.x) extend the config once the scheme works; 3.2 needs the seedling-intent confirmation, 3.3 adds the walkthrough UI. Universal/App Links (4.x) layer https on top and carry the external website dependency (4.4), so they come after the custom-scheme routes and can ship in a later cut if the association files aren't ready. 5.x closes out automated + manual verification. Req 1+2 (waves 1-4 minus the https bits) form a shippable slice with no website dependency."
+  "notes": "Scheme registration (1.x) is the prerequisite for everything. 1.4 verifies it before building on top. Consuming focusCardId (2.1/2.2) delivers the concrete 1.0.4 goal and only depends on the scheme; 2.3 is its manual cross-state verification. New routes (3.x) extend the config once the scheme works: 3.2 = the 'Start from how I feel' session-launcher card, 3.3 = the DISTINCT seedling KPI check-in card (both operator-confirmed), 3.4 adds the walkthrough UI. Universal/App Links (4.x) layer https on top and carry the external website dependency (4.4), so they come after the custom-scheme routes and can ship in a later cut if the association files aren't ready. 5.x closes out automated + manual verification. Req 1+2 (waves 1-4 minus the https bits) form a shippable slice with no website dependency."
 }
 ```
