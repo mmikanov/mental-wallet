@@ -41,17 +41,18 @@ tests/verify (incl. the mandatory real-Android animate check).
 ## Task 4: Add the visual to Box Breathing
 
 - [x] 4.1 Update `lib-box-breathing` in `src/data/curatedLibrary.ts`
-  - Prepend a `breathing_animation` control at `position: 0`; shift the existing `static_text`
-    steps to `position: 1` (visual above, steps kept, both visible). Leave rationale, tags,
-    colors unchanged. Document inline (or via the release notes) the wallet-copy caveat: existing
-    wallet copies get the visual only on re-add; no backfill in 1.0.4.
+  - Keep the `static_text` steps at `position: 0`; add the `breathing_animation` control at
+    `position: 1` (steps first, visual below so the user reads the instructions then scrolls to
+    the pacer; both kept, both visible). Leave rationale, tags, colors unchanged. Document inline
+    (or via the release notes) the wallet-copy caveat: existing wallet copies get the visual only
+    on re-add; no backfill in 1.0.4.
   - _Req: 1.1, 1.4, 1.5_
 
 ## Task 5: Tests + verification
 
 - [x] 5.1 Unit / component tests
-  - Card test: `lib-box-breathing` includes a `breathing_animation` control at position 0 AND
-    still includes its `static_text` steps (guards Req 1.1/1.4 against future edits).
+  - Card test: `lib-box-breathing` includes a `breathing_animation` control (below the
+    `static_text` steps) AND still includes those steps (guards Req 1.1/1.4 against future edits).
   - Component test: `BoxBreathingAnimation` renders without throwing; with reduce-motion mocked
     ON it renders the static branch (no repeating animation) and exposes the expected
     `accessibilityLabel`.
