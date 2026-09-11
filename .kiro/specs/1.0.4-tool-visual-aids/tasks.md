@@ -7,7 +7,7 @@ tests/verify (incl. the mandatory real-Android animate check).
 
 ## Task 1: Add the `breathing_animation` control type
 
-- [ ] 1.1 Extend the control model in `src/types/index.ts`
+- [x] 1.1 Extend the control model in `src/types/index.ts`
   - Add `'breathing_animation'` to the `ControlType` union and a `BreathingAnimationConfig`
     (`{ pattern: '4-4-4-4'; label?: string }`). Keep it minimal/fixed for 1.0.4; shape leaves
     room to parameterize later without a new type. Display-only (no value in completions).
@@ -15,14 +15,14 @@ tests/verify (incl. the mandatory real-Android animate check).
 
 ## Task 2: Build the animation component
 
-- [ ] 2.1 Add `src/components/controls/BoxBreathingAnimation.tsx`
+- [x] 2.1 Add `src/components/controls/BoxBreathingAnimation.tsx`
   - Reanimated square: 16s loop = 4s expand (inhale) → 4s hold → 4s contract (exhale) → 4s
     hold, via `withSequence`/`withTiming` (calm `Easing.inOut(Easing.ease)`) wrapped in
     `withRepeat(-1)`. Gentle scale (~0.6→1.0), no flashy motion. Phase label in sync
     ("Breathe in" / "Hold" / "Breathe out" / "Hold"). Palette: sage `#788d75` square on cream
     `#f5f2eb`, ~200pt contained block, legible at card width.
   - _Req: 1.2, 1.3, 3.1, 3.2, 3.3, 3.4_
-- [ ] 2.2 Reduce-motion + accessibility branch
+- [x] 2.2 Reduce-motion + accessibility branch
   - Read `AccessibilityInfo.isReduceMotionEnabled()` + subscribe to changes; when ON, render a
     **static** square + label (no `withRepeat`). Provide an `accessibilityLabel` describing the
     pacer; keep decorative sub-views out of the a11y tree. Cancel/settle animation on unmount
@@ -31,7 +31,7 @@ tests/verify (incl. the mandatory real-Android animate check).
 
 ## Task 3: Wire the control into the renderer
 
-- [ ] 3.1 Add `case 'breathing_animation'` to `ControlRenderer.tsx`
+- [x] 3.1 Add `case 'breathing_animation'` to `ControlRenderer.tsx`
   - Render `<BoxBreathingAnimation />` (display-only, like `static_text`, no `value`/`onChange`).
     Do NOT add it to the Step 2 creator picker/`getDefaultConfig` (curated-only, per scope);
     confirm the renderer's `default: return null` still guards unknown types so creator/preview
@@ -40,7 +40,7 @@ tests/verify (incl. the mandatory real-Android animate check).
 
 ## Task 4: Add the visual to Box Breathing
 
-- [ ] 4.1 Update `lib-box-breathing` in `src/data/curatedLibrary.ts`
+- [x] 4.1 Update `lib-box-breathing` in `src/data/curatedLibrary.ts`
   - Prepend a `breathing_animation` control at `position: 0`; shift the existing `static_text`
     steps to `position: 1` (visual above, steps kept, both visible). Leave rationale, tags,
     colors unchanged. Document inline (or via the release notes) the wallet-copy caveat: existing
@@ -49,20 +49,24 @@ tests/verify (incl. the mandatory real-Android animate check).
 
 ## Task 5: Tests + verification
 
-- [ ] 5.1 Unit / component tests
+- [x] 5.1 Unit / component tests
   - Card test: `lib-box-breathing` includes a `breathing_animation` control at position 0 AND
     still includes its `static_text` steps (guards Req 1.1/1.4 against future edits).
   - Component test: `BoxBreathingAnimation` renders without throwing; with reduce-motion mocked
     ON it renders the static branch (no repeating animation) and exposes the expected
     `accessibilityLabel`.
   - _Req: 1.1, 1.4_
-- [ ] 5.2 Verify + checkpoint (incl. mandatory Android animate check)
-  - `npm run typecheck` clean for the new type, component, renderer case, and card.
-  - MANUAL iOS: open Box Breathing → square expands/holds/contracts/holds on a smooth ~16s
-    loop, phase labels synced, brand colors, calm motion, steps still shown below.
-  - **MANUAL Android (the whole reason for Req 2): confirm it actually animates** (not a frozen
-    frame), loop seamless, labels synced.
-  - MANUAL reduce-motion ON (both OSes): static, non-animating render + label.
+- [x] 5.2 Verify + checkpoint (automated) — MANUAL device checks still OPERATOR TODO
+  - DONE: `npm run typecheck` shows no new errors in the touched files (pre-existing
+    unrelated errors confirmed identical on `main`). Automated tests pass:
+    `boxBreathingVisual.test.ts`, `BoxBreathingAnimation.test.tsx` (incl. reduce-motion
+    branch), and `curatedLibrary.test.ts` (ControlType validity updated for the new type).
+  - OPERATOR TODO (needs a real build, cannot be automated here):
+    - MANUAL iOS: open Box Breathing → square expands/holds/contracts/holds on a smooth ~16s
+      loop, phase labels synced, brand colors, calm motion, steps still shown below.
+    - **MANUAL Android (the whole reason for Req 2): confirm it actually animates** (not a
+      frozen frame), loop seamless, labels synced.
+    - MANUAL reduce-motion ON (both OSes): static, non-animating render + label.
   - _Req: 1.2, 1.3, 1.4, 2.1, 2.2, 2.4_
 
 ## Task Dependency Graph

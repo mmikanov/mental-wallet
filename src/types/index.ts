@@ -19,7 +19,8 @@ export type ControlType =
   | 'image_attachment'
   | 'link_button'
   | 'display_media'
-  | 'upload_media';
+  | 'upload_media'
+  | 'breathing_animation';
 
 export type MediaSourceType = 'local_file' | 'direct_url' | 'platform_url';
 export type MediaFileType = 'image' | 'video' | 'audio';
@@ -105,6 +106,16 @@ export interface UploadMediaConfig {
   acceptedTypes: MediaFileType[];
 }
 
+/**
+ * Display-only, code-drawn breathing pacer (Reanimated). Curated-only for 1.0.4
+ * (not offered in the creator picker). Fixed 4-4-4-4 pattern; the config shape
+ * leaves room to parameterize the pattern later without a new control type.
+ */
+export interface BreathingAnimationConfig {
+  pattern: '4-4-4-4';
+  label?: string;
+}
+
 export type ControlConfig =
   | StaticTextConfig
   | TextInputConfig
@@ -117,7 +128,8 @@ export type ControlConfig =
   | ImageAttachmentConfig
   | LinkButtonConfig
   | DisplayMediaConfig
-  | UploadMediaConfig;
+  | UploadMediaConfig
+  | BreathingAnimationConfig;
 
 // --- Core Domain Models ---
 

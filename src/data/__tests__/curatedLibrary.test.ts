@@ -22,6 +22,7 @@ const VALID_CONTROL_TYPES: ControlType[] = [
   'link_button',
   'display_media',
   'upload_media',
+  'breathing_animation',
 ];
 
 const VALID_CATEGORY_IDS = SEED_CATEGORIES.map((c) => c.id);

@@ -154,8 +154,19 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
     allowBackgroundCustomization: true,
     controls: [
       {
-        type: 'static_text',
+        // Code-drawn Reanimated pacer (animates on iOS + Android; IP-free).
+        // Visual complements the steps below; existing wallet copies pick it up
+        // only on re-add (curated cards ship with the build, no OTA update).
+        type: 'breathing_animation',
         position: 0,
+        config: {
+          pattern: '4-4-4-4',
+        },
+        isRequired: false,
+      },
+      {
+        type: 'static_text',
+        position: 1,
         config: {
           title: 'Box Breathing Steps',
           body: '1. Breathe IN for 4 seconds\n2. HOLD for 4 seconds\n3. Breathe OUT for 4 seconds\n4. HOLD for 4 seconds\n\nRepeat 4 cycles.',
