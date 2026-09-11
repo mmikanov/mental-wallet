@@ -5,7 +5,7 @@ Each code change is copy/UI/persistence only; no native code, no DB migration.
 
 ## Task 1: Consent constants (source of truth)
 
-- [ ] 1.1 Add `src/constants/consent.ts`
+- [x] 1.1 Add `src/constants/consent.ts`
   - Export `CONSENT_VERSION` (date-based string, e.g. `'2026-09-11'`) and `CONSENT_LABEL`
     (the exact acknowledgment copy). Single source of truth so shown terms are reproducible
     per release. Wording is intent, pending attorney review.
@@ -13,12 +13,12 @@ Each code change is copy/UI/persistence only; no native code, no DB migration.
 
 ## Task 2: Store records accepted consent version
 
-- [ ] 2.1 Add `acknowledgedConsentVersion` to the onboarding store
+- [x] 2.1 Add `acknowledgedConsentVersion` to the onboarding store
   - Add `acknowledgedConsentVersion: string | null` to `PersistedState` (default `null`),
     load with `?? null` in the parse path; expose it on store state. Legacy-migration path
     leaves it `null` (no forced re-consent).
   - _Req: 3.3, 4.3, 5.3_
-- [ ] 2.2 Change `acknowledgeDisclaimer()` to accept a version
+- [x] 2.2 Change `acknowledgeDisclaimer()` to accept a version
   - Signature `acknowledgeDisclaimer(version: string)`: set `disclaimerAcknowledged: true`
     and `acknowledgedConsentVersion: version`, then persist. Keep persistence failure
     non-fatal (existing retry/warn behavior).
@@ -26,28 +26,31 @@ Each code change is copy/UI/persistence only; no native code, no DB migration.
 
 ## Task 3: WelcomeScreen consent gate
 
-- [ ] 3.1 Add the consent checkbox + ToS/Privacy links
+- [x] 3.1 Add the consent checkbox + ToS/Privacy links
   - Replace the static disclaimer `<Text>` with a checkbox row: pressable checkbox
     (`accessibilityRole="checkbox"` + `accessibilityState.checked`, 44×44) + `CONSENT_LABEL`
     with inline tappable **Terms of Service** / **Privacy Policy** links that call
     `WebBrowser.openBrowserAsync(TERMS_OF_SERVICE_URL / PRIVACY_POLICY_URL)`. Local
     `consentChecked` state; links don't reset it.
   - _Req: 1.1, 1.5, 2.1, 2.2, 2.3_
-- [ ] 3.2 Gate Continue and Skip on the checkbox
+- [x] 3.2 Gate Continue and Skip on the checkbox
   - `Continue` disabled until `consentChecked` (disabled styling +
     `accessibilityState.disabled`); on press call `acknowledgeDisclaimer(CONSENT_VERSION)`
     then navigate to `PrivacyNotice`. `Skip intro` gated identically; on press call
     `acknowledgeDisclaimer(CONSENT_VERSION)` then run the existing seed-and-enter flow.
     Preserve the existing try/catch fail-open around the ack.
   - _Req: 1.2, 1.3, 1.6, 5.1, 5.2, 5.4_
-- [ ] 3.3 (Optional) Emit anonymous consent event
-  - On acknowledge, `void logEvent('consent_accepted', { consent_version: CONSENT_VERSION })`
-    inside try/catch, no identity. Include only if we ship it for 1.0.4.
-  - _Req: 3.4_
+- [ ] 3.3 (Optional) Emit anonymous consent event — DEFERRED
+  - `logEvent('consent_accepted', { consent_version })` would require registering a new
+    `AnalyticsEventType` (union in `types/analytics.ts` + `VALID_EVENT_TYPES` in the logger +
+    the analytics worker's accepted-events schema). Since it's optional (Req 3.4) and the
+    version is already recorded locally + reproducible from release history, this was
+    intentionally NOT shipped in 1.0.4. Revisit if an aggregate acceptance count is wanted.
+  - _Req: 3.4 (deferred)_
 
 ## Task 4: Consent invariant across resets
 
-- [ ] 4.1 Verify + test the reset invariant
+- [x] 4.1 Verify + test the reset invariant
   - Confirm `exportService.deleteAllData()` (clears `settings`) and the Settings reset paths
     route to `Onboarding` and that the store's `disclaimerAcknowledged` returns to `false`
     (so the gate re-engages). No new app code expected; add a store test asserting a
@@ -56,12 +59,12 @@ Each code change is copy/UI/persistence only; no native code, no DB migration.
 
 ## Task 5: Tests + verification
 
-- [ ] 5.1 Store unit tests (`onboardingStore.consent.test.ts`)
+- [x] 5.1 Store unit tests (`onboardingStore.consent.test.ts`)
   - `acknowledgeDisclaimer(v)` sets `disclaimerAcknowledged: true` +
     `acknowledgedConsentVersion: v` and persists; an old blob without the field loads as
     `null`; post-wipe the flag is `false`.
   - _Req: 3.3, 4.1, 4.2_
-- [ ] 5.2 Verify + checkpoint
+- [x] 5.2 Verify + checkpoint
   - `npm run typecheck` clean for `consent.ts`, `onboardingStore.ts`, `WelcomeScreen.tsx`
     (pre-existing unrelated test-file jest-type errors excepted).
   - MANUAL (fresh onboarding): Continue disabled until ticked; Skip gated the same; tick +

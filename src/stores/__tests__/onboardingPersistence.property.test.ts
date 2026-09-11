@@ -185,7 +185,7 @@ describe('Feature: onboarding, Property 8: Stage completion independence', () =>
           // Apply the action
           switch (action) {
             case 'acknowledgeDisclaimer':
-              await useOnboardingStore.getState().acknowledgeDisclaimer();
+              await useOnboardingStore.getState().acknowledgeDisclaimer('test');
               break;
             case 'completeScreens':
               await useOnboardingStore
@@ -337,7 +337,7 @@ describe('Feature: onboarding, Property 9: Legacy disclaimer flag consistency', 
         });
 
         // Perform the acknowledge action
-        await useOnboardingStore.getState().acknowledgeDisclaimer();
+        await useOnboardingStore.getState().acknowledgeDisclaimer('test');
 
         // Verify state flag is set
         const state = useOnboardingStore.getState();

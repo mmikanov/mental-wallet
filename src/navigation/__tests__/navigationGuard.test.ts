@@ -345,7 +345,7 @@ describe('Navigation guard: Skip_Intro path seeds KPI card with default (Req 8.6
     expect(route).toBe('Onboarding'); // Still onboarding because disclaimer not ack'd
 
     // Now simulate full flow (disclaimer + both flags)
-    await useOnboardingStore.getState().acknowledgeDisclaimer();
+    await useOnboardingStore.getState().acknowledgeDisclaimer('test');
     const fullState = useOnboardingStore.getState();
     const fullRoute = resolveRootRoute(
       fullState.disclaimerAcknowledged,
@@ -357,7 +357,7 @@ describe('Navigation guard: Skip_Intro path seeds KPI card with default (Req 8.6
 
   it('Skip_Intro full path results in navigation to wallet (all three flags true)', async () => {
     // Replicate WelcomeScreen.handleSkip sequence:
-    await useOnboardingStore.getState().acknowledgeDisclaimer();
+    await useOnboardingStore.getState().acknowledgeDisclaimer('test');
     await useOnboardingStore.getState().completeOnboardingScreens(null);
     await useOnboardingStore.getState().completeKpiSelection();
 
