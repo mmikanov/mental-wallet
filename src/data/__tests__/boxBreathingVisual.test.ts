@@ -16,10 +16,9 @@ describe('lib-box-breathing visual aid', () => {
     expect(card).toBeDefined();
   });
 
-  it('includes a breathing_animation control at position 0', () => {
+  it('includes a breathing_animation control (4-4-4-4)', () => {
     const anim = card!.controls.find((c) => c.type === 'breathing_animation');
     expect(anim).toBeDefined();
-    expect(anim!.position).toBe(0);
     expect((anim!.config as { pattern: string }).pattern).toBe('4-4-4-4');
   });
 
@@ -32,9 +31,9 @@ describe('lib-box-breathing visual aid', () => {
     expect(body).toContain('Breathe OUT');
   });
 
-  it('renders the visual above the steps', () => {
+  it('renders the visual below the steps (read instructions first, then scroll)', () => {
     const anim = card!.controls.find((c) => c.type === 'breathing_animation')!;
     const steps = card!.controls.find((c) => c.type === 'static_text')!;
-    expect(anim.position).toBeLessThan(steps.position);
+    expect(steps.position).toBeLessThan(anim.position);
   });
 });

@@ -61,8 +61,8 @@ The parked richer idea (a configurable interactive pacer control) remains out of
 ```
 lib-box-breathing (curatedLibrary.ts)
   controls: [
-    { type: 'breathing_animation', position: 0, config: { pattern: '4-4-4-4' } },  // NEW, on top
-    { type: 'static_text',        position: 1, config: { ...existing steps... } }, // kept
+    { type: 'static_text',        position: 0, config: { ...existing steps... } }, // kept, first
+    { type: 'breathing_animation', position: 1, config: { pattern: '4-4-4-4' } },  // NEW, below
   ]
         │
         ▼
@@ -117,9 +117,9 @@ BoxBreathingAnimation.tsx  (NEW, Reanimated)
 
 ### Box Breathing card change (`curatedLibrary.ts`)
 
-- Prepend a `breathing_animation` control at `position: 0`, shift the existing `static_text`
-  to `position: 1` (visual above the steps; both visible, Req 1.4). Keep everything else
-  (rationale, tags, colors) unchanged.
+- Keep the `static_text` steps at `position: 0`, add the `breathing_animation` control at
+  `position: 1` (visual below the steps so the user reads the instructions first, then scrolls
+  to the pacer; both visible, Req 1.4). Keep everything else (rationale, tags, colors) unchanged.
 
 ## Ship & propagation model (Req 1.5)
 
@@ -134,7 +134,7 @@ BoxBreathingAnimation.tsx  (NEW, Reanimated)
 ## Testing strategy
 
 - **Unit (logic-level):** a small test that `lib-box-breathing` includes a
-  `breathing_animation` control at position 0 and still includes its `static_text` steps
+  `breathing_animation` control below its `static_text` steps and still includes those steps
   (guards Req 1.1 / 1.4 and prevents a future edit from dropping either).
 - **Component render:** `BoxBreathingAnimation` renders without throwing; with reduce-motion
   mocked on, it renders the static branch (no `withRepeat`); exposes the expected
