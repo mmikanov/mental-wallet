@@ -80,6 +80,9 @@ function getDefaultConfig(type: ControlType): ControlConfig {
       return { label: '', mediaSourceType: 'local_file' as const, mediaFileType: 'image' as const, source: '', platform: null, cachedPath: null };
     case 'upload_media':
       return { label: '', acceptedTypes: ['image', 'video', 'audio'] };
+    case 'breathing_animation':
+      // Curated-only control (not offered in the creator picker); unreachable here.
+      throw new Error('breathing_animation is not user-creatable');
   }
 }
 

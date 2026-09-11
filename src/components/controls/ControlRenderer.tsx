@@ -15,7 +15,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import type { Control } from '@/types/index';
-import type { DisplayMediaConfig } from '@/types/index';
+import type { DisplayMediaConfig, BreathingAnimationConfig } from '@/types/index';
 import type { ExternalAppConfig } from '@/types/externalApp';
 import StaticTextControl from './StaticTextControl';
 import TextInputControl from './TextInputControl';
@@ -29,6 +29,7 @@ import ImageAttachmentControl from './ImageAttachmentControl';
 import LinkButtonControl from './LinkButtonControl';
 import DisplayMediaControl from './DisplayMediaControl';
 import UploadMediaControl from './UploadMediaControl';
+import BoxBreathingAnimation from './BoxBreathingAnimation';
 
 interface ControlRendererProps {
   controls: Control[];
@@ -79,6 +80,16 @@ export default function ControlRenderer({
                 key={control.id}
                 control={control}
                 readOnly={readOnly}
+              />
+            );
+
+          case 'breathing_animation':
+            // Display-only, code-drawn pacer. Curated-only (not in the creator
+            // picker); no value / not part of completion capture.
+            return (
+              <BoxBreathingAnimation
+                key={control.id}
+                label={(control.config as BreathingAnimationConfig).label}
               />
             );
 
