@@ -217,3 +217,34 @@ export async function setOutcomePromptEnabled(enabled: boolean): Promise<void> {
     ['outcome_prompt_enabled', enabled ? 'true' : 'false']
   );
 }
+
+/**
+ * Reads whether the in-app email opt-in prompt has already been shown/dismissed.
+ * Defaults to false (not yet seen) if not set. Once true, the contextual prompt
+ * never shows again (Settings remains the always-available path).
+ * See spec 1.0.4-email-optin-and-cta-upgrade Req 1.4.
+ */
+export async function getEmailOptInPromptSeen(): Promise<boolean> {
+  try {
+    const db = await getDatabase();
+    const row = await db.getFirstAsync<{ value: string }>(
+      'SELECT value FROM settings WHERE key = ?',
+      ['email_opt_in_prompt_seen']
+    );
+    return row?.value === 'true';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Persists that the in-app email opt-in prompt has been shown/dismissed, so it
+ * is not shown again. Set on either action (Subscribe or dismiss).
+ */
+export async function setEmailOptInPromptSeen(seen: boolean): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync(
+    'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+    ['email_opt_in_prompt_seen', seen ? 'true' : 'false']
+  );
+}

@@ -170,6 +170,14 @@ jest.mock('@/services/backgroundOverlayService', () => ({
   removeOverlay: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock('@/services/analyticsEventLogger', () => ({ logEvent: jest.fn() }));
+jest.mock('@/services/settingsService', () => ({
+  getEmailOptInPromptSeen: jest.fn().mockResolvedValue(true),
+  setEmailOptInPromptSeen: jest.fn().mockResolvedValue(undefined),
+}));
+jest.mock('expo-web-browser', () => ({
+  openBrowserAsync: jest.fn().mockResolvedValue(undefined),
+  WebBrowserPresentationStyle: { PAGE_SHEET: 'pageSheet' },
+}));
 
 jest.mock('react-native-reanimated', () => {
   const React = require('react');
@@ -180,7 +188,12 @@ jest.mock('react-native-reanimated', () => {
     useSharedValue: (v: any) => ({ value: v }),
     useAnimatedStyle: (fn: () => any) => fn(),
     withSpring: (v: any) => v,
-    withTiming: (v: any) => v,
+    withTiming: (v: any, _cfg?: any, cb?: (f: boolean) => void) => {
+      if (cb) cb(true);
+      return v;
+    },
+    Easing: { inOut: () => () => 0, ease: () => 0, in: () => () => 0, out: () => () => 0 },
+    runOnJS: (fn: any) => fn,
     default: { View, Text },
   };
 });

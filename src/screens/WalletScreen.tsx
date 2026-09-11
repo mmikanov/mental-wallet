@@ -33,6 +33,7 @@ import BackgroundCustomizerSheet from '@/components/wallet/BackgroundCustomizerS
 import SessionLauncherContent from '@/components/session/SessionLauncherContent';
 import SessionActiveBanner from '@/components/session/SessionActiveBanner';
 import OnboardingBanner from '@/components/onboarding/OnboardingBanner';
+import EmailOptInPrompt from '@/components/onboarding/EmailOptInPrompt';
 import TooltipOverlay from '@/components/onboarding/TooltipOverlay';
 import FirstActionChecklist from '@/components/onboarding/FirstActionChecklist';
 import { useMicroTutorial } from '@/hooks/useMicroTutorial';
@@ -49,12 +50,18 @@ import type { BackgroundType } from '@/types/index';
 import type { RootStackParamList, MainTabParamList } from '@/navigation/types';
 import type { ChecklistItem } from '@/components/onboarding/FirstActionChecklist';
 import { logEvent } from '@/services/analyticsEventLogger';
+import * as WebBrowser from 'expo-web-browser';
+import { SUBSCRIBE_URL } from '@/config/appInfo';
+import { getEmailOptInPromptSeen, setEmailOptInPromptSeen } from '@/services/settingsService';
 
 type WalletNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type WalletRouteProp = RouteProp<MainTabParamList, 'Wallet'>;
 
 /** ID of the session launcher card from seed data */
 const SESSION_LAUNCHER_CARD_ID = 'session-launcher';
+
+/** Completions milestone at which the one-time email opt-in prompt may appear (Track A). */
+const EMAIL_OPT_IN_MILESTONE = 3;
 
 /** source_library_id for the KPI check-in card */
 const KPI_CARD_SOURCE_ID = 'lib-personal-kpi';
@@ -223,6 +230,12 @@ export default function WalletScreen() {
   // handled deep-link "key" so a re-render doesn't re-trigger, but a new deep link
   // (e.g. a second reminder for a different card) still fires.
   const lastHandledDeepLinkRef = useRef<string | null>(null);
+
+  // In-app email opt-in prompt (1.0.4-email-optin Track A). Fires once, after the
+  // user's Nth tool completion (a value milestone), if not already seen.
+  const [showEmailOptIn, setShowEmailOptIn] = useState(false);
+  const emailOptInSeenRef = useRef<boolean | null>(null); // null = not yet loaded
+  const emailOptInFiredRef = useRef(false); // fired this session (avoid re-showing)
 
   useFocusEffect(
     useCallback(() => {
@@ -550,6 +563,52 @@ export default function WalletScreen() {
     navigation,
   ]);
 
+  // --- Email opt-in prompt (Track A) ---
+  // Load the persisted "seen" flag once on mount.
+  useEffect(() => {
+    getEmailOptInPromptSeen()
+      .then((seen) => {
+        emailOptInSeenRef.current = seen;
+      })
+      .catch(() => {
+        emailOptInSeenRef.current = true; // on error, treat as seen (don't nag)
+      });
+  }, []);
+
+  // Fire once when the user crosses the completion milestone. Uses the sum of
+  // totalUses across cards (there's no global completion counter). Only shows on
+  // the wallet stack (no focused card), so it never stacks on the in-card outcome
+  // prompt. Not shown during onboarding (gated on onboarding + tutorial complete).
+  useEffect(() => {
+    if (emailOptInFiredRef.current) return;
+    if (emailOptInSeenRef.current !== false) return; // not loaded yet, or already seen
+    if (!onboardingScreensComplete || !tutorialComplete) return;
+    if (focusedCardId) return; // don't overlap a focused/expanded card
+
+    const totalCompletions = cards.reduce((sum, c) => sum + (c.totalUses ?? 0), 0);
+    if (totalCompletions >= EMAIL_OPT_IN_MILESTONE) {
+      emailOptInFiredRef.current = true;
+      setShowEmailOptIn(true);
+    }
+  }, [cards, focusedCardId, onboardingScreensComplete, tutorialComplete]);
+
+  const handleEmailOptInSubscribe = useCallback(() => {
+    setShowEmailOptIn(false);
+    emailOptInSeenRef.current = true;
+    void setEmailOptInPromptSeen(true);
+    void WebBrowser.openBrowserAsync(SUBSCRIBE_URL, {
+      presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
+      controlsColor: '#4A90D9',
+      toolbarColor: '#FFFFFF',
+    });
+  }, []);
+
+  const handleEmailOptInDismiss = useCallback(() => {
+    setShowEmailOptIn(false);
+    emailOptInSeenRef.current = true;
+    void setEmailOptInPromptSeen(true);
+  }, []);
+
   // --- Bug 4b: show the hint the first time a card is focused with others present.
   // Android only; never during the onboarding micro-tutorial; once per user (persisted).
   useEffect(() => {
@@ -866,6 +925,13 @@ export default function WalletScreen() {
         />
       )}
       <View style={styles.content}>
+        {!focusedCardId && (
+          <EmailOptInPrompt
+            visible={showEmailOptIn}
+            onSubscribe={handleEmailOptInSubscribe}
+            onDismiss={handleEmailOptInDismiss}
+          />
+        )}
         {isSessionActive && focusedCardId !== SESSION_LAUNCHER_CARD_ID && (
           <SessionActiveBanner onReturnToSession={handleReturnToSession} />
         )}
