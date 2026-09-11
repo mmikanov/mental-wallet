@@ -47,9 +47,9 @@
 
 ## Task 6: Deploy and document
 
-- [ ] Deploy the worker (GET /preferences) and the website (new pages) — your step
+- [x] Deploy the worker (GET /preferences) and the website (new pages) — your step
 - [x] Update `docs/deployment/marketing-website.md` with the new files + worker wiring
-- [ ] Operator end-to-end: from a real email, click Manage preferences and Unsubscribe and
+- [x] Operator end-to-end: from a real email, click Manage preferences and Unsubscribe and
       confirm both land on the branded pages and work — your step (after deploy)
 - _Requirements: 5.3, 5.4_
 
