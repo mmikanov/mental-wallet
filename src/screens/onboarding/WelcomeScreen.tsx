@@ -7,7 +7,7 @@
  * Validates: Requirements 1.1, 1.2, 1.3, 1.4, 1.6, 9.1, 9.2, 9.3, 9.4, 9.5
  */
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -18,10 +18,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import * as WebBrowser from 'expo-web-browser';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import { useKpiStore } from '@/stores/kpiStore';
 import { createOnboardingService } from '@/services/onboardingService';
 import { logEvent } from '@/services/analyticsEventLogger';
+import { CONSENT_VERSION, CONSENT_LABEL } from '@/constants/consent';
+import { TERMS_OF_SERVICE_URL, PRIVACY_POLICY_URL } from '@/config/appInfo';
 import type { OnboardingStackParamList } from '@/navigation/OnboardingNavigator';
 
 type WelcomeNavProp = NativeStackNavigationProp<OnboardingStackParamList, 'Welcome'>;
@@ -32,6 +35,8 @@ export default function WelcomeScreen() {
   const completeOnboardingScreens = useOnboardingStore((s) => s.completeOnboardingScreens);
   const onboardingService = useMemo(() => createOnboardingService(), []);
 
+  const [consentChecked, setConsentChecked] = useState(false);
+
   useEffect(() => {
     try {
       void logEvent('onboarding_step_viewed', { step_name: 'welcome' });
@@ -40,18 +45,34 @@ export default function WelcomeScreen() {
     }
   }, []);
 
-  const handleContinue = async () => {
+  // Records the explicit acknowledgment with the accepted consent version.
+  // Fail-open: a persistence error must never trap the user in onboarding.
+  const recordConsent = async () => {
     try {
-      await acknowledgeDisclaimer();
+      await acknowledgeDisclaimer(CONSENT_VERSION);
     } catch (error) {
       console.warn('[WelcomeScreen] acknowledgeDisclaimer failed:', error);
     }
+  };
+
+  const handleOpenTerms = () => {
+    void WebBrowser.openBrowserAsync(TERMS_OF_SERVICE_URL);
+  };
+
+  const handleOpenPrivacy = () => {
+    void WebBrowser.openBrowserAsync(PRIVACY_POLICY_URL);
+  };
+
+  const handleContinue = async () => {
+    if (!consentChecked) return;
+    await recordConsent();
     navigation.navigate('PrivacyNotice');
   };
 
   const handleSkip = async () => {
+    if (!consentChecked) return;
     try {
-      await acknowledgeDisclaimer();
+      await recordConsent();
       await onboardingService.seedStarterCards(null);
       await useKpiStore.getState().setKpi('Feeling good overall');
       await onboardingService.seedKpiCard('Feeling good overall');
@@ -96,34 +117,88 @@ export default function WelcomeScreen() {
             </Text>
           </View>
 
-          {/* Embedded disclaimer */}
-          <Text style={styles.disclaimer}>
-            This app is a personal wellness tool. It is not a replacement for
-            professional mental health care or a crisis service. If you are in
-            crisis, please contact a crisis helpline or emergency services.
-          </Text>
+          {/* Explicit consent checkbox (gates entry) */}
+          <TouchableOpacity
+            style={styles.consentRow}
+            onPress={() => setConsentChecked((c) => !c)}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: consentChecked }}
+            accessibilityLabel={CONSENT_LABEL}
+            activeOpacity={0.7}
+          >
+            <View
+              style={[styles.checkbox, consentChecked && styles.checkboxChecked]}
+            >
+              {consentChecked && <Text style={styles.checkmark}>✓</Text>}
+            </View>
+            <Text style={styles.consentLabel}>
+              {CONSENT_LABEL}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Terms of Service / Privacy Policy links */}
+          <View style={styles.legalLinksRow}>
+            <Text
+              style={styles.legalLink}
+              onPress={handleOpenTerms}
+              accessibilityRole="link"
+              accessibilityLabel="View Terms of Service"
+            >
+              Terms of Service
+            </Text>
+            <Text style={styles.legalSeparator}>  ·  </Text>
+            <Text
+              style={styles.legalLink}
+              onPress={handleOpenPrivacy}
+              accessibilityRole="link"
+              accessibilityLabel="View Privacy Policy"
+            >
+              Privacy Policy
+            </Text>
+          </View>
         </View>
 
         {/* Actions */}
         <View style={styles.actions}>
           <TouchableOpacity
-            style={styles.continueButton}
+            style={[
+              styles.continueButton,
+              !consentChecked && styles.continueButtonDisabled,
+            ]}
             onPress={handleContinue}
+            disabled={!consentChecked}
             accessibilityLabel="Continue to intent selection"
             accessibilityRole="button"
+            accessibilityState={{ disabled: !consentChecked }}
             activeOpacity={0.8}
           >
-            <Text style={styles.continueButtonText}>Continue</Text>
+            <Text
+              style={[
+                styles.continueButtonText,
+                !consentChecked && styles.continueButtonTextDisabled,
+              ]}
+            >
+              Continue
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.skipButton}
             onPress={handleSkip}
+            disabled={!consentChecked}
             accessibilityLabel="Skip intro and go to wallet"
             accessibilityRole="button"
+            accessibilityState={{ disabled: !consentChecked }}
             activeOpacity={0.7}
           >
-            <Text style={styles.skipButtonText}>Skip intro</Text>
+            <Text
+              style={[
+                styles.skipButtonText,
+                !consentChecked && styles.skipButtonTextDisabled,
+              ]}
+            >
+              Skip intro
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -168,11 +243,55 @@ const styles = StyleSheet.create({
     color: '#4B5563',
     lineHeight: 24,
   },
-  disclaimer: {
-    fontSize: 15,
-    color: '#6B7280',
-    textAlign: 'center',
-    lineHeight: 21,
+  consentRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 8,
+    minHeight: 44,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    marginTop: 2,
+  },
+  checkboxChecked: {
+    backgroundColor: '#4A90D9',
+    borderColor: '#4A90D9',
+  },
+  checkmark: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  consentLabel: {
+    flex: 1,
+    fontSize: 14,
+    color: '#4B5563',
+    lineHeight: 20,
+  },
+  legalLinksRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    flexWrap: 'wrap',
+  },
+  legalLink: {
+    fontSize: 14,
+    color: '#4A90D9',
+    fontWeight: '500',
+    textDecorationLine: 'underline',
+  },
+  legalSeparator: {
+    fontSize: 14,
+    color: '#9CA3AF',
   },
   actions: {
     paddingTop: 32,
@@ -190,6 +309,12 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
   },
+  continueButtonDisabled: {
+    backgroundColor: '#D1D5DB',
+  },
+  continueButtonTextDisabled: {
+    color: '#9CA3AF',
+  },
   skipButton: {
     marginTop: 16,
     alignItems: 'center',
@@ -200,5 +325,8 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontSize: 15,
     textDecorationLine: 'underline',
+  },
+  skipButtonTextDisabled: {
+    color: '#C4C9D1',
   },
 });

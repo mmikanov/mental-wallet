@@ -13,6 +13,8 @@ import { getDatabase } from '@/data/database';
 export interface OnboardingState {
   // Persisted state
   disclaimerAcknowledged: boolean;
+  /** The CONSENT_VERSION the user accepted (anonymous, local only). Null for legacy/pre-version users. */
+  acknowledgedConsentVersion: string | null;
   onboardingScreensComplete: boolean;
   selectedIntent: string | null;
   kpiSelectionComplete: boolean;
@@ -32,7 +34,7 @@ export interface OnboardingState {
   isChecklistComplete: boolean;
 
   // Actions
-  acknowledgeDisclaimer: () => Promise<void>;
+  acknowledgeDisclaimer: (consentVersion: string) => Promise<void>;
   completeOnboardingScreens: (intent: string | null) => Promise<void>;
   completeKpiSelection: () => Promise<void>;
   completeTutorial: () => Promise<void>;
@@ -49,6 +51,7 @@ const LEGACY_DISCLAIMER_KEY = 'disclaimer_acknowledged';
 
 interface PersistedState {
   disclaimerAcknowledged: boolean;
+  acknowledgedConsentVersion: string | null;
   onboardingScreensComplete: boolean;
   selectedIntent: string | null;
   kpiSelectionComplete: boolean;
@@ -65,6 +68,7 @@ interface PersistedState {
 
 const DEFAULT_STATE: PersistedState = {
   disclaimerAcknowledged: false,
+  acknowledgedConsentVersion: null,
   onboardingScreensComplete: false,
   selectedIntent: null,
   kpiSelectionComplete: false,
@@ -134,6 +138,7 @@ async function writeLegacyDisclaimerFlag(): Promise<void> {
 function getPersistedFields(state: OnboardingState): PersistedState {
   return {
     disclaimerAcknowledged: state.disclaimerAcknowledged,
+    acknowledgedConsentVersion: state.acknowledgedConsentVersion,
     onboardingScreensComplete: state.onboardingScreensComplete,
     selectedIntent: state.selectedIntent,
     kpiSelectionComplete: state.kpiSelectionComplete,
@@ -149,9 +154,13 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
   ...DEFAULT_STATE,
   ...computeDerived(DEFAULT_STATE),
 
-  async acknowledgeDisclaimer() {
+  async acknowledgeDisclaimer(consentVersion: string) {
     const current = getPersistedFields(get());
-    const updated: PersistedState = { ...current, disclaimerAcknowledged: true };
+    const updated: PersistedState = {
+      ...current,
+      disclaimerAcknowledged: true,
+      acknowledgedConsentVersion: consentVersion,
+    };
     queueMicrotask(() => set({ ...updated, ...computeDerived(updated) }));
     await persistState(updated);
     await writeLegacyDisclaimerFlag();
@@ -241,6 +250,7 @@ export const useOnboardingStore = create<OnboardingState>((set, get) => ({
         const parsed = JSON.parse(row.value) as PersistedState;
         const state: PersistedState = {
           disclaimerAcknowledged: parsed.disclaimerAcknowledged ?? false,
+          acknowledgedConsentVersion: parsed.acknowledgedConsentVersion ?? null,
           onboardingScreensComplete: parsed.onboardingScreensComplete ?? false,
           selectedIntent: parsed.selectedIntent ?? null,
           kpiSelectionComplete: parsed.kpiSelectionComplete ?? false,
