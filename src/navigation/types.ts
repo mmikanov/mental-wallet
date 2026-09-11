@@ -6,14 +6,25 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
 
 export type MainTabParamList = {
-  Wallet: { focusCardId?: string; highlightSessionCard?: boolean } | undefined;
+  Wallet:
+    | {
+        focusCardId?: string;
+        highlightSessionCard?: boolean;
+        /** Deep link /app/how-i-feel — focus+expand the "Start from how I feel" session card */
+        openHowIFeel?: boolean;
+        /** Deep link /app/checkin — focus+expand the seedling KPI daily check-in card */
+        openKpiCheckin?: boolean;
+        /** Deep link /app/learn-more-tour — focus+expand the top (non-session) stack card */
+        openTopCard?: boolean;
+      }
+    | undefined;
 };
 
 export type RootStackParamList = {
   Onboarding: undefined;
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
   ModeChoice: undefined;
-  LibraryBrowser: undefined;
+  LibraryBrowser: { initialFilter?: string } | undefined;
   CardCreator: { cardId?: string; adminEditCardId?: string; adminEditSource?: 'admin' | 'static' } | undefined;
   Archive: undefined;
   Settings: undefined;

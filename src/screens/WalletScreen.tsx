@@ -219,6 +219,11 @@ export default function WalletScreen() {
   const [isHighlighting, setIsHighlighting] = useState(false);
   const highlightHandled = useRef(false);
 
+  // Deep-link consume-once guard (1.0.4-deep-linking Req 2 + 4). Tracks the last
+  // handled deep-link "key" so a re-render doesn't re-trigger, but a new deep link
+  // (e.g. a second reminder for a different card) still fires.
+  const lastHandledDeepLinkRef = useRef<string | null>(null);
+
   useFocusEffect(
     useCallback(() => {
       loadCards();
@@ -479,6 +484,71 @@ export default function WalletScreen() {
     () => (focusedCardId ? stackCards.filter((c) => c.id !== focusedCardId) : []),
     [focusedCardId, stackCards]
   );
+
+  // --- Deep-link consumers (1.0.4-deep-linking Req 2 + 4) ---
+  // A reminder tap or tip CTA delivers one of these Wallet params. Each resolves a
+  // target card and reproduces a normal tap's end state: focusCard(id) + expandCard().
+  // Runs once cards are loaded; a consume-once ref keyed on the resolved intent avoids
+  // re-firing on re-render while still handling a fresh, distinct deep link.
+  useEffect(() => {
+    if (cards.length === 0) return;
+
+    const params = route.params;
+    if (!params) return;
+
+    // Resolve the target card id from whichever deep-link param is present.
+    let targetId: string | null = null;
+    let key: string | null = null;
+
+    if (params.focusCardId) {
+      // Req 2: reminder tap → the specific card (if present and not archived).
+      const card = cards.find((c) => c.id === params.focusCardId && !c.isArchived);
+      targetId = card ? card.id : null;
+      key = `focus:${params.focusCardId}`;
+    } else if (params.openHowIFeel) {
+      // Req 4.2: the "Start from how I feel" session-launcher card.
+      const card = cards.find((c) => c.id === SESSION_LAUNCHER_CARD_ID);
+      targetId = card ? card.id : null;
+      key = 'howIFeel';
+    } else if (params.openKpiCheckin) {
+      // Req 4.2: the seedling KPI daily check-in card.
+      targetId = kpiCard ? kpiCard.id : null;
+      key = 'kpiCheckin';
+    } else if (params.openTopCard) {
+      // Req 4.3: the top stack card, skipping the session-launcher (no Learn more).
+      const card = stackCards.find((c) => c.id !== SESSION_LAUNCHER_CARD_ID);
+      targetId = card ? card.id : null;
+      key = 'topCard';
+    }
+
+    if (!key) return; // no deep-link param present
+    if (lastHandledDeepLinkRef.current === key) return; // already handled this intent
+
+    lastHandledDeepLinkRef.current = key;
+
+    // Graceful degrade: if the target can't be resolved (deleted/archived/missing),
+    // just land on the wallet stack, no error.
+    if (targetId) {
+      focusCard(targetId);
+      expandCard();
+    }
+
+    // Clear the consumed params so returning to the wallet later doesn't re-trigger.
+    navigation.setParams({
+      focusCardId: undefined,
+      openHowIFeel: undefined,
+      openKpiCheckin: undefined,
+      openTopCard: undefined,
+    });
+  }, [
+    cards,
+    stackCards,
+    kpiCard,
+    route.params,
+    focusCard,
+    expandCard,
+    navigation,
+  ]);
 
   // --- Bug 4b: show the hint the first time a card is focused with others present.
   // Android only; never during the onboarding micro-tutorial; once per user (persisted).

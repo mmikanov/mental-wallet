@@ -27,6 +27,18 @@
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="exp+mental-health-wallet"/>
       </intent-filter>
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+        <category android:name="android.intent.category.BROWSABLE"/>
+        <data android:scheme="mentalwallet"/>
+      </intent-filter>
+      <intent-filter android:autoVerify="true">
+        <action android:name="android.intent.action.VIEW"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+        <category android:name="android.intent.category.BROWSABLE"/>
+        <data android:scheme="https" android:host="mentalhealthwallet.productsforgood.co" android:pathPrefix="/app"/>
+      </intent-filter>
     </activity>
   </application>
 </manifest>

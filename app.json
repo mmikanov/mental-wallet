@@ -3,6 +3,7 @@
     "name": "Mental Wallet",
     "slug": "mental-health-wallet",
     "version": "1.0.3",
+    "scheme": "mentalwallet",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -16,6 +17,9 @@
       "buildNumber": "1",
       "supportsTablet": false,
       "bundleIdentifier": "com.mentalwallet.app",
+      "associatedDomains": [
+        "applinks:mentalhealthwallet.productsforgood.co"
+      ],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "LSApplicationQueriesSchemes": [
