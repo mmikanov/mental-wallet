@@ -3,7 +3,11 @@
  * Validates: Requirements 9.1, 9.2, 9.6
  */
 
-import { runGuidedCheckinMigration, runMigrations } from '../migrations';
+import {
+  runGuidedCheckinMigration,
+  runControlTypeCheckMigration,
+  runMigrations,
+} from '../migrations';
 
 // Mock expo-sqlite module
 jest.mock('expo-sqlite', () => ({}));
@@ -183,5 +187,65 @@ describe('runEmotionSessionsExpansionMigration (via runMigrations)', () => {
       sql.includes('DROP TABLE emotion_sessions')
     );
     expect(dropEmotionSessions).toBeUndefined();
+  });
+});
+
+describe('runControlTypeCheckMigration', () => {
+  let mockDb: ReturnType<typeof createMockDb>;
+
+  const OLD_CONTROLS_DDL =
+    "CREATE TABLE controls (id TEXT PRIMARY KEY, card_id TEXT NOT NULL, " +
+    "type TEXT NOT NULL CHECK(type IN ('static_text','text_input','text_area'," +
+    "'mood_slider','choice_buttons','checkbox','counter','datetime_stamp'," +
+    "'image_attachment','link_button','display_media','upload_media')), " +
+    "position INTEGER NOT NULL, config TEXT NOT NULL DEFAULT '{}', " +
+    "is_required INTEGER NOT NULL DEFAULT 0, created_at TEXT)";
+
+  const NEW_CONTROLS_DDL = OLD_CONTROLS_DDL.replace(
+    "'upload_media')",
+    "'upload_media','breathing_animation')"
+  );
+
+  beforeEach(() => {
+    mockDb = createMockDb();
+  });
+
+  it('rebuilds the controls table when the constraint lacks breathing_animation', async () => {
+    mockDb.getFirstAsync.mockResolvedValueOnce({ sql: OLD_CONTROLS_DDL });
+
+    await runControlTypeCheckMigration(mockDb as any);
+
+    const execCalls = mockDb.execAsync.mock.calls.map((c) => c[0] as string);
+    // Rebuilds via a temp table that includes the new type
+    const createNew = execCalls.find(
+      (sql) => sql.includes('CREATE TABLE controls_new') && sql.includes('breathing_animation')
+    );
+    expect(createNew).toBeDefined();
+    expect(execCalls.some((sql) => sql.includes('DROP TABLE controls'))).toBe(true);
+    expect(
+      execCalls.some((sql) => sql.includes('ALTER TABLE controls_new RENAME TO controls'))
+    ).toBe(true);
+    // FK safety + committed
+    expect(execCalls).toContain('PRAGMA foreign_keys = OFF');
+    expect(execCalls).toContain('COMMIT');
+  });
+
+  it('is a no-op when the constraint already allows breathing_animation', async () => {
+    mockDb.getFirstAsync.mockResolvedValueOnce({ sql: NEW_CONTROLS_DDL });
+
+    await runControlTypeCheckMigration(mockDb as any);
+
+    const execCalls = mockDb.execAsync.mock.calls.map((c) => c[0] as string);
+    expect(execCalls.some((sql) => sql.includes('CREATE TABLE controls_new'))).toBe(false);
+    expect(execCalls.some((sql) => sql.includes('DROP TABLE controls'))).toBe(false);
+  });
+
+  it('is a no-op when the controls table does not exist yet', async () => {
+    mockDb.getFirstAsync.mockResolvedValueOnce(null);
+
+    await runControlTypeCheckMigration(mockDb as any);
+
+    const execCalls = mockDb.execAsync.mock.calls.map((c) => c[0] as string);
+    expect(execCalls.some((sql) => sql.includes('CREATE TABLE controls_new'))).toBe(false);
   });
 });

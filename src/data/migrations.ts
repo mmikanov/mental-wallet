@@ -32,6 +32,7 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
   await runOriginBadgeAppMigration(db);
   await runOutcomeResponsesMigration(db);
   await runDurationRecordsMigration(db);
+  await runControlTypeCheckMigration(db);
 }
 
 /**
@@ -111,7 +112,8 @@ CREATE TABLE IF NOT EXISTS controls (
   type TEXT NOT NULL CHECK(type IN (
     'static_text', 'text_input', 'text_area', 'mood_slider',
     'choice_buttons', 'checkbox', 'counter', 'datetime_stamp',
-    'image_attachment', 'link_button', 'display_media', 'upload_media'
+    'image_attachment', 'link_button', 'display_media', 'upload_media',
+    'breathing_animation'
   )),
   position INTEGER NOT NULL,
   config TEXT NOT NULL DEFAULT '{}',
@@ -805,3 +807,66 @@ CREATE TABLE IF NOT EXISTS duration_records (
 CREATE INDEX IF NOT EXISTS idx_duration_records_card ON duration_records(card_id);
 CREATE INDEX IF NOT EXISTS idx_duration_records_ended_at ON duration_records(ended_at);
 `;
+
+/**
+ * Migrates the controls table CHECK constraint to include 'breathing_animation'
+ * (the code-drawn Box Breathing pacer, spec 1.0.4-tool-visual-aids).
+ *
+ * SQLite cannot ALTER a CHECK constraint in place, so we rebuild the table when
+ * the current constraint doesn't allow the new type. Idempotent: detects the
+ * current constraint by reading the table's DDL from sqlite_master (no test
+ * insert, since controls has a NOT NULL card_id FK that makes a probe awkward).
+ */
+export async function runControlTypeCheckMigration(db: SQLiteDatabase): Promise<void> {
+  const row = await db.getFirstAsync<{ sql: string }>(
+    `SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'controls'`
+  );
+  // If the table doesn't exist yet (fresh DB just created SCHEMA_SQL) or the
+  // constraint already lists the new type, there's nothing to do.
+  if (!row?.sql || row.sql.includes('breathing_animation')) {
+    return;
+  }
+
+  // Rebuild the controls table with the updated CHECK constraint.
+  // Disable foreign keys so the DROP doesn't cascade-delete anything, and so the
+  // rebuilt rows (which reference cards) copy over cleanly.
+  await db.execAsync('PRAGMA foreign_keys = OFF');
+  await db.execAsync('BEGIN TRANSACTION');
+  try {
+    await db.execAsync(`
+      CREATE TABLE controls_new (
+        id TEXT PRIMARY KEY,
+        card_id TEXT NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+        type TEXT NOT NULL CHECK(type IN (
+          'static_text', 'text_input', 'text_area', 'mood_slider',
+          'choice_buttons', 'checkbox', 'counter', 'datetime_stamp',
+          'image_attachment', 'link_button', 'display_media', 'upload_media',
+          'breathing_animation'
+        )),
+        position INTEGER NOT NULL,
+        config TEXT NOT NULL DEFAULT '{}',
+        is_required INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    `);
+
+    await db.execAsync(`
+      INSERT INTO controls_new
+        SELECT id, card_id, type, position, config, is_required, created_at
+        FROM controls
+    `);
+
+    await db.execAsync('DROP TABLE controls');
+    await db.execAsync('ALTER TABLE controls_new RENAME TO controls');
+    await db.execAsync(
+      'CREATE INDEX IF NOT EXISTS idx_controls_card ON controls(card_id)'
+    );
+
+    await db.execAsync('COMMIT');
+    await db.execAsync('PRAGMA foreign_keys = ON');
+  } catch (error) {
+    await db.execAsync('ROLLBACK');
+    await db.execAsync('PRAGMA foreign_keys = ON');
+    throw error;
+  }
+}
