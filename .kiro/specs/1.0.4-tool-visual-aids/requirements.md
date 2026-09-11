@@ -90,6 +90,20 @@ and free of third-party IP, so that we can ship it without licensing concerns.
   already supports.
 - AI-generated backgrounds (tracked in `tool-customization-enhancements`).
 
+## Future Improvements (parked, not for 1.0.4)
+
+The 1.0.4 pacer (in-app Reanimated `BoxBreathingAnimation`, steps then visual, per-second
+counter + 4-dot cycle indicator) is intentionally simple. Ideas to revisit later:
+
+- Richer counter/cycle visuals (e.g. a progress ring that traces the square's perimeter,
+  smoother number transitions, a subtle chime or haptic on phase change).
+- Configurable counter direction semantics (literal up/down/up/down vs. breath-semantic:
+  inhale up, exhale down). Currently literal alternation per the original request.
+- A reusable/parameterized breathing pacer (other patterns like 4-7-8, box 5-5-5-5) — likely
+  the "configurable pacer control type" already parked above.
+- Reduce-motion branch could show a gentle non-animated cue instead of a fully static square.
+- Bringing the visual to tools beyond Box Breathing (already a prioritized follow-up above).
+
 ## Notes / Traceability (implementation anchors)
 
 - `src/data/curatedLibrary.ts` — `lib-box-breathing`: add the `display_media` control.
