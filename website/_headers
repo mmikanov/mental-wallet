@@ -1,0 +1,9 @@
+# Force the Apple App Site Association file to be served as JSON. It has no file
+# extension, so Cloudflare can't infer the type; iOS/validators expect
+# application/json. (assetlinks.json already gets application/json from its
+# extension, but we pin it too for clarity.)
+/.well-known/apple-app-site-association
+  Content-Type: application/json
+
+/.well-known/assetlinks.json
+  Content-Type: application/json
