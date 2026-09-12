@@ -5,6 +5,7 @@
       "namespace": "android_app",
       "package_name": "com.mentalwallet.app",
       "sha256_cert_fingerprints": [
+        "C4:72:E2:FF:ED:5A:93:23:F3:35:98:3C:B9:31:30:3C:36:BE:A9:87:9E:EB:51:6D:1E:A4:6B:55:A1:F5:A0:A5",
         "16:85:BA:DC:EA:29:5A:36:32:B4:D9:DE:7A:3C:CB:50:C0:74:66:6C:BF:FB:EB:95:1D:D3:8A:5C:15:49:66:CA"
       ]
     }
