@@ -13,12 +13,12 @@ worker (see `website/wrangler.toml`).
 - Apple caches the AASA via its CDN; changes can take time to propagate.
 
 ### `assetlinks.json` (Android)
-- SHA-256 = the EAS release keystore fingerprint (build credentials `vge9GwUgwg`).
-- **Double-check for Play App Signing:** if Google Play App Signing is enabled, the fingerprint
-  Android verifies against is the Play **"App signing key"** SHA-256 (Play Console → App
-  integrity → App signing), which can differ from this upload/EAS key. If they differ, add the
-  Play app-signing SHA-256 to the `sha256_cert_fingerprints` array too (multiple values are
-  allowed).
+- Contains TWO SHA-256 fingerprints (Play App Signing is enabled — "Releases signed by Play"):
+  1. The **Play "App signing key"** SHA-256 (Play Console → Protect app signing key → Manage
+     Play app signing → App signing key certificate) — this is what production installs from
+     Play are signed with, so it's the one Android App Links verify against for Play installs.
+  2. The **EAS upload/release keystore** SHA-256 (build credentials `vge9GwUgwg`) — covers
+     direct/internal-distribution builds not routed through Play.
 - Must be served as `Content-Type: application/json` over HTTPS at
   `/.well-known/assetlinks.json`.
 
