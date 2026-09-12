@@ -3,7 +3,7 @@
     "apps": [],
     "details": [
       {
-        "appID": "TEAMID.com.mentalwallet.app",
+        "appID": "J2XVWUDH2V.com.mentalwallet.app",
         "paths": [ "/app/*" ]
       }
     ]

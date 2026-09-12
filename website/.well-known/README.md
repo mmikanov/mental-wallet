@@ -4,19 +4,21 @@ These enable `https://mentalhealthwallet.productsforgood.co/app/...` links to op
 (1.0.4-deep-linking Req 3). They are served at the domain root by the Cloudflare static-assets
 worker (see `website/wrangler.toml`).
 
-## Before Universal/App Links will verify — fill in real values
+## Values (filled in)
 
 ### `apple-app-site-association` (iOS)
-- Replace `TEAMID` in `appID` with the Apple Developer **Team ID** (App Store Connect →
-  Membership, or the prefix of the App ID). Result: `<TeamID>.com.mentalwallet.app`.
+- `appID` = `J2XVWUDH2V.com.mentalwallet.app` (Apple Team ID `J2XVWUDH2V`).
 - Must be served as `Content-Type: application/json`, over HTTPS, with **no redirect**, at
   exactly `/.well-known/apple-app-site-association` (no `.json` extension).
 - Apple caches the AASA via its CDN; changes can take time to propagate.
 
 ### `assetlinks.json` (Android)
-- Replace `REPLACE_WITH_RELEASE_SIGNING_SHA256_FINGERPRINT` with the **release** signing
-  cert SHA-256 (the key that actually signs the Play build). For EAS: `eas credentials`
-  (Android → the keystore) shows the SHA-256, or Play Console → App integrity → App signing.
+- SHA-256 = the EAS release keystore fingerprint (build credentials `vge9GwUgwg`).
+- **Double-check for Play App Signing:** if Google Play App Signing is enabled, the fingerprint
+  Android verifies against is the Play **"App signing key"** SHA-256 (Play Console → App
+  integrity → App signing), which can differ from this upload/EAS key. If they differ, add the
+  Play app-signing SHA-256 to the `sha256_cert_fingerprints` array too (multiple values are
+  allowed).
 - Must be served as `Content-Type: application/json` over HTTPS at
   `/.well-known/assetlinks.json`.
 
