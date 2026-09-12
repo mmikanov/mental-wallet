@@ -135,6 +135,62 @@ Links → walkthrough UI → verify.
       (+ `?filter=apps`) land correctly via BOTH `mentalwallet://` and https.
   - _Req: 1.2, 2.4, 3.2, 3.3, 4.4_
 
+## Manual testing (simulator / emulator / device)
+
+These are native config changes (Info.plist, entitlements, AndroidManifest, `app.json` scheme),
+so a JS reload / Expo Go will NOT pick them up — build a real native binary first:
+`npx expo run:ios` and `npx expo run:android` (or an EAS dev/simulator build). Expo Go uses the
+`exp+mental-health-wallet` scheme and won't handle `mentalwallet://`.
+
+**What each surface can prove where:**
+- Custom scheme (`mentalwallet://…`) + reminder focus: fully testable on the iOS simulator AND
+  Android emulator.
+- Android App Links (`https://…/app/…`): testable on the emulator (verifies against the live
+  `assetlinks.json`). The emulator build is signed with the EAS upload key, which is listed in
+  assetlinks, so it should verify. The Play app-signing key only applies to installs from Play.
+- iOS Universal Links (`https://…/app/…`): the iOS Simulator is unreliable for these (Apple's
+  AASA/swcd association path isn't fully exercised). Verify on a REAL device (TestFlight/dev
+  build). The custom scheme still works on the simulator, so this is not a blocker for the
+  1.0.4 reminder-focus goal.
+
+**Custom-scheme + route commands:**
+
+iOS simulator (`xcrun simctl`, app must be installed + simulator booted):
+```
+xcrun simctl openurl booted "mentalwallet://wallet?focusCardId=<CARD_ID>"
+xcrun simctl openurl booted "mentalwallet://how-i-feel"
+xcrun simctl openurl booted "mentalwallet://checkin"
+xcrun simctl openurl booted "mentalwallet://learn-more-tour"
+xcrun simctl openurl booted "mentalwallet://add-tool?filter=apps"
+```
+
+Android emulator (`adb`):
+```
+adb shell am start -a android.intent.action.VIEW -d "mentalwallet://wallet?focusCardId=<CARD_ID>"
+adb shell am start -a android.intent.action.VIEW -d "mentalwallet://how-i-feel"
+adb shell am start -a android.intent.action.VIEW -d "mentalwallet://add-tool?filter=apps"
+```
+
+**Reminder path (the 1.0.4 goal):** set a per-card reminder, then tap the fired notification
+(local notifications fire on both simulator and emulator). Confirm focus + expand from cold
+start, background, and foreground; a deleted/archived card → wallet, no error.
+
+**Android App Links verification (emulator):**
+```
+# open the https link
+adb shell am start -a android.intent.action.VIEW -d "https://mentalhealthwallet.productsforgood.co/app/how-i-feel"
+# check verification status (look for "verified")
+adb shell pm get-app-links com.mentalwallet.app
+# force re-verification if needed
+adb shell pm verify-app-links --re-verify com.mentalwallet.app
+```
+Note: `am start -d "https://…"` opens the app regardless of verification; use
+`pm get-app-links` to confirm actual auto-verification.
+
+**iOS Universal Links (real device):** open a `https://…/app/…` link from Notes/Messages
+(not by typing in Safari's address bar, which can bypass Universal Links) and confirm it opens
+the app to the mapped screen; with the app uninstalled it should open the web page.
+
 ## Task Dependency Graph
 
 ```json
