@@ -9,14 +9,24 @@
  * Validates: Requirements 1.2, 2.1, 4.1, 4.4.
  */
 
-// expo-notifications is only used by getInitialURL/subscribe (not exercised here);
+// expo-notifications is only used by getInitialURL/subscribe;
 // mock it so importing the linking module doesn't require native bindings.
 jest.mock('expo-notifications', () => ({
   getLastNotificationResponseAsync: jest.fn().mockResolvedValue(null),
   addNotificationResponseReceivedListener: jest.fn().mockReturnValue({ remove: jest.fn() }),
 }));
 
+import { Linking } from 'react-native';
 import { linking } from '../linking';
+
+// Spy on the real RN Linking (jest-expo provides a working mock module); we drive
+// getInitialURL / the url listener without replacing the whole react-native module.
+const mockGetInitialURL = jest.spyOn(Linking, 'getInitialURL');
+let urlListener: ((e: { url: string }) => void) | null = null;
+jest.spyOn(Linking, 'addEventListener').mockImplementation(((_type: string, cb: any) => {
+  urlListener = cb;
+  return { remove: jest.fn() } as any;
+}) as any);
 
 const options = { screens: (linking.config as any).screens };
 
@@ -83,5 +93,32 @@ describe('deep-link route parsing', () => {
   it('archive and settings still resolve', () => {
     expect(leaf(parse('archive')).name).toBe('Archive');
     expect(leaf(parse('settings')).name).toBe('Settings');
+  });
+});
+
+describe('deep-link URL delivery (getInitialURL / subscribe)', () => {
+  beforeEach(() => {
+    mockGetInitialURL.mockReset().mockResolvedValue(null);
+    urlListener = null;
+  });
+
+  it('getInitialURL falls back to the OS launch URL (cold-start scheme link)', async () => {
+    mockGetInitialURL.mockResolvedValue('mentalwallet://how-i-feel');
+    const url = await (linking as any).getInitialURL();
+    expect(url).toBe('mentalwallet://how-i-feel');
+  });
+
+  it('getInitialURL returns null when there is no notification and no launch URL', async () => {
+    const url = await (linking as any).getInitialURL();
+    expect(url).toBeNull();
+  });
+
+  it('subscribe forwards OS url events to the navigator listener', () => {
+    const listener = jest.fn();
+    const unsubscribe = (linking as any).subscribe(listener);
+    expect(typeof urlListener).toBe('function');
+    urlListener!({ url: 'mentalwallet://checkin' });
+    expect(listener).toHaveBeenCalledWith('mentalwallet://checkin');
+    unsubscribe();
   });
 });
