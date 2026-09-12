@@ -5,7 +5,7 @@
       "namespace": "android_app",
       "package_name": "com.mentalwallet.app",
       "sha256_cert_fingerprints": [
-        "REPLACE_WITH_RELEASE_SIGNING_SHA256_FINGERPRINT"
+        "16:85:BA:DC:EA:29:5A:36:32:B4:D9:DE:7A:3C:CB:50:C0:74:66:6C:BF:FB:EB:95:1D:D3:8A:5C:15:49:66:CA"
       ]
     }
   }
