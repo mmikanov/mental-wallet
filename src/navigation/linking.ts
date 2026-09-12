@@ -20,6 +20,7 @@
 import type { LinkingOptions } from '@react-navigation/native';
 import { getStateFromPath as defaultGetStateFromPath } from '@react-navigation/native';
 import type { getStateFromPath } from '@react-navigation/native';
+import { Linking } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import type { RootStackParamList } from './types';
 
@@ -89,24 +90,31 @@ export const linking: LinkingOptions<RootStackParamList> = {
     }
   },
   /**
-   * Cold-start deep link. For a tapped `card_reminder` notification, route to the
-   * Wallet with the card focused + expanded. Otherwise, no initial URL.
+   * Cold-start deep link. Two sources, in priority order:
+   * 1. A tapped `card_reminder` notification → Wallet with the card focused + expanded.
+   * 2. The OS launch URL (a `mentalwallet://` or Universal-Link tap) — React Navigation
+   *    parses it through the config + getStateFromPath above.
+   *
+   * We MUST fall through to Linking.getInitialURL(); returning null on a real URL
+   * launch would drop the deep link and land on the default Wallet route.
    */
   async getInitialURL() {
     const response = await Notifications.getLastNotificationResponseAsync();
     const data = response?.notification.request.content.data;
-
     if (data?.type === 'card_reminder' && data?.cardId) {
       return `${CUSTOM_SCHEME_PREFIX}wallet?focusCardId=${data.cardId}`;
     }
 
-    return null;
+    // Fall back to the actual URL the app was launched with (scheme or https).
+    const url = await Linking.getInitialURL();
+    return url ?? null;
   },
   /**
-   * Running-app deep link. Same reminder-tap handling while the app is alive.
+   * Running-app deep links. Listen to BOTH sources while the app is alive:
+   * notification taps (card_reminder) and OS URL events (scheme / Universal Link).
    */
   subscribe(listener) {
-    const subscription = Notifications.addNotificationResponseReceivedListener(
+    const notificationSub = Notifications.addNotificationResponseReceivedListener(
       (response) => {
         const data = response.notification.request.content.data;
         if (data?.type === 'card_reminder' && data?.cardId) {
@@ -115,7 +123,15 @@ export const linking: LinkingOptions<RootStackParamList> = {
       }
     );
 
-    return () => subscription.remove();
+    // Forward real URL opens (e.g. mentalwallet://how-i-feel) to the navigator.
+    const urlSub = Linking.addEventListener('url', ({ url }) => {
+      listener(url);
+    });
+
+    return () => {
+      notificationSub.remove();
+      urlSub.remove();
+    };
   },
 };
 
