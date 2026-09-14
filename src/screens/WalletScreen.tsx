@@ -226,10 +226,14 @@ export default function WalletScreen() {
   const [isHighlighting, setIsHighlighting] = useState(false);
   const highlightHandled = useRef(false);
 
-  // Deep-link consume-once guard (1.0.4-deep-linking Req 2 + 4). Tracks the last
-  // handled deep-link "key" so a re-render doesn't re-trigger, but a new deep link
-  // (e.g. a second reminder for a different card) still fires.
-  const lastHandledDeepLinkRef = useRef<string | null>(null);
+  // Deep-link handling (1.0.4-deep-linking Req 2 + 4). A deep link may arrive on a
+  // COLD START before cards have loaded, so we capture the pending intent from the
+  // route params as soon as it appears (decoupled from cards being ready), then
+  // apply it once cards are loaded. This fixes cold-start links doing nothing.
+  const [pendingDeepLink, setPendingDeepLink] = useState<Record<string, unknown> | null>(null);
+  // Signature of the last params we captured, so the capture effect doesn't re-fire
+  // for the same delivery (guards against a re-render loop if params aren't cleared).
+  const capturedDeepLinkSigRef = useRef<string | null>(null);
 
   // In-app email opt-in prompt (1.0.4-email-optin Track A). Fires once, after the
   // user's Nth tool completion (a value milestone), if not already seen.
@@ -503,65 +507,41 @@ export default function WalletScreen() {
   // target card and reproduces a normal tap's end state: focusCard(id) + expandCard().
   // Runs once cards are loaded; a consume-once ref keyed on the resolved intent avoids
   // re-firing on re-render while still handling a fresh, distinct deep link.
+  // CAPTURE: whenever a deep-link param appears on the route, stash it as a pending
+  // intent and clear the params. Runs independent of `cards`, so a cold-start link
+  // (delivered before cards load) is never lost. Depends only on route.params.
   useEffect(() => {
-    if (cards.length === 0) return;
-
     const params = route.params;
-    if (!params) return;
-
-    // Resolve the target card id from whichever deep-link param is present.
-    // `expand` = whether to open the card fully (expanded) vs just focused.
-    let targetId: string | null = null;
-    let key: string | null = null;
-    let expand = false;
-
-    if (params.focusCardId) {
-      // Req 2: reminder tap → the specific card (if present and not archived).
-      // Focus only (same state as tapping the card), matching every other entry
-      // point. Force-expanding a regular card on open renders unreliably, so the
-      // user taps once to start; "open already expanded" is parked as follow-up.
-      const card = cards.find((c) => c.id === params.focusCardId && !c.isArchived);
-      targetId = card ? card.id : null;
-      key = `focus:${params.focusCardId}`;
-    } else if (params.openHowIFeel) {
-      // Req 4.2: the "Start from how I feel" session-launcher card. This one DOES
-      // expand — the session content only renders when expanded, and it uses the
-      // FocusedCardView compact branch (which handles open-expanded correctly).
-      const card = cards.find((c) => c.id === SESSION_LAUNCHER_CARD_ID);
-      targetId = card ? card.id : null;
-      key = 'howIFeel';
-      expand = true;
-    } else if (params.openKpiCheckin) {
-      // Req 4.2: the seedling KPI daily check-in card. Focus only (same as the 🌱
-      // FAB) — the user taps to expand, matching the built-and-tested UX.
-      targetId = kpiCard ? kpiCard.id : null;
-      key = 'kpiCheckin';
-    } else if (params.openTopCard) {
-      // Req 4.3: the top stack card, skipping the session-launcher. Focus only so
-      // its "Learn more" link is visible (it shows on the focused card).
-      const card = stackCards.find((c) => c.id !== SESSION_LAUNCHER_CARD_ID);
-      targetId = card ? card.id : null;
-      key = 'topCard';
-    }
-
-    if (!key) {
-      // No deep-link param present (e.g. after we cleared it, or a normal render).
-      // Reset the guard so the NEXT delivery of any route — including the same one
-      // again — is handled. Without this, each route would only ever fire once per
-      // app session.
-      lastHandledDeepLinkRef.current = null;
+    const hasDeepLink =
+      !!params &&
+      (params.focusCardId != null ||
+        params.openHowIFeel ||
+        params.openKpiCheckin ||
+        params.openTopCard);
+    if (!hasDeepLink || !params) {
+      // Params cleared / normal render — reset the capture signature so the SAME
+      // route delivered again later is captured afresh.
+      capturedDeepLinkSigRef.current = null;
       return;
     }
-    if (lastHandledDeepLinkRef.current === key) return; // already handled this exact delivery
 
-    lastHandledDeepLinkRef.current = key;
+    // Only capture once per distinct delivery (avoids a re-render loop if the params
+    // aren't cleared, e.g. rapid re-renders before setParams settles).
+    const sig = JSON.stringify({
+      f: params.focusCardId ?? null,
+      h: !!params.openHowIFeel,
+      k: !!params.openKpiCheckin,
+      t: !!params.openTopCard,
+    });
+    if (capturedDeepLinkSigRef.current === sig) return;
+    capturedDeepLinkSigRef.current = sig;
 
-    // Graceful degrade: if the target can't be resolved (deleted/archived/missing),
-    // just land on the wallet stack, no error.
-    if (targetId) {
-      focusCard(targetId);
-      if (expand) expandCard();
-    }
+    setPendingDeepLink({
+      focusCardId: params.focusCardId,
+      openHowIFeel: params.openHowIFeel,
+      openKpiCheckin: params.openKpiCheckin,
+      openTopCard: params.openTopCard,
+    });
 
     // Clear the consumed params so returning to the wallet later doesn't re-trigger.
     navigation.setParams({
@@ -570,15 +550,49 @@ export default function WalletScreen() {
       openKpiCheckin: undefined,
       openTopCard: undefined,
     });
-  }, [
-    cards,
-    stackCards,
-    kpiCard,
-    route.params,
-    focusCard,
-    expandCard,
-    navigation,
-  ]);
+  }, [route.params, navigation]);
+
+  // APPLY: once cards are loaded, act on the pending deep-link intent (focus the
+  // resolved card; the session-launcher route also expands). Cleared after handling.
+  useEffect(() => {
+    if (!pendingDeepLink) return;
+    if (cards.length === 0) return; // wait for cards (cold-start race)
+
+    const p = pendingDeepLink;
+    let targetId: string | null = null;
+    let expand = false;
+
+    if (p.focusCardId) {
+      // Req 2: reminder tap → the specific card (if present and not archived).
+      // Focus only (same state as tapping the card); expand-on-open is parked.
+      const card = cards.find((c) => c.id === p.focusCardId && !c.isArchived);
+      targetId = card ? card.id : null;
+    } else if (p.openHowIFeel) {
+      // Req 4.2: "Start from how I feel" session-launcher card. This one expands —
+      // its content only renders expanded and it uses FocusedCardView's compact
+      // branch (which handles open-expanded correctly).
+      const card = cards.find((c) => c.id === SESSION_LAUNCHER_CARD_ID);
+      targetId = card ? card.id : null;
+      expand = true;
+    } else if (p.openKpiCheckin) {
+      // Req 4.2: the seedling KPI daily check-in card. Focus only (same as the FAB).
+      targetId = kpiCard ? kpiCard.id : null;
+    } else if (p.openTopCard) {
+      // Req 4.3: top stack card, skipping the session-launcher (its Learn more link
+      // shows on the focused card). Focus only.
+      const card = stackCards.find((c) => c.id !== SESSION_LAUNCHER_CARD_ID);
+      targetId = card ? card.id : null;
+    }
+
+    // Graceful degrade: if the target can't be resolved (deleted/archived/missing),
+    // just land on the wallet stack, no error.
+    if (targetId) {
+      focusCard(targetId);
+      if (expand) expandCard();
+    }
+
+    setPendingDeepLink(null); // consumed
+  }, [pendingDeepLink, cards, stackCards, kpiCard, focusCard, expandCard]);
 
   // --- Email opt-in prompt (Track A) ---
   // Load the persisted "seen" flag once on mount.

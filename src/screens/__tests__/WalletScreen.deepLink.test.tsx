@@ -55,9 +55,14 @@ const mockCards = [
   card({ id: 'kpi-card', title: 'Daily check-in', sourceLibraryId: KPI_SOURCE_ID }),
 ];
 
+// Mutable "loaded cards" the wallet-store mock reads lazily, so a test can simulate
+// a cold start where cards load AFTER the deep link arrives. Prefixed `mock` so the
+// hoisted jest.mock factory may reference it.
+let mockCurrentCards = mockCards;
+
 jest.mock('@/stores/walletStore', () => ({
   useWalletStore: jest.fn(() => ({
-    cards: mockCards,
+    get cards() { return mockCurrentCards; },
     loadCards: mockLoadCards,
     focusedCardId: null,
     isExpanded: false,
@@ -219,6 +224,7 @@ describe('WalletScreen deep-link consumers', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRouteParams = {};
+    mockCurrentCards = mockCards;
   });
 
   it('focusCardId focuses that specific card (focus only, no force-expand)', () => {
@@ -288,6 +294,28 @@ describe('WalletScreen deep-link consumers', () => {
     mockRouteParams = { openKpiCheckin: true };
     act(() => { tree.update(React.createElement(WalletScreen)); });
     act(() => { jest.runOnlyPendingTimers(); });
+    expect(mockFocusCard).toHaveBeenCalledWith('kpi-card');
+  });
+
+  it('applies the deep link even when it arrives before cards load (cold start)', () => {
+    // Cold start: the deep-link param is present at mount, but cards are empty and
+    // load asynchronously afterward. The intent must be captured and applied once
+    // cards arrive — this is the bug where cold-start links did nothing.
+    mockCurrentCards = [];
+    mockRouteParams = { openKpiCheckin: true };
+    let tree: any;
+    act(() => {
+      tree = create(React.createElement(WalletScreen));
+    });
+    act(() => { jest.runOnlyPendingTimers(); });
+    // Nothing focused yet — cards not loaded.
+    expect(mockFocusCard).not.toHaveBeenCalled();
+
+    // Cards finish loading; re-render.
+    mockCurrentCards = mockCards;
+    act(() => { tree.update(React.createElement(WalletScreen)); });
+    act(() => { jest.runOnlyPendingTimers(); });
+    // Now the pending intent is applied.
     expect(mockFocusCard).toHaveBeenCalledWith('kpi-card');
   });
 });
