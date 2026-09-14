@@ -534,8 +534,15 @@ export default function WalletScreen() {
       key = 'topCard';
     }
 
-    if (!key) return; // no deep-link param present
-    if (lastHandledDeepLinkRef.current === key) return; // already handled this intent
+    if (!key) {
+      // No deep-link param present (e.g. after we cleared it, or a normal render).
+      // Reset the guard so the NEXT delivery of any route — including the same one
+      // again — is handled. Without this, each route would only ever fire once per
+      // app session.
+      lastHandledDeepLinkRef.current = null;
+      return;
+    }
+    if (lastHandledDeepLinkRef.current === key) return; // already handled this exact delivery
 
     lastHandledDeepLinkRef.current = key;
 

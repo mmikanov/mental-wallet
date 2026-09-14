@@ -54,7 +54,10 @@ export const linking: LinkingOptions<RootStackParamList> = {
     // Strip a leading `/app` (Universal Link) or leading slash so both prefixes
     // yield the same bare path + query.
     const withoutApp = path.replace(/^\/app(\/|$)/, '/');
-    const [rawPath, query] = withoutApp.replace(/^\//, '').split('?');
+    const [rawPathRaw, query] = withoutApp.replace(/^\//, '').split('?');
+    // Normalize a trailing slash: Android often delivers `mentalwallet://checkin`
+    // as `checkin/`, which would otherwise miss the exact-match switch below.
+    const rawPath = rawPathRaw.replace(/\/$/, '');
 
     const walletParam = (extra: Record<string, string | boolean>) => {
       const search = query ? `?${query}` : '';

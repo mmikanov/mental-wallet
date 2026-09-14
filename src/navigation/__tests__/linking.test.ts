@@ -94,6 +94,15 @@ describe('deep-link route parsing', () => {
     expect(leaf(parse('archive')).name).toBe('Archive');
     expect(leaf(parse('settings')).name).toBe('Settings');
   });
+
+  // Android normalizes `mentalwallet://checkin` to `checkin/` (trailing slash);
+  // the parser must tolerate it for every verb route.
+  it('tolerates a trailing slash on verb routes (Android normalization)', () => {
+    expect(leaf(parse('checkin/')).params?.openKpiCheckin).toBe(true);
+    expect(leaf(parse('how-i-feel/')).params?.openHowIFeel).toBe(true);
+    expect(leaf(parse('learn-more-tour/')).params?.openTopCard).toBe(true);
+    expect(leaf(parse('/app/checkin/')).params?.openKpiCheckin).toBe(true);
+  });
 });
 
 describe('deep-link URL delivery (getInitialURL / subscribe)', () => {
