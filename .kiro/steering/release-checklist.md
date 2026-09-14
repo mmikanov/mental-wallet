@@ -2,6 +2,13 @@
 
 When the user is about to build, submit, or release a new app version (any mention of `eas build`, `eas submit`, "new version", "release", "ship it"), proactively remind them of this checklist BEFORE they build. Don't wait to be asked.
 
+> **Bump the version when a new release cycle STARTS, not just before the build.** When work
+> begins on the next version (e.g. the first `X.Y.Z`-prefixed spec is created, or the user
+> says "the next version will be N"), do the 4-place version bump then. Waiting until build
+> time is how a build got submitted still carrying the previous version. If the marketing
+> version in `app.json` still equals the last released store version while new-version work is
+> underway, proactively flag it.
+
 ## Before building
 
 1. **Bump the marketing version** if the previous version was already submitted/approved on either store. Apple REJECTS a duplicate `CFBundleShortVersionString`. Because this project uses the bare workflow (committed `ios/`/`android/`), the version must be updated in ALL FOUR places and kept identical:
