@@ -264,4 +264,30 @@ describe('WalletScreen deep-link consumers', () => {
       expect.objectContaining({ focusCardId: undefined })
     );
   });
+
+  it('handles the SAME route again after params are cleared (not once-per-session)', () => {
+    // First delivery.
+    mockRouteParams = { openKpiCheckin: true };
+    let tree: any;
+    act(() => {
+      tree = create(React.createElement(WalletScreen));
+    });
+    act(() => { jest.runOnlyPendingTimers(); });
+    expect(mockFocusCard).toHaveBeenCalledWith('kpi-card');
+
+    // Simulate React Navigation clearing the params after handling (empty render).
+    mockRouteParams = {};
+    act(() => { tree.update(React.createElement(WalletScreen)); });
+    act(() => { jest.runOnlyPendingTimers(); });
+
+    mockFocusCard.mockClear();
+    mockExpandCard.mockClear();
+
+    // Second delivery of the SAME route must fire again (guard was reset on the empty render).
+    mockRouteParams = { openKpiCheckin: true };
+    act(() => { tree.update(React.createElement(WalletScreen)); });
+    act(() => { jest.runOnlyPendingTimers(); });
+    expect(mockFocusCard).toHaveBeenCalledWith('kpi-card');
+    expect(mockExpandCard).toHaveBeenCalled();
+  });
 });
