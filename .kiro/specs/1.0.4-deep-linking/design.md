@@ -33,10 +33,11 @@ Requirement 2, the concrete 1.0.4 goal. Universal/App Links (Req 3) and the extr
   sets `data: { type: 'card_reminder', cardId }` on every scheduled notification. So Req 2.2 is
   already satisfied at the data layer, no scheduling change needed.
 - **Focus/expand is store-driven.** `walletStore` owns `focusedCardId` + `isExpanded` with
-  `focusCard(id)` (focus, collapsed) and `expandCard()` (expand). The canonical "open a card
-  fully from code" pattern already exists: `handleReturnToSession` does
-  `focusCard(SESSION_LAUNCHER_CARD_ID); expandCard();`. Reproducing a normal tap's end state
-  (Req 2.5) = those two calls.
+  `focusCard(id)` (focus, collapsed) and `expandCard()` (expand). Reproducing a normal tap's
+  end state (Req 2.5) = `focusCard(id)` (focused). NOTE: deep links use focus-only for regular
+  cards; force-expanding a regular card on open renders unreliably (see Req 2 impl note), so
+  only the session-launcher route also calls `expandCard()` (it uses a compact render branch
+  that handles open-expanded correctly, as `handleReturnToSession` does).
 - **Dead code:** `notificationService.handleNotificationTap` +
   `setNotificationNavigationHandler`/`getNotificationNavigationHandler` are never called. The
   live tap path is `linking.ts`. We will not revive the dead path; optionally remove it.
@@ -81,9 +82,10 @@ Add an effect in `WalletScreen` (mirroring the existing `highlightSessionCard` e
 2. Waits until `cards` are loaded (the effect already depends on `cards`; the highlight effect
    uses the same guard).
 3. Resolves the card: `cards.find(c => c.id === focusCardId)`.
-   - **If found and not archived:** `focusCard(focusCardId)` then `expandCard()` (the exact
-     `handleReturnToSession` pattern, satisfying Req 2.5, identical to a normal tap's end
-     state).
+   - **If found and not archived:** `focusCard(focusCardId)` (focus only — the same state as
+     tapping the card, Req 2.5). NOT force-expanded: expanding a regular card on open renders
+     unreliably (timing-sensitive expanded-on-mount layout), so we land on the focused card and
+     the user taps once to begin. "Open already expanded" is parked as follow-up.
    - **If missing or archived (Req 2.3):** do nothing beyond landing on the Wallet stack (no
      error). Optional: a gentle, non-blocking toast/hint ("That tool isn't in your wallet
      anymore"), deferred unless trivial.
@@ -177,16 +179,18 @@ There are TWO separate cards, and tip CTAs target different ones. Do not conflat
    what the 🌱 FAB (`handleKpiFabPress`) opens. The `personal-kpi-check-in` tip targets THIS.
    (Operator confirmed the seedling = KPI check-in card.)
 
-Both are just "focus + expand a specific card," so both reuse the same mechanism as Req 2, but
-each card's wallet-instance id is per-install (seeded per device), so a literal `focusCardId`
-can't be hardcoded in a tip URL. Use dedicated boolean params the wallet resolves locally:
+Both reuse the focus mechanism, but each card's wallet-instance id is per-install (seeded per
+device), so a literal `focusCardId` can't be hardcoded in a tip URL. Use dedicated boolean
+params the wallet resolves locally:
 
 - **`/app/how-i-feel`** → `Wallet` param `openHowIFeel?: boolean`. Effect: find the
-  `session-launcher` card, `focusCard(it.id); expandCard()` (this is exactly what the existing
-  `handleReturnToSession` does). Degrade gracefully if the card is missing.
+  `session-launcher` card, `focusCard(it.id); expandCard()`. This is the ONE route that expands
+  on open, because the session content only renders expanded AND the session-launcher uses
+  `FocusedCardView`'s compact branch (which handles open-expanded correctly). Same as the
+  existing `handleReturnToSession`. Degrade gracefully if the card is missing.
 - **`/app/checkin`** → `Wallet` param `openKpiCheckin?: boolean`. Effect: find the card with
-  `sourceLibraryId === 'lib-personal-kpi'`, `focusCard(it.id); expandCard()`. Degrade
-  gracefully if the user removed the KPI card.
+  `sourceLibraryId === 'lib-personal-kpi'`, `focusCard(it.id)` (focus only, same as the 🌱
+  FAB). Degrade gracefully if the user removed the KPI card.
 
 Both effects follow the same consume-once / cards-load-guard pattern as the `focusCardId`
 consumer (Req 2). Neither needs to drive the session/checkin store directly, focusing +
@@ -203,9 +207,10 @@ walkthrough UI. A richer guided tour is parked as a future enhancement.
 
 - New `Wallet` param `openTopCard?: boolean` (set via `/app/learn-more-tour`). (Named for what
   it does, not "tour", since there is no tour.)
-- On trigger: focus + expand the **top card of the stack**, i.e. the first entry of `stackCards`
-  (index 0 is the top of the deck; `StackedCardList` reverses for rendering). Reuses the same
-  `focusCard(id); expandCard()` + consume-once / cards-load guard as Req 2 and 4.2.
+- On trigger: focus the **top card of the stack** (focus only, not expanded — its "Learn more"
+  link shows on the focused card), i.e. the first entry of `stackCards` (index 0 is the top of
+  the deck; `StackedCardList` reverses for rendering). Reuses the same `focusCard(id)` +
+  consume-once / cards-load guard as Req 2 and 4.2.
 - **Skip the "Start from how I feel" session-launcher card:** pick the first `stackCards` entry
   whose id is NOT `session-launcher`. (The KPI card is already excluded from `stackCards`, it's
   FAB-only, so no extra guard needed for it.) These aren't regular tools and have no Learn more
@@ -280,16 +285,16 @@ the shared `linking.config.screens`, so it's reachable via `mentalwallet://...` 
 - **Unit:** `linking.ts` route parsing, `mentalwallet://wallet?focusCardId=X` and
   `https://.../app/wallet?focusCardId=X` both resolve to `Wallet` with the param; new routes
   (`add-tool`, `how-i-feel`, `checkin`, `learn-more-tour`) resolve. A `WalletScreen` effect test (with a
-  mocked store) that `focusCardId` for an existing card calls `focusCard` then `expandCard`,
-  and that a missing/archived id does neither and doesn't throw (Req 2.3). Consume-once /
-  distinct-second-link behavior via the `lastHandledFocusCardId` ref.
+  mocked store) that `focusCardId` for an existing card calls `focusCard` (focus only; only
+  `how-i-feel` additionally calls `expandCard`), and that a missing/archived id does neither and
+  doesn't throw (Req 2.3). Consume-once reset so a route fires again after params clear.
 - **`openTopCard` effect (mocked store):** focuses + expands the first non-`session-launcher`
   stack card; when the only stack card is the session-launcher (or the stack is empty) it does
   nothing and doesn't throw.
 - **MANUAL, both platforms (the association layer can't be unit-tested):**
   - Req 1/2: schedule a reminder, tap the notification from cold start, background, and
-    foreground → app opens with that card focused AND expanded; deleted/archived card → wallet,
-    no error.
+    foreground → app opens with that card focused (same as tapping it); deleted/archived card →
+    wallet, no error.
   - Req 3: with app installed, a `/app/wallet` https link opens the app; uninstalled, it opens
     the web page. Verify AASA/assetlinks are fetched (Apple's CDN cache + Android App Links
     verification).
@@ -303,17 +308,17 @@ the shared `linking.config.screens`, so it's reachable via `mentalwallet://...` 
 | 1.1 consistent scheme | `app.json` + Info.plist + AndroidManifest `mentalwallet` |
 | 1.2 existing routes open | scheme registered; config unchanged for those |
 | 1.3 confirm tap path | confirmed: relies on `linking.ts` custom scheme |
-| 2.1 focus+expand on tap | consume `focusCardId` → `focusCard`+`expandCard` |
+| 2.1 focus on tap | consume `focusCardId` → `focusCard` (focus only; expand parked) |
 | 2.2 payload has card id | already present in reminder `data` |
 | 2.3 missing/archived graceful | resolve guard, no-op + optional hint |
 | 2.4 cold/bg/fg | getInitialURL + subscribe + cards-load guard |
-| 2.5 same state as tap | identical `focusCard`+`expandCard` pattern |
+| 2.5 same state as tap | identical `focusCard` (focused) state as a normal tap |
 | 3.1–3.2 UL/AL registered | associatedDomains + autoVerify https filter |
 | 3.3 web fallback | inherent to UL/AL; website page dependency |
 | 3.4 association files | defined here; website serves them |
 | 3.5 custom scheme still works | https added as an extra prefix |
 | 4.1 routes for destinations | wallet, how-i-feel, checkin, learn-more-tour, add-tool |
-| 4.2 feel-oriented destinations | `openHowIFeel` → session-launcher; `openKpiCheckin` → KPI card (both focus+expand) |
-| 4.3 learn-more destination | `openTopCard` → focus+expand top non-session stack card (its Learn more link is visible); no walkthrough built |
+| 4.2 feel-oriented destinations | `openHowIFeel` → session-launcher (focus+expand); `openKpiCheckin` → KPI card (focus only, like the FAB) |
+| 4.3 learn-more destination | `openTopCard` → focus (only) the top non-session stack card (its Learn more link is visible); no walkthrough built |
 | 4.4 both transports | shared `linking.config.screens` |
 | 4.5 no-screen destinations | add-tool → existing LibraryBrowser (optional `?filter=apps` pre-selects the Apps pill) |

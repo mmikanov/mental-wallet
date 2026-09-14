@@ -221,11 +221,12 @@ describe('WalletScreen deep-link consumers', () => {
     mockRouteParams = {};
   });
 
-  it('focusCardId focuses + expands that specific card', () => {
+  it('focusCardId focuses that specific card (focus only, no force-expand)', () => {
     mockRouteParams = { focusCardId: 'card-top' };
     renderWallet();
     expect(mockFocusCard).toHaveBeenCalledWith('card-top');
-    expect(mockExpandCard).toHaveBeenCalled();
+    // Reminder route focuses only (no force-expand — expand-on-open is parked).
+    expect(mockExpandCard).not.toHaveBeenCalled();
   });
 
   it('focusCardId for a missing card is a no-op (no focus, no throw)', () => {
@@ -242,19 +243,19 @@ describe('WalletScreen deep-link consumers', () => {
     expect(mockExpandCard).toHaveBeenCalled();
   });
 
-  it('openKpiCheckin focuses + expands the KPI card', () => {
+  it('openKpiCheckin focuses the KPI card (focus only, like the FAB)', () => {
     mockRouteParams = { openKpiCheckin: true };
     renderWallet();
     expect(mockFocusCard).toHaveBeenCalledWith('kpi-card');
-    expect(mockExpandCard).toHaveBeenCalled();
+    expect(mockExpandCard).not.toHaveBeenCalled();
   });
 
-  it('openTopCard focuses the top card, skipping the session-launcher', () => {
+  it('openTopCard focuses the top card, skipping the session-launcher (focus only)', () => {
     mockRouteParams = { openTopCard: true };
     renderWallet();
     expect(mockFocusCard).toHaveBeenCalledWith('card-top');
     expect(mockFocusCard).not.toHaveBeenCalledWith(SESSION_LAUNCHER_CARD_ID);
-    expect(mockExpandCard).toHaveBeenCalled();
+    expect(mockExpandCard).not.toHaveBeenCalled();
   });
 
   it('clears the consumed params after handling', () => {
@@ -288,6 +289,5 @@ describe('WalletScreen deep-link consumers', () => {
     act(() => { tree.update(React.createElement(WalletScreen)); });
     act(() => { jest.runOnlyPendingTimers(); });
     expect(mockFocusCard).toHaveBeenCalledWith('kpi-card');
-    expect(mockExpandCard).toHaveBeenCalled();
   });
 });
