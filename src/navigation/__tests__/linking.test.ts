@@ -28,7 +28,10 @@ jest.spyOn(Linking, 'addEventListener').mockImplementation(((_type: string, cb: 
   return { remove: jest.fn() } as any;
 }) as any);
 
-const options = { screens: (linking.config as any).screens };
+const options = {
+  screens: (linking.config as any).screens,
+  initialRouteName: (linking.config as any).initialRouteName,
+};
 
 /** Walk to the innermost route (the leaf screen) of a parsed nav state. */
 function leaf(state: any): { name: string; params?: Record<string, unknown> } {
@@ -102,6 +105,25 @@ describe('deep-link route parsing', () => {
     expect(leaf(parse('how-i-feel/')).params?.openHowIFeel).toBe(true);
     expect(leaf(parse('learn-more-tour/')).params?.openTopCard).toBe(true);
     expect(leaf(parse('/app/checkin/')).params?.openKpiCheckin).toBe(true);
+  });
+
+  // Universal Links: extractPathFromURL strips the `.../app` prefix and passes a
+  // LEADING-SLASH path (e.g. `/checkin`) — the exact form RN hands getStateFromPath
+  // for the https transport. Must resolve identically to the scheme form.
+  it('resolves the leading-slash verb paths the https prefix produces', () => {
+    expect(leaf(parse('/checkin')).params?.openKpiCheckin).toBe(true);
+    expect(leaf(parse('/how-i-feel')).params?.openHowIFeel).toBe(true);
+    expect(leaf(parse('/learn-more-tour')).params?.openTopCard).toBe(true);
+    expect(leaf(parse('/add-tool')).name).toBe('LibraryBrowser');
+  });
+
+  // With initialRouteName MainTabs, a cold-opened screen route has the wallet
+  // beneath it so Back/Close works (not a stack containing only that screen).
+  it('places MainTabs under a deep-linked screen route (add-tool)', () => {
+    const state = parse('/add-tool');
+    // Top-level RootStack should include MainTabs as the base route.
+    expect(state.routes[0].name).toBe('MainTabs');
+    expect(state.routes[state.routes.length - 1].name).toBe('LibraryBrowser');
   });
 });
 

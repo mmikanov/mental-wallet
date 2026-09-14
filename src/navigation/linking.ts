@@ -30,6 +30,11 @@ const UNIVERSAL_LINK_PREFIX = 'https://mentalhealthwallet.productsforgood.co/app
 export const linking: LinkingOptions<RootStackParamList> = {
   prefixes: [CUSTOM_SCHEME_PREFIX, UNIVERSAL_LINK_PREFIX],
   config: {
+    // Ensure MainTabs (the wallet) is always at the base of the stack that a deep
+    // link builds. Without this, cold-opening a screen like Settings/Archive/
+    // LibraryBrowser via a link creates a stack containing ONLY that screen, so its
+    // Close/Back button has nowhere to go.
+    initialRouteName: 'MainTabs',
     screens: {
       MainTabs: {
         screens: {
