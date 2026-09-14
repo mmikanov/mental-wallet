@@ -64,22 +64,27 @@ notification taps and tip CTAs don't dead-end with "couldn't be opened".
 ### Requirement 2: Reminder notification opens the app focused on that tool, expanded
 
 **User Story:** As a user who set a reminder for a specific tool, I want tapping its push
-notification to open the app directly on that tool, already expanded, so that I can start
-using it immediately without hunting for it.
+notification to open the app directly on that tool, so that I can start using it immediately
+without hunting for it.
 
 #### Acceptance Criteria
 
 1. WHEN a per-card reminder notification fires and the user taps it, THE app SHALL open (or
-   foreground) and navigate to the wallet with that specific card **focused and expanded**,
-   ready to use.
+   foreground) and navigate to the wallet with that specific card **focused** (the same state
+   as tapping the card), so the user taps once to begin.
+   - **Implementation note (1.0.4):** the card is opened **focused, not force-expanded.**
+     Force-expanding a regular card on open rendered unreliably (the expanded-on-mount layout
+     is timing-sensitive), and focus-only matches every other entry point (tapping a card, the
+     🌱 FAB). "Open already expanded / ready to use" is parked as a follow-up, contingent on
+     fixing the expanded-on-mount render in `FocusedCardView`.
 2. THE notification SHALL carry the target card's identifier so the app can resolve which
    card to focus (reusing the existing `wallet?focusCardId=` route or an equivalent).
 3. IF the target card no longer exists (deleted) or is archived, THE app SHALL degrade
    gracefully (open the wallet without error; optionally a gentle message).
 4. THE behavior SHALL work from a cold start (app not running), from background, and from
    foreground.
-5. THE focus/expand SHALL match the app's normal focused-card view (the same state a user
-   gets by tapping the card), not a separate or partial state.
+5. THE focus SHALL match the app's normal focused-card view (the same state a user gets by
+   tapping the card), not a separate or partial state.
 
 ### Requirement 3: Universal Links / App Links
 

@@ -510,25 +510,35 @@ export default function WalletScreen() {
     if (!params) return;
 
     // Resolve the target card id from whichever deep-link param is present.
+    // `expand` = whether to open the card fully (expanded) vs just focused.
     let targetId: string | null = null;
     let key: string | null = null;
+    let expand = false;
 
     if (params.focusCardId) {
       // Req 2: reminder tap → the specific card (if present and not archived).
+      // Focus only (same state as tapping the card), matching every other entry
+      // point. Force-expanding a regular card on open renders unreliably, so the
+      // user taps once to start; "open already expanded" is parked as follow-up.
       const card = cards.find((c) => c.id === params.focusCardId && !c.isArchived);
       targetId = card ? card.id : null;
       key = `focus:${params.focusCardId}`;
     } else if (params.openHowIFeel) {
-      // Req 4.2: the "Start from how I feel" session-launcher card.
+      // Req 4.2: the "Start from how I feel" session-launcher card. This one DOES
+      // expand — the session content only renders when expanded, and it uses the
+      // FocusedCardView compact branch (which handles open-expanded correctly).
       const card = cards.find((c) => c.id === SESSION_LAUNCHER_CARD_ID);
       targetId = card ? card.id : null;
       key = 'howIFeel';
+      expand = true;
     } else if (params.openKpiCheckin) {
-      // Req 4.2: the seedling KPI daily check-in card.
+      // Req 4.2: the seedling KPI daily check-in card. Focus only (same as the 🌱
+      // FAB) — the user taps to expand, matching the built-and-tested UX.
       targetId = kpiCard ? kpiCard.id : null;
       key = 'kpiCheckin';
     } else if (params.openTopCard) {
-      // Req 4.3: the top stack card, skipping the session-launcher (no Learn more).
+      // Req 4.3: the top stack card, skipping the session-launcher. Focus only so
+      // its "Learn more" link is visible (it shows on the focused card).
       const card = stackCards.find((c) => c.id !== SESSION_LAUNCHER_CARD_ID);
       targetId = card ? card.id : null;
       key = 'topCard';
@@ -550,7 +560,7 @@ export default function WalletScreen() {
     // just land on the wallet stack, no error.
     if (targetId) {
       focusCard(targetId);
-      expandCard();
+      if (expand) expandCard();
     }
 
     // Clear the consumed params so returning to the wallet later doesn't re-trigger.
