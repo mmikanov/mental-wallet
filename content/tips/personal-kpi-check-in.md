@@ -7,9 +7,9 @@ topics: ["tracking", "goals"]
 heroImage: "https://mentalhealthwallet.productsforgood.co/assets/tip-media/personal-kpi-check-in.gif"
 cta:
   label: "Log a check-in"
-  url: "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+  url: "https://mentalhealthwallet.productsforgood.co/app/checkin"
 publishedAt: "2026-09-04"
-version: 2
+version: 3
 ---
 
 "Getting better" means different things to different people. For one person it's managing

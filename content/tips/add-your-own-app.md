@@ -7,9 +7,9 @@ topics: ["discovery", "apps", "customization"]
 heroImage: "https://mentalhealthwallet.productsforgood.co/assets/tip-media/add-your-own-app.gif"
 cta:
   label: "Create your own tool"
-  url: "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+  url: "https://mentalhealthwallet.productsforgood.co/app/add-tool"
 publishedAt: "2026-09-09"
-version: 2
+version: 3
 ---
 
 The library has cards for a lot of popular apps, but it can't cover everything. If the app

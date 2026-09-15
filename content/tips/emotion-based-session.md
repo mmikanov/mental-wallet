@@ -7,9 +7,9 @@ topics: ["emotions", "getting-started"]
 heroImage: "https://mentalhealthwallet.productsforgood.co/assets/tip-media/emotion-based-session.gif"
 cta:
   label: "Try Start from how I feel"
-  url: "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+  url: "https://mentalhealthwallet.productsforgood.co/app/how-i-feel"
 publishedAt: "2026-09-04"
-version: 2
+version: 3
 ---
 
 Most tools ask you to already know what you're looking for. Mental Health Wallet can work

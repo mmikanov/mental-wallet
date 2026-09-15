@@ -7,9 +7,9 @@ topics: ["discovery", "apps"]
 heroImage: "https://mentalhealthwallet.productsforgood.co/assets/tip-media/discover-third-party-apps.gif"
 cta:
   label: "Browse app cards to add"
-  url: "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+  url: "https://mentalhealthwallet.productsforgood.co/app/add-tool?filter=apps"
 publishedAt: "2026-09-04"
-version: 2
+version: 3
 ---
 
 Mental Health Wallet isn't trying to replace the wellness apps you already like. It's

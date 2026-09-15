@@ -17,6 +17,16 @@ Every route below works under BOTH:
   entitlement + Android autoVerify filter. iOS Universal Links are unreliable on the Simulator;
   verify on a real device.
 
+### Not-installed fallback (`/app/*` web page)
+
+When the app is NOT installed, the browser loads `/app/<path>` from the marketing site. A single
+page — `website/app-fallback.html`, served for every `/app/*` path via a `200` rewrite in
+`website/_redirects` — reads the route from the URL, shows a message tailored to it, and offers
+the app stores. It is one shared page (not one per route); its route→copy map is colocated in
+that file and this table here is the canonical route list. Adding a new route means adding it to
+`linking.ts` (app side) and, if it needs tailored fallback copy, to the map in
+`website/app-fallback.html`; unknown routes degrade to a generic "Open your wallet" message.
+
 ## Routes
 
 | Path | Lands on | Notes |

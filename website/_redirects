@@ -1,0 +1,20 @@
+# Cloudflare Workers static-assets redirects.
+# Docs: https://developers.cloudflare.com/workers/static-assets/redirects/
+#
+# /app/* is the Universal/App Link path space. When the app is installed the OS opens
+# the app and the web server is never hit. When it is NOT installed the browser loads
+# /app/<route> here, so we serve the single path-aware fallback page for every /app/*
+# path with a 200 (proxy/rewrite): the URL stays /app/<route> so the page's script can
+# read the route from location.pathname and personalize the message.
+#
+# The status code 200 = proxy (content served, URL unchanged), NOT a redirect. Splats
+# match greedily and are referenced with :splat (unused here; we always serve the one
+# page). This rule is scoped to /app/* so the rest of the site (/, /tips/*, /privacy.html,
+# /.well-known/*, etc.) is unaffected.
+#
+# The destination lives at the ROOT (/app-fallback.html), NOT under /app/. If it were under
+# /app/ (e.g. /app/index.html), Cloudflare rejects the rule as an infinite loop, because the
+# destination itself matches the /app/* source and .html/index stripping would re-trigger it.
+# Bare /app (no trailing slash) does not match the /app/* splat, so cover it explicitly.
+/app /app-fallback 200
+/app/* /app-fallback 200

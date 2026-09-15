@@ -7,9 +7,9 @@ topics: ["customization", "organization"]
 heroImage: "https://mentalhealthwallet.productsforgood.co/assets/tip-media/archive-restore-tools.gif"
 cta:
   label: "Tidy up your wallet"
-  url: "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+  url: "https://mentalhealthwallet.productsforgood.co/app/wallet"
 publishedAt: "2026-09-10"
-version: 2
+version: 3
 ---
 
 Your needs change over time, and your wallet can change with them. A tool that helped last

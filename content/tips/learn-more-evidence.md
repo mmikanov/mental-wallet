@@ -7,9 +7,9 @@ topics: ["trust", "evidence"]
 heroImage: "https://mentalhealthwallet.productsforgood.co/assets/tip-media/learn-more-evidence.gif"
 cta:
   label: "Open a tool and tap Learn more"
-  url: "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+  url: "https://mentalhealthwallet.productsforgood.co/app/learn-more-tour"
 publishedAt: "2026-09-04"
-version: 2
+version: 3
 ---
 
 A coping tool is easier to use when you understand why it's supposed to help. So the tools

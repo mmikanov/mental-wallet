@@ -7,9 +7,9 @@ topics: ["customization", "organization"]
 heroImage: "https://mentalhealthwallet.productsforgood.co/assets/tip-media/reorder-tools.gif"
 cta:
   label: "Reorder your wallet"
-  url: "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+  url: "https://mentalhealthwallet.productsforgood.co/app/wallet"
 publishedAt: "2026-09-10"
-version: 2
+version: 3
 ---
 
 Your wallet is personal, so the order of your tools should be too. If the one you reach for

@@ -7,9 +7,9 @@ topics: ["re-engagement", "reminders"]
 heroImage: "https://mentalhealthwallet.productsforgood.co/assets/tip-media/come-back-reset.gif"
 cta:
   label: "Open your wallet"
-  url: "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+  url: "https://mentalhealthwallet.productsforgood.co/app/wallet"
 publishedAt: "2026-09-05"
-version: 2
+version: 3
 ---
 
 It's been a little while, and that's completely okay. Life gets busy, and a tools app should
