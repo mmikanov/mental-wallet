@@ -262,6 +262,72 @@ export function createReminderService(): ReminderService {
     },
 
     /**
+     * Re-arm a card's preserved (inactive) reminder — the inverse of
+     * disableForCard. Used when an archived card is restored: the reminder row
+     * was kept (is_active = 0) when the card was archived, so here we reschedule
+     * its OS notifications from the stored time/frequency and mark it active
+     * again. Reschedule reads the CURRENT discreet setting and card title.
+     *
+     * No-op (returns null) when the card has no reminder. Guards against
+     * double-scheduling: if an active reminder already exists for the card, it is
+     * returned unchanged without scheduling again.
+     * Validates: Requirement 2.3, 2.4, 2.5 (1.0.4-user-reported-fixes-round-2)
+     */
+    async reactivateForCard(cardId: string): Promise<Reminder | null> {
+      const db = await getDatabase();
+
+      // If an active reminder already exists, don't double-schedule.
+      const activeRow = await db.getFirstAsync<Record<string, unknown>>(
+        'SELECT * FROM reminders WHERE card_id = ? AND is_active = 1 LIMIT 1',
+        [cardId]
+      );
+      if (activeRow) {
+        return mapRowToReminder(activeRow);
+      }
+
+      // Find the preserved (inactive) reminder for the card, most recent first.
+      const row = await db.getFirstAsync<Record<string, unknown>>(
+        'SELECT * FROM reminders WHERE card_id = ? AND is_active = 0 ORDER BY created_at DESC LIMIT 1',
+        [cardId]
+      );
+      if (!row) return null; // Card had no reminder — nothing to re-arm.
+
+      const reminder = mapRowToReminder(row);
+
+      // Reschedule the OS notifications from the preserved time/frequency, using
+      // the current discreet setting + current card title.
+      const cardRow = await db.getFirstAsync<{ title: string }>(
+        'SELECT title FROM cards WHERE id = ?',
+        [reminder.cardId]
+      );
+      const cardTitle = cardRow?.title || 'your tool';
+
+      const config: ReminderConfig = {
+        time: reminder.time,
+        frequency: reminder.frequency,
+      };
+      const discreet = await getDiscreetNotifications();
+      const notificationConfigs = buildNotificationConfigs(cardTitle, reminder.cardId, config, discreet);
+      const notificationIds: string[] = [];
+      for (const notifConfig of notificationConfigs) {
+        const id = await notificationService.scheduleLocal(notifConfig);
+        notificationIds.push(id);
+      }
+
+      const notificationIdValue = JSON.stringify(notificationIds);
+      await db.runAsync(
+        'UPDATE reminders SET is_active = 1, notification_id = ? WHERE id = ?',
+        [notificationIdValue, reminder.id]
+      );
+
+      return {
+        ...reminder,
+        isActive: true,
+        notificationId: notificationIdValue,
+      };
+    },
+
+    /**
      * Schedule a system notification for a reminder.
      * Used internally by setCardReminder and updateReminder.
      */
