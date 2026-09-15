@@ -108,8 +108,11 @@ Links → walkthrough UI → verify.
   - Document the required `apple-app-site-association` (App ID `<TeamID>.com.mentalwallet.app`,
     `/app/*` paths) and `.well-known/assetlinks.json` (package `com.mentalwallet.app` + release
     signing SHA-256). These are served by the marketing site, NOT the app repo. Flag as an
-    external dependency; UL/AL verification can't pass until they're live and real `/app/...`
-    web fallback pages exist (Req 3.3).
+    external dependency; UL/AL verification can't pass until they're live and the `/app/...`
+    web fallback page exists. NOTE: the association files are now deployed + verified live. The
+    `/app/*` not-installed fallback page (Req 3.3 here) is OWNED by
+    `1.0.4-email-optin-and-cta-upgrade` Requirement 3 / Task 6 (a single path-aware page), not
+    this spec.
   - _Req: 3.3, 3.4_
 
 ## Task 5: Tests + verification
