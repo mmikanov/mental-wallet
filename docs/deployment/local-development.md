@@ -2,6 +2,16 @@
 
 ## Run on iOS Simulator
 
+> **Heads up: `npx expo run:ios` currently does NOT work on this machine.** Since we added the
+> `applinks:` associated-domains entitlement (for Universal Links / deep links), the Expo CLI
+> requires development code signing **even for the simulator**, and this machine has no
+> development certificate (`security find-identity -v -p codesigning` → 0 identities). So
+> `expo run:ios` fails with "No code signing certificates are available to use."
+>
+> Use the **`xcodebuild` + `simctl` workaround below**, which builds for the simulator with
+> ad-hoc "Sign to Run Locally" signing (no certificate needed). This is a temporary situation:
+> see "Making `expo run:ios` work again (after 1.0.4)" at the end of this section.
+
 ### First time setup (already done)
 
 ```bash
@@ -12,40 +22,79 @@ npx expo prebuild --platform ios
 cd ios && pod install && cd ..
 ```
 
-### Every time you want to run
+### Every time you want to run (the working workaround)
 
 ```bash
 # Terminal 1: Start the Metro bundler
 npx expo start --dev-client
-
-# Terminal 2 (or press 'i' in Terminal 1): Build and launch on simulator
-npx expo run:ios
 ```
 
-Or if the app is already installed on the simulator, just start Metro:
+If the dev build is already installed on the simulator, that's all you need — open the app in
+the simulator and it auto-connects to Metro.
+
+To (re)build and install the native app on the booted simulator, use `xcodebuild` directly
+(NOT `expo run:ios`):
 
 ```bash
-npx expo start --dev-client
+# 1. Find the booted simulator's UDID (or boot one first from Simulator.app)
+xcrun simctl list devices booted
+
+# 2. Build for the simulator (ad-hoc signed; no dev certificate needed)
+xcodebuild \
+  -workspace ios/MentalWallet.xcworkspace \
+  -scheme MentalWallet \
+  -configuration Debug \
+  -sdk iphonesimulator \
+  -destination 'platform=iOS Simulator,id=<BOOTED_SIM_UDID>' \
+  -derivedDataPath ios/build
+
+# 3. Install + launch on the booted simulator
+xcrun simctl install booted "ios/build/Build/Products/Debug-iphonesimulator/MentalWallet.app"
+xcrun simctl launch booted com.mentalwallet.app
 ```
 
-Then open the app in the simulator — it will auto-connect to the dev server.
+Replace `<BOOTED_SIM_UDID>` with the UDID from step 1 (e.g. the iPhone 17 Pro Max sim).
 
 **Troubleshooting:**
 - If you see "No development server found" — make sure Metro is running (`npx expo start --dev-client`)
 - If Metro shows errors — try `npx expo start --dev-client --clear` to clear the cache
 - If the build fails — try `cd ios && pod install && cd ..` then rebuild
+- If `expo run:ios` gives "No code signing certificates are available to use" — that's the
+  known issue above; use the `xcodebuild` workaround (or complete the Option B setup below).
 
 ### Run on iPad Simulator
 
-```bash
-# List available iPad simulators
-xcrun simctl list devices available | grep iPad
+Boot an iPad simulator, then use the same `xcodebuild` workaround with that iPad's UDID in the
+`-destination`:
 
-# Build and launch on a specific iPad simulator
-npx expo run:ios --device "iPad Pro 13-inch (M4)"
+```bash
+# List available iPad simulators (name + UDID)
+xcrun simctl list devices available | grep iPad
 ```
 
-Use the exact device name from the list. This compiles the native project and installs it — `npx expo start` alone won't work without a development build already installed on the target device.
+`npx expo start` alone won't work without a development build already installed on the target
+device — the `xcodebuild` steps above install it.
+
+### Making `expo run:ios` work again (after 1.0.4)
+
+`expo run:ios` is nicer than the `xcodebuild` workaround (one command, handles Metro, device
+selection, etc.). It only fails today because there's no local development signing set up and
+the associated-domains entitlement forces signing even for the simulator. One-time fix, to do
+after 1.0.4 ships (deferred so we don't touch native signing config right before release):
+
+1. Open the workspace in Xcode: `xed ios`
+2. Select the **MentalWallet** target → **Signing & Capabilities**
+3. Check **Automatically manage signing** and pick your **Team** (Apple Developer team
+   `J2XVWUDH2V` — the same prefix as the AASA `appID`). Xcode will create a development
+   certificate + provisioning profile for you (needs your Apple ID login).
+4. Once a valid identity exists (`security find-identity -v -p codesigning` shows it), set
+   `DEVELOPMENT_TEAM = J2XVWUDH2V` for both Debug and Release in
+   `ios/MentalWallet.xcodeproj/project.pbxproj` so the setting persists across prebuilds.
+5. Verify: `npx expo run:ios` should now build + launch on the simulator without the signing
+   error.
+
+Note: EAS builds are unaffected either way — they use EAS-managed remote credentials
+(`eas.json` → `appVersionSource: remote`), not the local keychain.
 
 ---
 
