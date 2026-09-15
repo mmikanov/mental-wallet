@@ -7,9 +7,9 @@ topics: ["anxiety", "grounding", "in-the-moment"]
 heroImage: "https://mentalhealthwallet.productsforgood.co/assets/tip-media/feeling-anxious.gif"
 cta:
   label: "Start from how I feel"
-  url: "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+  url: "https://mentalhealthwallet.productsforgood.co/app/how-i-feel"
 publishedAt: "2026-09-05"
-version: 2
+version: 3
 ---
 
 When anxiety hits, the last thing you want is to scroll around deciding what might help.

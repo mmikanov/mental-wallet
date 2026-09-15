@@ -7,9 +7,9 @@ topics: ["welcome", "getting-started"]
 heroImage: "https://mentalhealthwallet.productsforgood.co/assets/tip-media/welcome-wallet.gif"
 cta:
   label: "Open the app and tap a card"
-  url: "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+  url: "https://mentalhealthwallet.productsforgood.co/app/wallet"
 publishedAt: "2026-09-05"
-version: 2
+version: 3
 ---
 
 Thanks for signing up. Glad to have you.

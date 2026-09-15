@@ -18,11 +18,11 @@ const TIPS_DIR = path.join(ROOT, 'content', 'tips');
 const OUT_TIPS_DIR = path.join(__dirname, 'tips');
 const OUT_CONTENT_DIR = path.join(__dirname, 'content');
 
-// INTERIM app CTA: article pages render a single "app-cta" button whose href is
-// rewritten to the correct store by /app-cta.js based on the visitor's platform. The
-// store URLs live in app-cta.js. When real deep links ship (see
-// .kiro/specs/app-deep-linking), the article CTA reverts to a single real deep link and
-// the store becomes the not-installed fallback.
+// App CTA: article pages render a single button whose href is the tip's real Universal Link
+// (`tip.cta.url`, e.g. https://.../app/checkin). Installed users get the app; not-installed
+// users land on the /app/* fallback page (website/app-fallback.html via _redirects), which
+// offers the store. The old interim client-side store rewrite (app-cta.js) is retired for
+// article pages. See .kiro/specs/1.0.4-email-optin-and-cta-upgrade Req 2 & 3.
 
 // --- helpers ---
 
@@ -187,14 +187,15 @@ function renderArticle(tip) {
   const hero = tip.heroImage && !bodyHasInlineMedia
     ? `<img src="${escapeAttr(tip.heroImage)}" alt="" class="article-hero">`
     : '';
-  // INTERIM CTA: one intent-labeled button. Its href defaults to the site's download
-  // section (both stores) and is rewritten by app-cta.js to the correct store based on
-  // the visitor's platform (iOS -> App Store, Android -> Play, desktop/unknown -> both).
-  // The label states the action ("open"), and installed users see "Open" on the store.
-  // Reverts to a single real deep-link CTA once app-deep-linking ships (see spec).
+  // CTA: a single real deep link. `tip.cta.url` is the Universal Link
+  // (https://.../app/<route>); when the app is installed the OS opens it, and when it is not
+  // the browser loads the /app/* fallback page (website/app-fallback.html via _redirects),
+  // which offers the store. So there is no client-side store rewrite here anymore (app-cta.js
+  // is retired for article pages). Falls back to the site home if a tip somehow has no cta.
   const ctaLabel = tip.cta ? escapeHtml(tip.cta.label) : 'Open Mental Health Wallet';
+  const ctaHref = tip.cta && tip.cta.url ? escapeAttr(tip.cta.url) : '/';
   const cta = `<div class="article-cta">
-          <a href="/#hero" class="btn-primary app-cta">${ctaLabel}</a>
+          <a href="${ctaHref}" class="btn-primary">${ctaLabel}</a>
         </div>`;
 
   return `${pageHead(tip.title, tip.summary, '/tips/' + tip.slug).replace('</head>', `${EMBED_SCRIPT}\n</head>`)}
@@ -211,7 +212,7 @@ ${NAV}
       </article>
     </div>
   </main>
-${FOOTER.replace('</body>', '  <script src="/app-cta.js"></script>\n</body>')}
+${FOOTER}
 `;
 }
 

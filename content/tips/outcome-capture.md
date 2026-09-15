@@ -7,9 +7,9 @@ topics: ["tracking", "reflection"]
 heroImage: "https://mentalhealthwallet.productsforgood.co/assets/tip-media/outcome-capture.gif"
 cta:
   label: "Use a tool and check in"
-  url: "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+  url: "https://mentalhealthwallet.productsforgood.co/app/wallet"
 publishedAt: "2026-09-04"
-version: 2
+version: 3
 ---
 
 It's easy to collect coping tools. It's harder to know which ones are actually doing

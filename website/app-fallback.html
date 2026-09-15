@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Open Mental Health Wallet</title>
+  <meta name="description" content="Open this in the Mental Health Wallet app, or get the app to continue.">
+  <!-- This page is served for ANY /app/* path (see website/_redirects). When the app is
+       installed, the OS intercepts the Universal/App Link and opens the app, so this page is
+       only seen by people WITHOUT the app. It reads the route from the URL and shows a message
+       tailored to what the link was for, then offers the app stores. Static, no PII, no forms. -->
+  <link rel="icon" type="image/png" href="/assets/icon.png">
+  <link rel="stylesheet" href="/styles.css">
+  <script>
+    /*
+     * Route -> friendly copy. The canonical list of routes lives in
+     * docs/deployment/deep-links.md (source of truth); keep this map in sync with it.
+     * Unknown or bare /app paths fall back to the 'wallet' entry. Copy mirrors the
+     * route->message table in .kiro/specs/1.0.4-email-optin-and-cta-upgrade/requirements.md.
+     */
+    (function () {
+      var ROUTE_COPY = {
+        'wallet': {
+          headline: 'Open your wallet',
+          sub: 'Get Mental Health Wallet to open your tools and pick up where you left off.'
+        },
+        'how-i-feel': {
+          headline: 'Start from how you feel',
+          sub: "Get the app to check in with how you're feeling and get matching tools."
+        },
+        'checkin': {
+          headline: 'Your daily check-in',
+          sub: "Get the app to log today's check-in and track how you're doing."
+        },
+        'learn-more-tour': {
+          headline: 'See why a tool works',
+          sub: 'Get the app to open a tool and read the evidence behind it.'
+        },
+        'add-tool': {
+          headline: 'Add a tool',
+          sub: 'Get the app to browse the library and add tools to your wallet.'
+        }
+      };
+      // Apps-filter variant of add-tool: distinguish by the ?filter=apps query.
+      var ADD_TOOL_APPS = {
+        headline: 'Discover mental health apps',
+        sub: 'Get the app to browse companion apps you can add to your wallet.'
+      };
+
+      function normalizeRoute() {
+        // Strip a leading /app, leading slash, and trailing slash. Ignore the query for
+        // route lookup (handled separately for the add-tool apps variant).
+        var path = (window.location.pathname || '')
+          .replace(/^\/app(\/|$)/, '/')
+          .replace(/^\//, '')
+          .replace(/\/$/, '');
+        return path;
+      }
+
+      function pickCopy() {
+        var route = normalizeRoute();
+        var params = new URLSearchParams(window.location.search || '');
+        if (route === 'add-tool' && params.get('filter') === 'apps') {
+          return ADD_TOOL_APPS;
+        }
+        return ROUTE_COPY[route] || ROUTE_COPY['wallet'];
+      }
+
+      // Expose for the body script (runs after the DOM is ready).
+      window.__appFallback = { pickCopy: pickCopy, normalizeRoute: normalizeRoute };
+    })();
+  </script>
+</head>
+<body>
+  <a href="#main" class="skip-link">Skip to main content</a>
+
+  <nav class="nav" aria-label="Main navigation">
+    <div class="nav-inner container">
+      <a href="/" class="nav-brand" aria-label="Mental Health Wallet home">
+        <img src="/assets/icon.png" alt="" width="32" height="32" class="nav-icon">
+        <span class="nav-name">Mental Health Wallet</span>
+      </a>
+      <a href="/" class="nav-cta">Home</a>
+    </div>
+  </nav>
+
+  <main id="main" class="legal-page">
+    <div class="container">
+      <img src="/assets/icon.png" alt="" width="96" height="96" class="hero-icon" style="margin-bottom: 1rem;">
+      <h1 id="app-headline">Open Mental Health Wallet</h1>
+      <p id="app-sub">Get the app to continue.</p>
+
+      <div class="store-badges" id="store-badges">
+        <a href="https://apps.apple.com/app/mental-health-wallet/id6800036822" class="store-badge" data-store="ios" aria-label="Download on the App Store">
+          <img src="/assets/app-store-badge.svg" alt="Download on the App Store">
+        </a>
+        <a href="https://play.google.com/store/apps/details?id=com.mentalwallet.app" class="store-badge" data-store="android" aria-label="Get it on Google Play">
+          <img src="/assets/google-play-badge.svg" alt="Get it on Google Play">
+        </a>
+      </div>
+
+      <p class="legal-contact">
+        Already have the app? <a href="/" id="open-app-link">Open it</a> and this link will take you to the right place.
+      </p>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-content">
+      <p class="footer-brand">Mental Health Wallet&#8482;</p>
+      <nav class="footer-links" aria-label="Footer navigation">
+        <a href="/privacy.html">Privacy Policy</a>
+        <a href="/terms.html">Terms of Service</a>
+        <a href="mailto:mentalhealthwallet@productsforgood.co">Contact</a>
+      </nav>
+      <p class="footer-copyright">&copy; 2026 Products for Good Inc. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var fb = window.__appFallback || {};
+
+      // 1) Personalize copy from the route.
+      try {
+        var copy = fb.pickCopy ? fb.pickCopy() : null;
+        if (copy) {
+          var h = document.getElementById('app-headline');
+          var s = document.getElementById('app-sub');
+          if (h) h.textContent = copy.headline;
+          if (s) s.textContent = copy.sub;
+          document.title = copy.headline + ' \u2014 Mental Health Wallet';
+        }
+      } catch (e) { /* keep the static default copy */ }
+
+      // 2) Emphasize the visitor's platform store (never hide both; desktop keeps both).
+      try {
+        var ua = navigator.userAgent || '';
+        var isIOS = /iPhone|iPad|iPod/i.test(ua) ||
+          (/Macintosh/i.test(ua) && typeof navigator.maxTouchPoints === 'number' && navigator.maxTouchPoints > 1);
+        var isAndroid = /Android/i.test(ua);
+        if (isIOS || isAndroid) {
+          var hideStore = isIOS ? 'android' : 'ios';
+          var badges = document.querySelectorAll('.store-badge[data-store="' + hideStore + '"]');
+          for (var i = 0; i < badges.length; i++) badges[i].style.display = 'none';
+        }
+      } catch (e) { /* leave both badges visible */ }
+
+      // 3) Optional: attempt the custom scheme once, in case an installed user reached this
+      //    page (e.g. a browser that did not honor the Universal Link). Degrades cleanly: if
+      //    nothing handles it, the page stays put and the store CTA is right here. We do NOT
+      //    auto-redirect aggressively; only wire the "Open it" link to try the scheme.
+      try {
+        var route = fb.normalizeRoute ? fb.normalizeRoute() : '';
+        var search = window.location.search || '';
+        var schemeUrl = 'mentalwallet://' + (route || 'wallet') + search;
+        var openLink = document.getElementById('open-app-link');
+        if (openLink) {
+          openLink.setAttribute('href', schemeUrl);
+        }
+      } catch (e) { /* leave the "Open it" link pointing at home */ }
+    })();
+  </script>
+</body>
+</html>

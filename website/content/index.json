@@ -12,7 +12,7 @@
     "heroImage": "https://mentalhealthwallet.productsforgood.co/assets/tip-media/add-your-own-tool.gif",
     "cta": {
       "label": "Create your own tool",
-      "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+      "url": "https://mentalhealthwallet.productsforgood.co/app/add-tool"
     },
     "url": "/tips/add-your-own-tool",
     "publishedAt": "2026-09-10"
@@ -29,7 +29,7 @@
     "heroImage": "https://mentalhealthwallet.productsforgood.co/assets/tip-media/reorder-tools.gif",
     "cta": {
       "label": "Reorder your wallet",
-      "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+      "url": "https://mentalhealthwallet.productsforgood.co/app/wallet"
     },
     "url": "/tips/reorder-tools",
     "publishedAt": "2026-09-10"
@@ -46,7 +46,7 @@
     "heroImage": "https://mentalhealthwallet.productsforgood.co/assets/tip-media/archive-restore-tools.gif",
     "cta": {
       "label": "Tidy up your wallet",
-      "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+      "url": "https://mentalhealthwallet.productsforgood.co/app/wallet"
     },
     "url": "/tips/archive-restore-tools",
     "publishedAt": "2026-09-10"
@@ -64,7 +64,7 @@
     "heroImage": "https://mentalhealthwallet.productsforgood.co/assets/tip-media/add-your-own-app.gif",
     "cta": {
       "label": "Create your own tool",
-      "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+      "url": "https://mentalhealthwallet.productsforgood.co/app/add-tool"
     },
     "url": "/tips/add-your-own-app",
     "publishedAt": "2026-09-09"
@@ -82,7 +82,7 @@
     "heroImage": "https://mentalhealthwallet.productsforgood.co/assets/tip-media/feeling-anxious.gif",
     "cta": {
       "label": "Start from how I feel",
-      "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+      "url": "https://mentalhealthwallet.productsforgood.co/app/how-i-feel"
     },
     "url": "/tips/feeling-anxious",
     "publishedAt": "2026-09-05"
@@ -99,7 +99,7 @@
     "heroImage": "https://mentalhealthwallet.productsforgood.co/assets/tip-media/come-back-reset.gif",
     "cta": {
       "label": "Open your wallet",
-      "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+      "url": "https://mentalhealthwallet.productsforgood.co/app/wallet"
     },
     "url": "/tips/come-back-reset",
     "publishedAt": "2026-09-05"
@@ -116,7 +116,7 @@
     "heroImage": "https://mentalhealthwallet.productsforgood.co/assets/tip-media/welcome-wallet.gif",
     "cta": {
       "label": "Open the app and tap a card",
-      "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+      "url": "https://mentalhealthwallet.productsforgood.co/app/wallet"
     },
     "url": "/tips/welcome",
     "publishedAt": "2026-09-05"
@@ -133,7 +133,7 @@
     "heroImage": "https://mentalhealthwallet.productsforgood.co/assets/tip-media/discover-third-party-apps.gif",
     "cta": {
       "label": "Browse app cards to add",
-      "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+      "url": "https://mentalhealthwallet.productsforgood.co/app/add-tool?filter=apps"
     },
     "url": "/tips/discover-third-party-apps",
     "publishedAt": "2026-09-04"
@@ -150,7 +150,7 @@
     "heroImage": "https://mentalhealthwallet.productsforgood.co/assets/tip-media/emotion-based-session.gif",
     "cta": {
       "label": "Try Start from how I feel",
-      "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+      "url": "https://mentalhealthwallet.productsforgood.co/app/how-i-feel"
     },
     "url": "/tips/emotion-based-session",
     "publishedAt": "2026-09-04"
@@ -167,7 +167,7 @@
     "heroImage": "https://mentalhealthwallet.productsforgood.co/assets/tip-media/outcome-capture.gif",
     "cta": {
       "label": "Use a tool and check in",
-      "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+      "url": "https://mentalhealthwallet.productsforgood.co/app/wallet"
     },
     "url": "/tips/outcome-capture",
     "publishedAt": "2026-09-04"
@@ -184,7 +184,7 @@
     "heroImage": "https://mentalhealthwallet.productsforgood.co/assets/tip-media/personal-kpi-check-in.gif",
     "cta": {
       "label": "Log a check-in",
-      "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+      "url": "https://mentalhealthwallet.productsforgood.co/app/checkin"
     },
     "url": "/tips/personal-kpi-check-in",
     "publishedAt": "2026-09-04"
@@ -201,7 +201,7 @@
     "heroImage": "https://mentalhealthwallet.productsforgood.co/assets/tip-media/learn-more-evidence.gif",
     "cta": {
       "label": "Open a tool and tap Learn more",
-      "url": "https://apps.apple.com/app/mental-health-wallet/id6800036822"
+      "url": "https://mentalhealthwallet.productsforgood.co/app/learn-more-tour"
     },
     "url": "/tips/learn-more-evidence",
     "publishedAt": "2026-09-04"
