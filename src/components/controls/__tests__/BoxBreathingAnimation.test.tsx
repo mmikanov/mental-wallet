@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react-native';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react-native';
 import { AccessibilityInfo } from 'react-native';
 import BoxBreathingAnimation, { derivePacerState } from '../BoxBreathingAnimation';
 
@@ -81,9 +81,30 @@ describe('BoxBreathingAnimation', () => {
     });
   });
 
-  it('starts on the first second of inhale (count 1) and cycle 1', async () => {
+  it('starts PAUSED with a Play button and does not auto-run', async () => {
     mockReduceMotion(false);
     await render(<BoxBreathingAnimation />);
+    await waitFor(() => {
+      expect(screen.getByLabelText(/box breathing pacer/i)).toBeTruthy();
+    });
+    // Idle state: the Play affordance is shown and the pacer is not running yet.
+    expect(screen.getByLabelText('Start breathing exercise')).toBeTruthy();
+    expect(screen.getByText('Ready when you are')).toBeTruthy();
+    // Not running: no live phase word, no cycle indicator, no Pause control.
+    expect(screen.queryByText('Breathe in')).toBeNull();
+    expect(screen.queryByText('Cycle 1 of 4')).toBeNull();
+    expect(screen.queryByLabelText('Pause breathing exercise')).toBeNull();
+  });
+
+  it('starts the pacer on the first second of inhale (count 1, cycle 1) after Play', async () => {
+    mockReduceMotion(false);
+    await render(<BoxBreathingAnimation />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Start breathing exercise')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByLabelText('Start breathing exercise'));
+
     await waitFor(() => {
       expect(screen.getByText('Breathe in')).toBeTruthy();
     });
@@ -91,6 +112,28 @@ describe('BoxBreathingAnimation', () => {
     // accessibility-hidden stage, so include hidden elements in the query.
     expect(screen.getByText('1', { includeHiddenElements: true })).toBeTruthy();
     expect(screen.getByText('Cycle 1 of 4')).toBeTruthy();
+    // Play affordance is replaced by a Pause control while running.
+    expect(screen.getByLabelText('Pause breathing exercise')).toBeTruthy();
+    expect(screen.queryByLabelText('Start breathing exercise')).toBeNull();
+  });
+
+  it('returns to the idle Play state when paused', async () => {
+    mockReduceMotion(false);
+    await render(<BoxBreathingAnimation />);
+    await waitFor(() => {
+      expect(screen.getByLabelText('Start breathing exercise')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByLabelText('Start breathing exercise'));
+    await waitFor(() => {
+      expect(screen.getByLabelText('Pause breathing exercise')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByLabelText('Pause breathing exercise'));
+    await waitFor(() => {
+      expect(screen.getByLabelText('Start breathing exercise')).toBeTruthy();
+    });
+    expect(screen.getByText('Ready when you are')).toBeTruthy();
   });
 
 });

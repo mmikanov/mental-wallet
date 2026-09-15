@@ -10,6 +10,10 @@
  * Display-only: no value, not part of completion capture. Curated-only for
  * 1.0.4 (not offered in the creator control picker).
  *
+ * Starts PAUSED: the pacer does not auto-run when the card expands, so a
+ * first-time user can read the steps above it first, then tap Play to begin
+ * when ready. Tapping Pause returns it to the idle/ready state.
+ *
  * Accessibility: respects the OS "reduce motion" setting (renders a static
  * square instead of looping) and exposes a descriptive accessibility label. The
  * card's textual steps remain the authoritative instructions.
@@ -17,8 +21,8 @@
  * Validates: Requirements 1.2, 1.3, 1.4, 2.1, 2.4, 3.1, 3.2, 3.3, 3.4
  */
 
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, AccessibilityInfo } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, StyleSheet, AccessibilityInfo, Pressable } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -86,7 +90,10 @@ interface BoxBreathingAnimationProps {
 export default function BoxBreathingAnimation({ label }: BoxBreathingAnimationProps) {
   const scale = useSharedValue(MIN_SCALE);
   const [reduceMotion, setReduceMotion] = useState(false);
-  // elapsedSec advances once per second while animating; phase, second-in-phase,
+  // Start PAUSED so the pacer doesn't auto-run before the user has read the
+  // instructions. The user taps Play to begin (Req: user starts when ready).
+  const [playing, setPlaying] = useState(false);
+  // elapsedSec advances once per second while playing; phase, second-in-phase,
   // and cycle are all derived from it so the counter, phase label, and cycle
   // indicator stay in lockstep.
   const [elapsedSec, setElapsedSec] = useState(0);
@@ -112,11 +119,18 @@ export default function BoxBreathingAnimation({ label }: BoxBreathingAnimationPr
     };
   }, []);
 
-  // Drive the looping scale animation (skipped when reduce-motion is on).
+  // Drive the looping scale animation. Only runs while playing (and motion is on).
+  // When not playing, the square rests at MIN_SCALE (idle) so the Play button reads
+  // as "not started yet". Reduce-motion shows a static settled square.
   useEffect(() => {
     if (reduceMotion) {
       cancelAnimation(scale);
       scale.value = MAX_SCALE; // static "settled" state
+      return;
+    }
+    if (!playing) {
+      cancelAnimation(scale);
+      scale.value = MIN_SCALE; // idle "ready" state
       return;
     }
     // inhale (expand) -> hold -> exhale (contract) -> hold, looped forever.
@@ -134,19 +148,29 @@ export default function BoxBreathingAnimation({ label }: BoxBreathingAnimationPr
     return () => {
       cancelAnimation(scale);
     };
-  }, [reduceMotion, scale]);
+  }, [reduceMotion, playing, scale]);
 
   // Advance the 1-second clock that drives the counter, phase label, and cycle
   // indicator (JS side; keeps them readable/testable without reading the shared
-  // value on the JS thread).
+  // value on the JS thread). Only ticks while playing.
   useEffect(() => {
-    if (reduceMotion) return;
+    if (reduceMotion || !playing) return;
     setElapsedSec(0);
     const id = setInterval(() => {
       setElapsedSec((prev) => prev + 1);
     }, TICK_MS);
     return () => clearInterval(id);
-  }, [reduceMotion]);
+  }, [reduceMotion, playing]);
+
+  const handlePlay = useCallback(() => {
+    setElapsedSec(0);
+    setPlaying(true);
+  }, []);
+
+  const handlePause = useCallback(() => {
+    setPlaying(false);
+    setElapsedSec(0);
+  }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -155,25 +179,53 @@ export default function BoxBreathingAnimation({ label }: BoxBreathingAnimationPr
   return (
     <View
       style={styles.container}
-      accessibilityRole="image"
       accessibilityLabel={A11Y_LABEL}
     >
       {label ? <Text style={styles.label}>{label}</Text> : null}
-      <View style={styles.stage} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        {reduceMotion ? (
-          <View style={styles.square}>
-            <Text style={styles.count}>4</Text>
-          </View>
-        ) : (
-          <Animated.View style={[styles.square, animatedStyle]}>
-            <Text style={styles.count}>{count}</Text>
-          </Animated.View>
+      <View style={styles.stage}>
+        {/* Decorative animated square — hidden from the accessibility tree so it
+            doesn't add noise; the container's label describes the pacer and the
+            interactive Play button (a sibling) stays its own accessible element. */}
+        <View
+          style={styles.stageInner}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
+          {reduceMotion ? (
+            <View style={styles.square}>
+              <Text style={styles.count}>4</Text>
+            </View>
+          ) : (
+            <Animated.View style={[styles.square, animatedStyle]}>
+              <Text style={styles.count}>{playing ? count : ''}</Text>
+            </Animated.View>
+          )}
+        </View>
+        {/* Idle overlay: a Play button so the user starts the pacer when ready
+            (after reading the steps). Hidden while playing and for reduce-motion.
+            Sibling of the hidden square so it remains accessible/tappable. */}
+        {!reduceMotion && !playing && (
+          <Pressable
+            style={styles.playOverlay}
+            onPress={handlePlay}
+            accessibilityRole="button"
+            accessibilityLabel="Start breathing exercise"
+          >
+            <View style={styles.playButton}>
+              <Text style={styles.playIcon}>▶</Text>
+            </View>
+            <Text style={styles.playHint}>Tap to start</Text>
+          </Pressable>
         )}
       </View>
       <Text style={styles.phase}>
-        {reduceMotion ? 'Breathe slowly, 4 in, 4 hold, 4 out, 4 hold' : PHASES[phaseIndex]}
+        {reduceMotion
+          ? 'Breathe slowly, 4 in, 4 hold, 4 out, 4 hold'
+          : playing
+            ? PHASES[phaseIndex]
+            : 'Ready when you are'}
       </Text>
-      {!reduceMotion && (
+      {!reduceMotion && playing && (
         <View style={styles.cycleRow} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           {Array.from({ length: CYCLES }).map((_, i) => (
             <View
@@ -183,8 +235,18 @@ export default function BoxBreathingAnimation({ label }: BoxBreathingAnimationPr
           ))}
         </View>
       )}
-      {!reduceMotion && (
+      {!reduceMotion && playing && (
         <Text style={styles.cycleLabel}>{`Cycle ${cycleIndex + 1} of ${CYCLES}`}</Text>
+      )}
+      {!reduceMotion && playing && (
+        <Pressable
+          style={styles.pauseButton}
+          onPress={handlePause}
+          accessibilityRole="button"
+          accessibilityLabel="Pause breathing exercise"
+        >
+          <Text style={styles.pauseButtonText}>Pause</Text>
+        </Pressable>
       )}
     </View>
   );
@@ -213,6 +275,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
+  },
+  stageInner: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   square: {
     width: SQUARE_SIZE,
@@ -255,5 +322,46 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: 13,
     color: '#8a8577',
+  },
+  // Idle play overlay — sits on top of the (resting) square inside the stage.
+  playOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playButton: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: SAGE,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playIcon: {
+    fontSize: 26,
+    color: CREAM,
+    // Nudge the triangle glyph to look optically centered in the circle.
+    marginLeft: 4,
+  },
+  playHint: {
+    marginTop: 10,
+    fontSize: 14,
+    fontWeight: '600',
+    color: SAGE,
+  },
+  pauseButton: {
+    marginTop: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: SAGE,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  pauseButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: SAGE,
   },
 });
