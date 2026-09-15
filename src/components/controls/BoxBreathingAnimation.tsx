@@ -76,8 +76,8 @@ export function derivePacerState(elapsedSec: number): {
 }
 
 const A11Y_LABEL =
-  'Box breathing pacer. Breathe in for 4 seconds, hold for 4 seconds, ' +
-  'breathe out for 4 seconds, hold for 4 seconds. Four cycles, then repeats.';
+  'Box breathing pacer. Breathe in through your nose for 4 seconds, hold for 4 seconds, ' +
+  'breathe out through your mouth for 4 seconds, hold for 4 seconds. Four cycles, then repeats.';
 
 interface BoxBreathingAnimationProps {
   label?: string;
