@@ -238,3 +238,26 @@ Access the in-app event viewer by triple-tapping the "Settings" header text. Fro
 - Export the queue as JSON
 - Clear the queue
 - Run the stress test with configurable user count, events per user, and time span
+
+---
+
+## Known follow-ups / tech debt
+
+### No app-wide `SafeAreaProvider` (blocks `useSafeAreaInsets`)
+
+The app does not mount a `SafeAreaProvider` (from `react-native-safe-area-context`) at the root
+(`App.tsx` wraps things in `GestureHandlerRootView` + `NavigationContainer` only). Screens rely
+on `SafeAreaView edges={[...]}`, which works without a provider. But the `useSafeAreaInsets()`
+hook **requires** a `SafeAreaProvider` and returns zeros without one — so it can't be used today.
+
+This surfaced while fixing the Library card preview's Dismiss button being hidden behind the
+Android 3-button nav bar (PR #74). The hook would have been the natural tool for adding the
+bottom inset to the footer padding, but with no provider it returned 0 and didn't fix anything,
+so `SafeAreaView edges={['bottom']}` was used instead (works without a provider, matches the
+rest of the app).
+
+Follow-up (not urgent; do outside a release crunch): wrap the app in `<SafeAreaProvider>` in
+`App.tsx` so `useSafeAreaInsets()` becomes usable. That unlocks precise, per-value inset control
+for cases like footers/overlays where wrapping in a whole `SafeAreaView` is awkward. Low risk,
+but it's an app-wide layout change, so verify the wallet, library, insights, and any modal
+sheets on both platforms (especially Android 3-button nav) after adding it.
