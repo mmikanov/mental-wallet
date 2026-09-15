@@ -18,7 +18,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ActivityIndicator, AppState, AppStateStatus, View, StyleSheet } from 'react-native';
+import { ActivityIndicator, AppState, AppStateStatus, Linking, View, StyleSheet } from 'react-native';
 import ModeChoiceScreen from '@/screens/ModeChoiceScreen';
 import CardCreatorScreen from '@/screens/CardCreatorScreen';
 import LibraryBrowserScreen from '@/screens/LibraryBrowserScreen';
@@ -43,6 +43,7 @@ import { endUnterminatedSessions } from '@/services/emotionSessionService';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import type { RootStackParamList } from './types';
+import { resolveInitialMainTabsParams } from './resolveInitialMainTabsParams';
 
 type InitialRoute = 'Onboarding' | 'ModeChoice' | 'MainTabs';
 
@@ -110,12 +111,13 @@ export default function RootNavigator() {
           }
           // startMode === 'wallet' → effectiveMode stays 'wallet'
 
-          if (effectiveMode === 'emotion') {
-            // Launch with session card highlighted (Req 2.2)
-            setInitialMainTabsParams({
-              screen: 'Wallet',
-              params: { highlightSessionCard: true },
-            });
+          // Highlight the session card for emotion mode (Req 2.2), unless the app
+          // was cold-launched from a deep link — in which case the deep-link nav
+          // state must win. See resolveInitialMainTabsParams for the rationale.
+          const launchUrl = await Linking.getInitialURL();
+          const mainTabsParams = resolveInitialMainTabsParams(effectiveMode, launchUrl);
+          if (mainTabsParams) {
+            setInitialMainTabsParams(mainTabsParams);
           }
 
           setInitialRoute('MainTabs');
