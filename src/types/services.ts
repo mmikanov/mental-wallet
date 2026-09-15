@@ -99,6 +99,13 @@ export interface ReminderService {
   /** Disable all reminders for a card (used when archiving). */
   disableForCard(cardId: string): Promise<void>;
 
+  /**
+   * Re-arm a card's preserved (inactive) reminder (used when restoring an
+   * archived card). Reschedules its notifications and marks it active again.
+   * Returns the reactivated reminder, or null if the card has no reminder.
+   */
+  reactivateForCard(cardId: string): Promise<Reminder | null>;
+
   /** Schedule a system notification for a reminder. */
   scheduleNotification(reminder: Reminder): Promise<void>;
 }

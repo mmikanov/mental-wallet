@@ -485,9 +485,10 @@ export function createCardService(): CardService {
     },
 
     /**
-     * Archive a card: set is_archived=1, store previous_stack_position,
-     * and disable associated reminders.
-     * Validates: Requirement 14.1
+     * Archive a card: set is_archived=1, store previous_stack_position, and
+     * disable associated reminders (cancel their OS notifications but PRESERVE
+     * the reminder definition so restore can re-arm it).
+     * Validates: Requirement 14.1; Bug 2 (1.0.4-user-reported-fixes-round-2)
      */
     async archive(id: string): Promise<void> {
       const db = await getDatabase();
@@ -508,12 +509,6 @@ export function createCardService(): CardService {
           [now, existing.stackPosition, now, id]
         );
 
-        // Disable associated reminders
-        await db.runAsync(
-          `UPDATE reminders SET is_active = 0 WHERE card_id = ?`,
-          [id]
-        );
-
         // Reindex remaining active cards (exclude library cards with stack_position = -1)
         await db.runAsync(
           `UPDATE cards SET stack_position = (
@@ -530,6 +525,23 @@ export function createCardService(): CardService {
           'Failed to archive card',
           error instanceof Error ? error : undefined
         );
+      }
+
+      // Disable the card's reminders AFTER the card transaction (never inside it):
+      // disableForCard cancels the scheduled OS notifications AND marks the reminder
+      // inactive, while keeping the row so restore can re-arm it. Notification I/O is
+      // async and must not sit inside an open SQLite transaction. Best-effort: the
+      // card is already archived; a notification-cancel hiccup shouldn't fail archive.
+      try {
+        // Lazy require so cardService's static import graph doesn't pull in
+        // reminderService → expo-notifications for every consumer (keeps store/unit
+        // tests that import cardService free of the native notifications module).
+        const { createReminderService } = require('./reminderService');
+        await createReminderService().disableForCard(id);
+      } catch {
+        // Non-fatal: launch reconciliation only reschedules active reminders, and
+        // this reminder is being marked inactive; a stale OS notification (rare)
+        // degrades gracefully (tapping it lands on the wallet, card not focused).
       }
     },
 
@@ -590,6 +602,22 @@ export function createCardService(): CardService {
           'Failed to restore card',
           error instanceof Error ? error : undefined
         );
+      }
+
+      // Re-arm the card's preserved reminder AFTER the card transaction (never inside
+      // it): reactivateForCard reschedules the OS notifications from the preserved
+      // time/frequency and marks the reminder active again. No-op if the card had no
+      // reminder. Notification I/O is async and must not sit inside a SQLite
+      // transaction. Best-effort: the card is already restored either way.
+      try {
+        // Lazy require (see archive) to keep expo-notifications out of the static
+        // import graph of cardService's consumers.
+        const { createReminderService } = require('./reminderService');
+        await createReminderService().reactivateForCard(id);
+      } catch {
+        // Non-fatal: if rescheduling fails, launch reconciliation will re-arm the
+        // now-active reminder on next launch (it reschedules active reminders whose
+        // OS notifications are missing).
       }
     },
 

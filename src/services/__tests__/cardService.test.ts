@@ -11,6 +11,17 @@ jest.mock('../../data/database', () => ({
   getDatabase: jest.fn(),
 }));
 
+// Mock reminderService so archive/restore wiring can be asserted without touching
+// notifications (Bug 2 — 1.0.4-user-reported-fixes-round-2).
+const mockDisableForCard = jest.fn(async () => undefined);
+const mockReactivateForCard = jest.fn(async () => null);
+jest.mock('../reminderService', () => ({
+  createReminderService: () => ({
+    disableForCard: mockDisableForCard,
+    reactivateForCard: mockReactivateForCard,
+  }),
+}));
+
 describe('CardService', () => {
   describe('validateShell', () => {
     const validShell: CardShell = {
@@ -396,6 +407,107 @@ describe('CardService', () => {
       expect(cardInsertCall).toBeDefined();
       // Verify origin_badge is 'my_tool' in the insert
       expect(cardInsertCall![0]).toContain("'my_tool'");
+    });
+  });
+
+  describe('archive / restore reminder wiring (Bug 2)', () => {
+    beforeEach(() => {
+      mockDisableForCard.mockClear();
+      mockReactivateForCard.mockClear();
+    });
+
+    function mockCardRow(overrides: Record<string, unknown> = {}) {
+      return {
+        id: 'card-1',
+        title: 'Box Breathing',
+        description: 'A calming exercise',
+        icon_type: 'emoji',
+        icon_value: '🫁',
+        background_type: 'color',
+        background_value: '#EDE7F6',
+        category_id: 'grounding-calming',
+        origin_badge: 'library',
+        stack_position: 2,
+        total_uses: 0,
+        current_streak: 0,
+        last_used_at: null,
+        is_archived: 0,
+        archived_at: null,
+        previous_stack_position: null,
+        allow_background_customization: 0,
+        source_library_id: null,
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
+        control_id: null,
+        control_card_id: null,
+        control_type: null,
+        control_position: null,
+        control_config: null,
+        control_is_required: null,
+        ...overrides,
+      };
+    }
+
+    it('archive cancels the card reminders via reminderService.disableForCard, after the transaction', async () => {
+      const { getDatabase } = require('../../data/database');
+      const mockDb = {
+        getAllAsync: jest.fn().mockResolvedValue([mockCardRow()]), // getById
+        getFirstAsync: jest.fn().mockResolvedValue({ count: 1 }),
+        execAsync: jest.fn().mockResolvedValue(undefined),
+        runAsync: jest.fn().mockResolvedValue({ changes: 1 }),
+      };
+      getDatabase.mockResolvedValue(mockDb);
+
+      const service = createCardService();
+      await service.archive('card-1');
+
+      // The archive transaction no longer flips reminders via raw SQL...
+      const rawReminderUpdate = mockDb.runAsync.mock.calls.some(
+        (c: unknown[]) => typeof c[0] === 'string' && /UPDATE reminders SET is_active = 0/.test(c[0] as string)
+      );
+      expect(rawReminderUpdate).toBe(false);
+      // ...it delegates to reminderService.disableForCard instead.
+      expect(mockDisableForCard).toHaveBeenCalledWith('card-1');
+      // And the card transaction committed.
+      const execCalls = mockDb.execAsync.mock.calls.map((c: unknown[]) => c[0]);
+      expect(execCalls).toContain('COMMIT');
+    });
+
+    it('restore re-arms the reminder via reminderService.reactivateForCard', async () => {
+      const { getDatabase } = require('../../data/database');
+      const archived = mockCardRow({ is_archived: 1, archived_at: '2026-01-02T00:00:00Z', previous_stack_position: 1, stack_position: -1 });
+      const mockDb = {
+        getAllAsync: jest.fn().mockResolvedValue([archived]), // getById
+        getFirstAsync: jest.fn().mockResolvedValue({ count: 3 }),
+        execAsync: jest.fn().mockResolvedValue(undefined),
+        runAsync: jest.fn().mockResolvedValue({ changes: 1 }),
+      };
+      getDatabase.mockResolvedValue(mockDb);
+
+      const service = createCardService();
+      await service.restore('card-1');
+
+      expect(mockReactivateForCard).toHaveBeenCalledWith('card-1');
+      const execCalls = mockDb.execAsync.mock.calls.map((c: unknown[]) => c[0]);
+      expect(execCalls).toContain('COMMIT');
+    });
+
+    it('restore does nothing to reminders when the card is already active', async () => {
+      const { getDatabase } = require('../../data/database');
+      const active = mockCardRow({ is_archived: 0 });
+      const mockDb = {
+        getAllAsync: jest.fn().mockResolvedValue([active]), // getById → not archived
+        getFirstAsync: jest.fn().mockResolvedValue({ count: 3 }),
+        execAsync: jest.fn().mockResolvedValue(undefined),
+        runAsync: jest.fn().mockResolvedValue({ changes: 1 }),
+      };
+      getDatabase.mockResolvedValue(mockDb);
+
+      const service = createCardService();
+      await service.restore('card-1');
+
+      // Already active → early return, no re-arm.
+      expect(mockReactivateForCard).not.toHaveBeenCalled();
     });
   });
 });
