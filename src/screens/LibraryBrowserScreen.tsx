@@ -770,14 +770,7 @@ export default function LibraryBrowserScreen() {
       };
 
       return (
-        <TouchableOpacity
-          style={styles.cardRow}
-          onPress={() => handleOpenPreview(item)}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel={`Preview ${item.title}`}
-          accessibilityHint="Opens a full card preview"
-        >
+        <View style={styles.cardRow}>
           <View style={[
             styles.cardIcon,
             item.iconType === 'third_party' && styles.cardIconApp,
@@ -831,17 +824,28 @@ export default function LibraryBrowserScreen() {
             <Text style={styles.cardDescription}>
               {item.description}
             </Text>
-            <TouchableOpacity
-              style={getButtonStyle()}
-              onPress={handlePress}
-              disabled={isDisabled}
-              accessibilityRole="button"
-              accessibilityLabel={getAccessibilityLabel()}
-            >
-              <Text style={getButtonTextStyle()}>
-                {getButtonLabel()}
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.cardActions}>
+              <TouchableOpacity
+                style={getButtonStyle()}
+                onPress={handlePress}
+                disabled={isDisabled}
+                accessibilityRole="button"
+                accessibilityLabel={getAccessibilityLabel()}
+              >
+                <Text style={getButtonTextStyle()}>
+                  {getButtonLabel()}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.previewButton}
+                onPress={() => handleOpenPreview(item)}
+                accessibilityRole="button"
+                accessibilityLabel={`Preview ${item.title}`}
+                accessibilityHint="Opens a full card preview"
+              >
+                <Text style={styles.previewButtonText}>Preview</Text>
+              </TouchableOpacity>
+            </View>
             {/* Admin mode action buttons */}
             {isAdminMode && (
               <View style={styles.adminActions}>
@@ -872,11 +876,7 @@ export default function LibraryBrowserScreen() {
               </View>
             )}
           </View>
-          {/* Preview hint */}
-          <View style={styles.previewHint}>
-            <Text style={styles.previewHintIcon}>Preview</Text>
-          </View>
-        </TouchableOpacity>
+        </View>
       );
     },
     [categoryMap, addingCardId, restoringCardId, cards, archivedLibraryCards, handleAddToWallet, handleRestoreFromArchive, handleOpenPreview, isAdminMode, handleAdminEdit, handleAdminExport, handleAdminDelete]
@@ -1234,16 +1234,10 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F2F2F7',
     alignItems: 'flex-start',
   },
-  previewHint: {
-    marginLeft: 10,
-    justifyContent: 'center',
+  cardActions: {
+    flexDirection: 'row',
     alignItems: 'center',
-  },
-  previewHintIcon: {
-    fontSize: 11,
-    color: '#AEAEB2',
-    fontWeight: '500',
-    letterSpacing: 0.2,
+    gap: 8,
   },
   cardIcon: {
     width: 48,
@@ -1356,6 +1350,24 @@ const styles = StyleSheet.create({
   },
   addButtonTextDisabled: {
     color: '#8E8E93',
+  },
+  // Secondary/outline button so Preview reads as subordinate to the primary
+  // "Add to wallet" action while still being an obvious, tappable button.
+  previewButton: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#4A90D9',
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  previewButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4A90D9',
   },
   emptyState: {
     flex: 1,
