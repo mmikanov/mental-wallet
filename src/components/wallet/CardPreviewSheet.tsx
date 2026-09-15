@@ -19,6 +19,7 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { CuratedCardDefinition } from '@/data/curatedLibrary';
 import type { ButtonState } from '@/screens/libraryBrowserHelpers';
 import type { Control } from '@/types/index';
@@ -174,10 +175,16 @@ export default function CardPreviewSheet({
         ]}
       >
         <View style={Platform.OS === 'android' ? styles.androidSheet : { flex: 1 }}>
-        {/* Dismiss handle */}
-        <View style={styles.handleContainer}>
+        {/* Dismiss handle — tappable as an accessible way to close the sheet */}
+        <TouchableOpacity
+          style={styles.handleContainer}
+          onPress={handleDismiss}
+          accessibilityRole="button"
+          accessibilityLabel="Dismiss preview"
+          hitSlop={{ top: 12, bottom: 12, left: 24, right: 24 }}
+        >
           <View style={styles.handle} />
-        </View>
+        </TouchableOpacity>
 
         <ScrollView
           style={styles.scrollView}
@@ -220,8 +227,9 @@ export default function CardPreviewSheet({
           )}
         </ScrollView>
 
-        {/* Footer */}
-        <View style={styles.footer}>
+        {/* Footer — SafeAreaView bottom edge keeps the Dismiss button clear of the
+            Android navigation bar (3-button nav) and the iOS home indicator. */}
+        <SafeAreaView edges={['bottom']} style={styles.footer}>
           {/* Error message */}
           {error && (
             <Text style={styles.errorText} accessibilityRole="alert">
@@ -268,7 +276,7 @@ export default function CardPreviewSheet({
           >
             <Text style={styles.dismissButtonText}>Dismiss</Text>
           </TouchableOpacity>
-        </View>
+        </SafeAreaView>
       </View>
 
       {/* Rationale Sheet */}
@@ -403,7 +411,11 @@ const styles = StyleSheet.create({
     borderTopColor: '#E5E7EB',
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    // Base padding; the footer is a SafeAreaView edges={['bottom']}, which ADDS the
+    // device's bottom inset on top of this (Android nav bar / iOS home indicator),
+    // so the Dismiss button is never hidden behind system UI. Kept modest to avoid
+    // an oversized gap on devices with no bottom inset.
+    paddingBottom: 16,
   },
   errorText: {
     color: '#DC2626',
