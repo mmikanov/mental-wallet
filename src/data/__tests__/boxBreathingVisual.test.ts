@@ -31,6 +31,17 @@ describe('lib-box-breathing visual aid', () => {
     expect(body).toContain('Breathe OUT');
   });
 
+  it('tells the user to breathe in through the nose and out through the mouth (Bug 3)', () => {
+    // User feedback: it was unclear whether to breathe through the nose or mouth.
+    const steps = card!.controls.find((c) => c.type === 'static_text')!;
+    const body = (steps.config as { body: string }).body.toLowerCase();
+    expect(body).toContain('nose');
+    expect(body).toContain('mouth');
+    // Timing/cycle guidance is unchanged.
+    expect(body).toContain('4 seconds');
+    expect(body).toContain('repeat 4 cycles');
+  });
+
   it('renders the visual below the steps (read instructions first, then scroll)', () => {
     const anim = card!.controls.find((c) => c.type === 'breathing_animation')!;
     const steps = card!.controls.find((c) => c.type === 'static_text')!;

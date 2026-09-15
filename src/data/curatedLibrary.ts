@@ -158,7 +158,7 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         position: 0,
         config: {
           title: 'Box Breathing Steps',
-          body: '1. Breathe IN for 4 seconds\n2. HOLD for 4 seconds\n3. Breathe OUT for 4 seconds\n4. HOLD for 4 seconds\n\nRepeat 4 cycles.',
+          body: '1. Breathe IN through your nose for 4 seconds\n2. HOLD for 4 seconds\n3. Breathe OUT through your mouth for 4 seconds\n4. HOLD for 4 seconds\n\nRepeat 4 cycles.',
           fontSize: 'large',
         },
         isRequired: false,
