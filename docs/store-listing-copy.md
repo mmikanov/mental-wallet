@@ -134,13 +134,14 @@ This update makes your tools easier to reach and adds a calming new visual:
 • Box Breathing has a new guided pacer. Read the steps, tap play, and follow the expanding square through four calm cycles (breathe in through the nose, out through the mouth).
 • Preview any tool in the library with a clear new Preview button before adding it.
 • Archive a tool and its reminders stop; restore it and they pick right back up.
-• Get occasional tips and reminders by email, opt in anytime from Settings.
+• A new Tips section, open it anytime to read short, practical ideas for getting the most out of the app.
+• Want tips and gentle reminders by email? You can opt in from Settings. It's handled separately from the app, so your email is never tied to how you use your tools, and the app stays private and anonymous.
 • Onboarding is clearer, plus fixes for right-to-left languages, app links on Android, and general polish.
 
 Have feedback? We'd love to hear it, reach us from Settings.
 ```
 
-**Notes:** Covers the deep-linking work (tips/reminders open the specific tool), the tip CTA upgrade, the Box Breathing visual pacer, the Library preview button, the archived-tool reminder fix, the in-app email opt-in, onboarding consent + clarity fixes, and the round-1 user-reported fixes (RTL, Android store link, collapsed-stack visibility). Also includes a behind-the-scenes emotion-session analytics accuracy fix (not user-visible enough for a bullet).
+**Notes:** Covers the deep-linking work (tips/reminders open the specific tool), the tip CTA upgrade, the Box Breathing visual pacer, the Library preview button, the archived-tool reminder fix, the in-app Tips feed, the in-app email opt-in (privacy-preserving link-out, no email stored in the app), onboarding consent + clarity fixes, and the round-1 user-reported fixes (RTL, Android store link, collapsed-stack visibility). Also includes a behind-the-scenes emotion-session analytics accuracy fix (not user-visible enough for a bullet).
 
 **Data caveat (internal):** the emotion-session over-counting fix means only `session_ended` events from this build onward are clean; historical data stays duplicated. Remove the "read as proportions" note from the analytics dashboard's emotion-sessions drill-down after this ships.
 
@@ -185,8 +186,9 @@ Google Play release notes use `<en-US>...</en-US>` language tags and have a **50
 • New guided Box Breathing pacer: read the steps, tap play, follow four calm cycles.
 • Preview any library tool before adding it.
 • Archiving a tool now stops its reminders; restoring brings them back.
-• Opt in to email tips anytime from Settings.
-• Clearer onboarding, right-to-left language fixes, and polish.
+• New Tips section: practical ideas anytime.
+• Optional email tips from Settings, kept separate so your app usage stays private.
+• Clearer onboarding, right-to-left fixes, and polish.
 
 Feedback? Reach us from Settings.
 </en-US>
