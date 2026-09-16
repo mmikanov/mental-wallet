@@ -119,3 +119,29 @@ counter + 4-dot cycle indicator) is intentionally simple. Ideas to revisit later
   Recommend confirming which of the three during design after a quick Android animate test.
 - Whether the visual sits above or below the textual steps in the card, and its size.
 - Bundled local asset vs. hosted URL (bundled preferred for reliability; affects app size).
+
+## Post-1.0.4 changes (superseding some of the above)
+
+After this spec shipped, user feedback drove several behavior changes to the Box Breathing
+pacer (`BoxBreathingAnimation`). They supersede the auto-run/loop wording above (Req 2.3's
+"autoplay, loop" and the "Future Improvements" description of an auto-running looping pacer).
+The chosen implementation is the in-app **Reanimated** component (not a video/GIF asset), so
+Req 2's video-vs-GIF autoplay language doesn't apply to what shipped.
+
+- **Starts paused with a Play button.** The pacer no longer auto-runs when the card expands
+  (it renders below the steps, so a first-time user should read the instructions first). It
+  shows an idle "Ready when you are" state with a Play button on a clean stage; the user taps
+  Play to begin. (PR #77, refined in #78.)
+- **Stops after 4 cycles ("Completed"), does not loop.** After the 4 cycles (64s) it stops,
+  shows "Completed", and offers the Play button again ("Tap to restart"). There is no
+  pause/stop while running (the exercise is ~1 minute; to restart mid-way, close and reopen the
+  card — the Pause button was removed because it pushed "Mark as done" down). (PR #78, #79.)
+- **Nose/mouth breathing cue.** The step text, the pacer's live phase labels ("Breathe in
+  (nose)" / "Breathe out (mouth)"), and the accessibility label all state to inhale through the
+  nose and exhale through the mouth. (Round-2 Bug 3 for the step text + a11y label; PR #80 for
+  the pacer phase labels.)
+
+Unchanged and still accurate: the 4-4-4-4 rhythm, brand palette, per-second counter + 4-dot
+cycle indicator (shown while playing), the textual steps remaining available, the reduce-motion
+static branch, and shipping with the app build (no OTA; existing wallet copies keep their old
+snapshot — see the `library-card-sync` spec for the general fix to that).
