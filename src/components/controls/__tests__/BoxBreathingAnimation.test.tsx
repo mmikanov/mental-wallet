@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react-native';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react-native';
 import { AccessibilityInfo } from 'react-native';
 import BoxBreathingAnimation, { derivePacerState } from '../BoxBreathingAnimation';
 
@@ -113,6 +113,38 @@ describe('BoxBreathingAnimation', () => {
     expect(screen.getByText('Cycle 1 of 4')).toBeTruthy();
     // Once started, the Play affordance is gone (no pause/stop; restart = reopen).
     expect(screen.queryByLabelText('Start breathing exercise')).toBeNull();
+  });
+
+  it('stops on a Completed state (with a restart button) after all 4 cycles', async () => {
+    jest.useFakeTimers();
+    try {
+      mockReduceMotion(false);
+      await act(async () => {
+        render(<BoxBreathingAnimation />);
+        // Flush the reduce-motion probe (a resolved promise) under fake timers so
+        // the Play button renders, without waitFor (which fights fake timers).
+        await Promise.resolve();
+      });
+
+      await act(async () => {
+        fireEvent.press(screen.getByLabelText('Start breathing exercise'));
+        await Promise.resolve();
+      });
+
+      // 4 cycles x 4 phases x 4s = 64s. Advance past the total run length.
+      await act(async () => {
+        jest.advanceTimersByTime(64 * 1000);
+        await Promise.resolve();
+      });
+
+      // Completed: shows the Completed label and offers a restart (Play again).
+      expect(screen.getByText('Completed')).toBeTruthy();
+      expect(screen.getByLabelText('Restart breathing exercise')).toBeTruthy();
+      // Not still running: no live phase word.
+      expect(screen.queryByText('Breathe in')).toBeNull();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
 });

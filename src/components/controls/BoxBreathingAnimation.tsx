@@ -49,8 +49,12 @@ const PHASES = ['Breathe in', 'Hold', 'Breathe out', 'Hold'] as const;
 
 const SECONDS_PER_PHASE = 4;
 const PHASES_PER_CYCLE = PHASES.length; // 4
-const CYCLES = 4; // 4 full box-breathing cycles, then it loops back to cycle 1
+const CYCLES = 4; // 4 full box-breathing cycles, then it stops (Completed)
 const TICK_MS = 1000;
+
+// Total run length: 4 cycles x 4 phases x 4s = 64s. The pacer stops here (shows
+// "Completed") instead of looping back to cycle 1.
+const TOTAL_SECONDS = PHASES_PER_CYCLE * CYCLES * SECONDS_PER_PHASE; // 64
 
 // Whether a phase counts up (1→4) or down (4→1). Alternating up/down/up/down
 // reads naturally: fill up on inhale/first hold, wind down on exhale/second hold.
@@ -82,7 +86,7 @@ export function derivePacerState(elapsedSec: number): {
 
 const A11Y_LABEL =
   'Box breathing pacer. Breathe in through your nose for 4 seconds, hold for 4 seconds, ' +
-  'breathe out through your mouth for 4 seconds, hold for 4 seconds. Four cycles, then repeats.';
+  'breathe out through your mouth for 4 seconds, hold for 4 seconds. Four cycles, then it completes.';
 
 interface BoxBreathingAnimationProps {
   label?: string;
@@ -94,6 +98,9 @@ export default function BoxBreathingAnimation({ label }: BoxBreathingAnimationPr
   // Start PAUSED so the pacer doesn't auto-run before the user has read the
   // instructions. The user taps Play to begin (Req: user starts when ready).
   const [playing, setPlaying] = useState(false);
+  // Set true after all 4 cycles finish. Shows a "Completed" state with the Play
+  // button so the user can restart if they want (instead of looping forever).
+  const [completed, setCompleted] = useState(false);
   // elapsedSec advances once per second while playing; phase, second-in-phase,
   // and cycle are all derived from it so the counter, phase label, and cycle
   // indicator stay in lockstep.
@@ -134,7 +141,9 @@ export default function BoxBreathingAnimation({ label }: BoxBreathingAnimationPr
       scale.value = MIN_SCALE; // idle "ready" state
       return;
     }
-    // inhale (expand) -> hold -> exhale (contract) -> hold, looped forever.
+    // inhale (expand) -> hold -> exhale (contract) -> hold, repeated for exactly
+    // CYCLES cycles, then it settles (no infinite loop — the JS clock flips to
+    // the Completed state at TOTAL_SECONDS).
     scale.value = MIN_SCALE;
     scale.value = withRepeat(
       withSequence(
@@ -143,7 +152,7 @@ export default function BoxBreathingAnimation({ label }: BoxBreathingAnimationPr
         withTiming(MIN_SCALE, { duration: PHASE_MS, easing: Easing.inOut(Easing.ease) }),
         withTiming(MIN_SCALE, { duration: PHASE_MS })
       ),
-      -1,
+      CYCLES,
       false
     );
     return () => {
@@ -153,18 +162,28 @@ export default function BoxBreathingAnimation({ label }: BoxBreathingAnimationPr
 
   // Advance the 1-second clock that drives the counter, phase label, and cycle
   // indicator (JS side; keeps them readable/testable without reading the shared
-  // value on the JS thread). Only ticks while playing.
+  // value on the JS thread). Only ticks while playing. Stops at TOTAL_SECONDS and
+  // flips to the Completed state (rather than looping back to cycle 1).
   useEffect(() => {
     if (reduceMotion || !playing) return;
-    setElapsedSec(0);
     const id = setInterval(() => {
-      setElapsedSec((prev) => prev + 1);
+      setElapsedSec((prev) => {
+        const next = prev + 1;
+        if (next >= TOTAL_SECONDS) {
+          // All cycles done: stop the clock, mark complete.
+          setPlaying(false);
+          setCompleted(true);
+          return TOTAL_SECONDS;
+        }
+        return next;
+      });
     }, TICK_MS);
     return () => clearInterval(id);
   }, [reduceMotion, playing]);
 
   const handlePlay = useCallback(() => {
     setElapsedSec(0);
+    setCompleted(false);
     setPlaying(true);
   }, []);
 
@@ -191,30 +210,27 @@ export default function BoxBreathingAnimation({ label }: BoxBreathingAnimationPr
             <View style={styles.square}>
               <Text style={styles.count}>4</Text>
             </View>
-          ) : (
-            // Idle: a muted, hollow square so the Play button reads clearly against
-            // it. Playing: the solid sage square that scales with the breath.
-            <Animated.View
-              style={[playing ? styles.square : styles.squareIdle, animatedStyle]}
-            >
-              <Text style={styles.count}>{playing ? count : ''}</Text>
+          ) : playing ? (
+            // Playing: the solid sage square that scales with the breath.
+            <Animated.View style={[styles.square, animatedStyle]}>
+              <Text style={styles.count}>{count}</Text>
             </Animated.View>
-          )}
+          ) : null /* Idle/Completed: nothing behind the Play button (clean stage). */}
         </View>
-        {/* Idle overlay: a Play button so the user starts the pacer when ready
-            (after reading the steps). Hidden while playing and for reduce-motion.
-            Sibling of the hidden square so it remains accessible/tappable. */}
+        {/* Play button — shown when not playing (idle before start, or after all
+            cycles complete so the user can restart). Hidden while playing and for
+            reduce-motion. Sibling of the hidden square so it stays accessible. */}
         {!reduceMotion && !playing && (
           <Pressable
             style={styles.playOverlay}
             onPress={handlePlay}
             accessibilityRole="button"
-            accessibilityLabel="Start breathing exercise"
+            accessibilityLabel={completed ? 'Restart breathing exercise' : 'Start breathing exercise'}
           >
             <View style={styles.playButton}>
               <Text style={styles.playIcon}>▶</Text>
             </View>
-            <Text style={styles.playHint}>Tap to start</Text>
+            <Text style={styles.playHint}>{completed ? 'Tap to restart' : 'Tap to start'}</Text>
           </Pressable>
         )}
       </View>
@@ -223,7 +239,9 @@ export default function BoxBreathingAnimation({ label }: BoxBreathingAnimationPr
           ? 'Breathe slowly, 4 in, 4 hold, 4 out, 4 hold'
           : playing
             ? PHASES[phaseIndex]
-            : 'Ready when you are'}
+            : completed
+              ? 'Completed'
+              : 'Ready when you are'}
       </Text>
       {!reduceMotion && playing && (
         <View style={styles.cycleRow} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
@@ -276,19 +294,6 @@ const styles = StyleSheet.create({
     height: SQUARE_SIZE,
     borderRadius: 20,
     backgroundColor: SAGE,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  // Idle (not playing): a hollow, muted square so it recedes and the Play button
-  // stands out clearly against it (the solid sage square was the same color as
-  // the button, making Play hard to see).
-  squareIdle: {
-    width: SQUARE_SIZE,
-    height: SQUARE_SIZE,
-    borderRadius: 20,
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#cfd8cd', // muted sage tint
     justifyContent: 'center',
     alignItems: 'center',
   },
