@@ -45,7 +45,7 @@ const PHASE_MS = 4000;
 const MIN_SCALE = 0.6;
 const MAX_SCALE = 1;
 
-const PHASES = ['Breathe in', 'Hold', 'Breathe out', 'Hold'] as const;
+const PHASES = ['Breathe in (nose)', 'Hold', 'Breathe out (mouth)', 'Hold'] as const;
 
 const SECONDS_PER_PHASE = 4;
 const PHASES_PER_CYCLE = PHASES.length; // 4
