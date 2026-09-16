@@ -12,7 +12,8 @@
  *
  * Starts PAUSED: the pacer does not auto-run when the card expands, so a
  * first-time user can read the steps above it first, then tap Play to begin
- * when ready. Tapping Pause returns it to the idle/ready state.
+ * when ready. There is no pause/stop (the exercise is ~1 minute); to restart,
+ * the user closes and reopens the card.
  *
  * Accessibility: respects the OS "reduce motion" setting (renders a static
  * square instead of looping) and exposes a descriptive accessibility label. The
@@ -167,11 +168,6 @@ export default function BoxBreathingAnimation({ label }: BoxBreathingAnimationPr
     setPlaying(true);
   }, []);
 
-  const handlePause = useCallback(() => {
-    setPlaying(false);
-    setElapsedSec(0);
-  }, []);
-
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
@@ -196,7 +192,11 @@ export default function BoxBreathingAnimation({ label }: BoxBreathingAnimationPr
               <Text style={styles.count}>4</Text>
             </View>
           ) : (
-            <Animated.View style={[styles.square, animatedStyle]}>
+            // Idle: a muted, hollow square so the Play button reads clearly against
+            // it. Playing: the solid sage square that scales with the breath.
+            <Animated.View
+              style={[playing ? styles.square : styles.squareIdle, animatedStyle]}
+            >
               <Text style={styles.count}>{playing ? count : ''}</Text>
             </Animated.View>
           )}
@@ -238,16 +238,6 @@ export default function BoxBreathingAnimation({ label }: BoxBreathingAnimationPr
       {!reduceMotion && playing && (
         <Text style={styles.cycleLabel}>{`Cycle ${cycleIndex + 1} of ${CYCLES}`}</Text>
       )}
-      {!reduceMotion && playing && (
-        <Pressable
-          style={styles.pauseButton}
-          onPress={handlePause}
-          accessibilityRole="button"
-          accessibilityLabel="Pause breathing exercise"
-        >
-          <Text style={styles.pauseButtonText}>Pause</Text>
-        </Pressable>
-      )}
     </View>
   );
 }
@@ -286,6 +276,19 @@ const styles = StyleSheet.create({
     height: SQUARE_SIZE,
     borderRadius: 20,
     backgroundColor: SAGE,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // Idle (not playing): a hollow, muted square so it recedes and the Play button
+  // stands out clearly against it (the solid sage square was the same color as
+  // the button, making Play hard to see).
+  squareIdle: {
+    width: SQUARE_SIZE,
+    height: SQUARE_SIZE,
+    borderRadius: 20,
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: '#cfd8cd', // muted sage tint
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -329,37 +332,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  // High-contrast solid sage circle with a cream icon, on a subtle shadow, so it
+  // pops against the muted idle square and the cream stage.
   playButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     backgroundColor: SAGE,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+    elevation: 4,
   },
   playIcon: {
-    fontSize: 26,
+    fontSize: 28,
     color: CREAM,
     // Nudge the triangle glyph to look optically centered in the circle.
     marginLeft: 4,
   },
   playHint: {
     marginTop: 10,
-    fontSize: 14,
-    fontWeight: '600',
-    color: SAGE,
-  },
-  pauseButton: {
-    marginTop: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: SAGE,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  pauseButtonText: {
     fontSize: 14,
     fontWeight: '600',
     color: SAGE,
