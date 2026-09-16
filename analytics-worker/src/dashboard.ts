@@ -560,10 +560,10 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
             <div class="value">\${num(kpis.launch.shareTaps)}</div>
             <div class="detail">Times users opened the share sheet</div>
           </div>
-          <div class="card">
+          <div class="card" onclick="showDetail('wallet-growth')">
             <h3>Wallet Growth</h3>
             <div class="value">\${num(kpis.launch.usersWhoAddedTools)}</div>
-            <div class="detail">Returning users who added new cards</div>
+            <div class="detail">Unique users who added a tool — from the library, an emotion session, or by creating their own. Click for the per-add breakdown.</div>
           </div>
         </div>
 
@@ -690,6 +690,29 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
             var avgSec = t.avg_duration_ms ? Math.round(t.avg_duration_ms / 1000) + 's' : '-';
             return '<tr><td>' + (t.card_id ? t.card_id.slice(0, 20) : '-') + '</td><td>' + (t.card_category || '-') + '</td><td>' + t.completions + '</td><td>' + avgSec + '</td></tr>';
           }).join('') +
+          '</tbody></table></div>';
+      }
+
+      if (type === 'wallet-growth') {
+        var rows = Array.isArray(data) ? data : [];
+        function sourceLabel(s) {
+          return s === 'emotion_session' ? 'Emotion session'
+            : s === 'created' ? 'Created (custom)'
+            : 'Library';
+        }
+        function entryLabel(e) {
+          return e === 'list' ? 'List' : e === 'preview' ? 'Preview' : '\u2014';
+        }
+        var wgBody = rows.length === 0
+          ? '<tr><td colspan="6" style="color:#6c757d;">No adds in this window.</td></tr>'
+          : rows.map(function(r) {
+              return '<tr><td>' + shortId(r.anonymous_user_id) + '</td><td>' + (r.card_id ? r.card_id.slice(0, 20) : '-') + '</td><td>' + (r.card_category || '-') + '</td><td>' + sourceLabel(r.source) + '</td><td>' + entryLabel(r.entry_point) + '</td><td>' + fmtDate(r.timestamp) + '</td></tr>';
+            }).join('');
+        html = '<div class="detail-panel">' +
+          '<h3>Wallet Growth — adds (' + rows.length + ') <button class="close-btn" onclick="closeDetail()">Close</button></h3>' +
+          '<p style="margin-bottom:12px;color:#6c757d;font-size:0.85rem;">Each row is one tool added to a wallet. Source = where the add happened; Entry Point = which affordance. Entry Point is blank (\u2014) for created tools and for any library add made before the 1.0.4 build (that dimension did not exist yet).</p>' +
+          '<table><thead><tr><th>User ID</th><th>Card ID</th><th>Category</th><th>Source</th><th>Entry Point</th><th>Timestamp</th></tr></thead><tbody>' +
+          wgBody +
           '</tbody></table></div>';
       }
 

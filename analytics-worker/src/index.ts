@@ -419,48 +419,17 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
     `, toolCompletedRecent.params).first<{ total_completions: number; active_users: number }>(),
     // Share taps total
     query(`SELECT COUNT(*) as count FROM events ${shareTapFilter.where}`, shareTapFilter.params).first<{ count: number }>(),
-    // Wallet growth: tool_added events after first session (days_since_install > 0 proxy)
+    // Wallet growth: distinct users who added a tool by ANY means within the window —
+    // a library/emotion-session add (`tool_added`) OR creating a custom tool (`tool_created`).
+    // No returning-user gate (previously required an app_opened with days_since_install > 0);
+    // this now measures real wallet expansion, not retention. Uses the shared withFilter so it
+    // honors the phase (from/to), exclusion, and cohort (active/new) toggles like every other KPI.
     (() => {
-      let outerFilter = '';
-      let innerFilter = '';
-      const outerParams: string[] = [];
-      const innerParams: string[] = [];
-      if (fromDate) {
-        outerFilter += ' AND e1.timestamp >= ?';
-        innerFilter += ' AND e2.timestamp >= ?';
-        outerParams.push(fromDate);
-        innerParams.push(fromDate);
-      }
-      if (toDate) {
-        outerFilter += ' AND e1.timestamp < ?';
-        innerFilter += ' AND e2.timestamp < ?';
-        outerParams.push(toDate);
-        innerParams.push(toDate);
-      }
-      if (excludedIds.length > 0) {
-        const ph = excludedIds.map(() => '?').join(', ');
-        outerFilter += ` AND e1.anonymous_user_id NOT IN (${ph})`;
-        innerFilter += ` AND e2.anonymous_user_id NOT IN (${ph})`;
-        outerParams.push(...excludedIds);
-        innerParams.push(...excludedIds);
-      }
-      // Restrict to the new-user acquisition cohort when active.
-      const outerCohort = buildCohortClause('e1.anonymous_user_id');
-      const innerCohort = buildCohortClause('e2.anonymous_user_id');
-      outerFilter += outerCohort.sql;
-      outerParams.push(...outerCohort.params);
-      innerFilter += innerCohort.sql;
-      innerParams.push(...innerCohort.params);
-      return query(`
-        SELECT COUNT(DISTINCT e1.anonymous_user_id) as users_who_added
-        FROM events e1
-        WHERE e1.event_type = 'tool_added'${outerFilter}
-          AND e1.anonymous_user_id IN (
-            SELECT DISTINCT e2.anonymous_user_id FROM events e2
-            WHERE e2.event_type = 'app_opened'
-              AND json_extract(e2.properties, '$.days_since_install') > 0${innerFilter}
-          )
-      `, [...outerParams, ...innerParams]);
+      const f = withFilter("WHERE event_type IN ('tool_added', 'tool_created')");
+      return query(
+        `SELECT COUNT(DISTINCT anonymous_user_id) as users_who_added FROM events ${f.where}`,
+        f.params
+      );
     })().first<{ users_who_added: number }>(),
     // All-time total event count (UNfiltered) — powers the D1 health indicator, which
     // reflects table size regardless of the selected phase. A bare COUNT(*) is cheap.
@@ -826,6 +795,40 @@ async function handleDetailTools(request: Request, env: Env): Promise<Response> 
   });
 }
 
+async function handleDetailWalletGrowth(request: Request, env: Env): Promise<Response> {
+  if (!isAuthorized(request, env)) return unauthorizedResponse();
+
+  const { clause, query } = buildDetailFilter(request, env);
+  // One row per add event (tool_added ∪ tool_created). Source resolves the surface:
+  //   tool_created                              -> 'created'
+  //   tool_added with source 'emotion_session'  -> 'emotion_session'
+  //   tool_added with source 'library_browser' or NULL (legacy) -> 'library'
+  // entry_point is returned raw (NULL for legacy tool_added and all tool_created); the
+  // dashboard renders NULL as "—" (the dimension did not exist before 1.0.4).
+  const result = await query(`
+    SELECT
+      anonymous_user_id,
+      json_extract(properties, '$.card_id') as card_id,
+      json_extract(properties, '$.card_category') as card_category,
+      CASE
+        WHEN event_type = 'tool_created' THEN 'created'
+        WHEN json_extract(properties, '$.source') = 'emotion_session' THEN 'emotion_session'
+        ELSE 'library'
+      END as source,
+      json_extract(properties, '$.entry_point') as entry_point,
+      timestamp
+    FROM events
+    WHERE event_type IN ('tool_added', 'tool_created')${clause}
+    ORDER BY timestamp DESC
+    LIMIT 200
+  `).all();
+
+  return corsResponse(JSON.stringify(result.results), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
 async function handleDetailOutcomes(request: Request, env: Env): Promise<Response> {
   if (!isAuthorized(request, env)) return unauthorizedResponse();
 
@@ -928,6 +931,9 @@ export default {
     }
     if (path === '/details/tools' && request.method === 'GET') {
       return handleDetailTools(request, env);
+    }
+    if (path === '/details/wallet-growth' && request.method === 'GET') {
+      return handleDetailWalletGrowth(request, env);
     }
     if (path === '/details/outcomes' && request.method === 'GET') {
       return handleDetailOutcomes(request, env);

@@ -228,6 +228,11 @@ export default function SessionLauncherContent({
           const libraryCard = CURATED_LIBRARY.find((c) => c.id === cardId);
           if (libraryCard) {
             setPreviewingCard(libraryCard);
+            void logEvent('tool_preview_opened', {
+              card_id: libraryCard.id,
+              card_category: libraryCard.categoryId,
+              source: 'emotion_session',
+            });
           }
         }
       } else {
@@ -252,7 +257,7 @@ export default function SessionLauncherContent({
   }, []);
 
   const handleAddToWallet = useCallback(
-    async (cardId: string) => {
+    async (cardId: string, entryPoint: 'list' | 'preview') => {
       // Find the library card definition
       const libraryCard = CURATED_LIBRARY.find((c) => c.id === cardId);
       if (!libraryCard) return;
@@ -303,6 +308,15 @@ export default function SessionLauncherContent({
 
         // Record that this tool was added to wallet (for session history)
         recordToolAdded(libraryCard.title);
+
+        // Analytics: an add that originated inside the emotion session.
+        void logEvent('tool_added', {
+          card_id: libraryCard.id,
+          card_category: libraryCard.categoryId,
+          origin_badge: 'library',
+          source: 'emotion_session',
+          entry_point: entryPoint,
+        });
 
         // Reload wallet store so the new card appears in the wallet view
         await useWalletStore.getState().loadCards();

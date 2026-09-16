@@ -373,6 +373,11 @@ export default function LibraryBrowserScreen() {
   const handleOpenPreview = useCallback((card: CuratedCardDefinition) => {
     setPreviewCard(card);
     setPreviewVisible(true);
+    void logEvent('tool_preview_opened', {
+      card_id: card.id,
+      card_category: card.categoryId,
+      source: 'library_browser',
+    });
   }, []);
 
   const handleDismissPreview = useCallback(() => {
@@ -432,6 +437,8 @@ export default function LibraryBrowserScreen() {
           card_id: card.id,
           card_category: card.categoryId,
           origin_badge: originBadge,
+          source: 'library_browser',
+          entry_point: 'list',
         });
 
         Alert.alert('Added', `"${card.title}" has been added to your wallet.`);
@@ -528,6 +535,8 @@ export default function LibraryBrowserScreen() {
         card_id: card.id,
         card_category: card.categoryId,
         origin_badge: originBadge,
+        source: 'library_browser',
+        entry_point: 'preview',
       });
     },
     [cards, loadCards, loadArchivedCards, loadMergedLibrary]

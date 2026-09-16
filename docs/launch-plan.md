@@ -15,7 +15,7 @@ Validate that Mental Health Wallet delivers real value to users. Success = peopl
 | **D7 Retention** | 40%+ | Users with `app_opened` on day 7+ vs day 0 |
 | **D30 Retention** | 25%+ | Users with `app_opened` on day 30+ vs day 0 |
 | **Organic Sharing** | Any signal (even 1-2 users sharing unprompted is positive) | `share_tapped` event + survey responses |
-| **Wallet Growth** | Users add cards beyond onboarding defaults | `tool_added` events after first session |
+| **Wallet Growth** | Users add cards beyond onboarding defaults | Distinct users with a `tool_added` (library or emotion-session, tagged by `source`) OR a `tool_created` (custom tool) event in the window — no returning-user gate |
 
 ### How to Read Results
 
@@ -104,7 +104,7 @@ Already tracked:
 - `app_opened` (with `days_since_install` property) → retention
 - `onboarding_completed` → activation funnel
 - `tool_opened` / `tool_completed` → engagement
-- `tool_added` → wallet growth
+- `tool_added` (any `source`) + `tool_created` → wallet growth
 - `share_tapped` → organic sharing signal
 
 ---

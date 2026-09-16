@@ -15,6 +15,7 @@ export type AnalyticsEventType =
   | 'start_mode_selected'
   | 'session_started'
   | 'tool_added'
+  | 'tool_preview_opened'
   | 'tool_archived'
   | 'tool_unarchived'
   | 'tool_created'
@@ -74,7 +75,24 @@ export type SessionStartedEvent = AnalyticsEventBase & {
 
 export type ToolAddedEvent = AnalyticsEventBase & {
   event_type: 'tool_added';
-  properties: { card_id: string; card_category: string; origin_badge: string };
+  properties: {
+    card_id: string;
+    card_category: string;
+    origin_badge: string;
+    /** Surface the add happened on. Absent on pre-1.0.4 rows (treat as library). */
+    source?: 'library_browser' | 'emotion_session';
+    /** Affordance within the surface. Absent on pre-1.0.4 rows (the dimension did not exist). */
+    entry_point?: 'list' | 'preview';
+  };
+};
+
+export type ToolPreviewOpenedEvent = AnalyticsEventBase & {
+  event_type: 'tool_preview_opened';
+  properties: {
+    card_id: string;
+    card_category: string;
+    source: 'library_browser' | 'emotion_session';
+  };
 };
 
 export type ToolArchivedEvent = AnalyticsEventBase & {
@@ -194,6 +212,7 @@ export type AnalyticsEvent =
   | StartModeSelectedEvent
   | SessionStartedEvent
   | ToolAddedEvent
+  | ToolPreviewOpenedEvent
   | ToolArchivedEvent
   | ToolUnarchivedEvent
   | ToolCreatedEvent
