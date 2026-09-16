@@ -130,12 +130,12 @@ Track the release notes submitted for each Apple version here. Newest first.
 ```
 This update makes your tools easier to reach and adds a calming new visual:
 
-• Tap a reminder or a tip link and you now land right on that tool, ready to use, not just the wallet.
 • Box Breathing has a new guided pacer. Read the steps, tap play, and follow the expanding square through four calm cycles (breathe in through the nose, out through the mouth).
-• Preview any tool in the library with a clear new Preview button before adding it.
-• Archive a tool and its reminders stop; restore it and they pick right back up.
 • A new Tips section, open it anytime to read short, practical ideas for getting the most out of the app.
 • Want tips and gentle reminders by email? You can opt in from Settings. It's handled separately from the app, so your email is never tied to how you use your tools, and the app stays private and anonymous.
+• Tap a reminder or a tip link and you now land right on that tool, ready to use, not just the wallet.
+• Preview any tool in the library with a clear new Preview button before adding it.
+• Archive a tool and its reminders stop; restore it and they pick right back up.
 • Onboarding is clearer, plus fixes for right-to-left languages, app links on Android, and general polish.
 
 Have feedback? We'd love to hear it, reach us from Settings.
@@ -182,12 +182,12 @@ Google Play release notes use `<en-US>...</en-US>` language tags and have a **50
 
 ```
 <en-US>
-• Tap a reminder or tip link and land right on that tool, not just the wallet.
 • New guided Box Breathing pacer: read the steps, tap play, follow four calm cycles.
-• Preview any library tool before adding it.
-• Archiving a tool now stops its reminders; restoring brings them back.
 • New Tips section: practical ideas anytime.
 • Optional email tips from Settings, kept separate so your app usage stays private.
+• Tap a reminder or tip link and land right on that tool, not just the wallet.
+• Preview any library tool before adding it.
+• Archiving a tool now stops its reminders; restoring brings them back.
 • Clearer onboarding, right-to-left fixes, and polish.
 
 Feedback? Reach us from Settings.
