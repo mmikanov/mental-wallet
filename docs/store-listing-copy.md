@@ -124,22 +124,27 @@ A card-based toolkit to build coping habits and discover what works for you.
 
 Track the release notes submitted for each Apple version here. Newest first.
 
-### Unreleased (next version — not yet built)
+### 1.0.4
 
-Running list of changes landed in the repo since 1.0.3 but NOT yet shipped to any store. Finalize the version number and "What's New" copy when building. Bump the marketing version in all four places (see the release checklist) since 1.0.3 is already live.
-
-**Changes landed (developer-facing):**
-- **Fix: emotion sessions were being over-counted.** The active emotion session ended (and re-logged its analytics `session_ended` event) on transient iOS foreground interruptions (Control Center, app switcher, permission prompts, call banners), and `endSession()` had no re-entrancy guard — so a single session could log many endings. Now `endSession()` fires at most once per session, and the app only ends a session on a real background transition, not on `inactive`. Files: `src/stores/sessionStore.ts`, `src/navigation/RootNavigator.tsx` (+ `sessionStore.endSessionIdempotency.test.ts`).
-  - **User-facing angle (optional for notes):** more accurate session/insights data; sessions are no longer cut short by momentary interruptions.
-  - **Not user-visible enough to require a "What's New" bullet** — reviewer/internal note is enough. Include a line only if we want to signal "improved reliability."
-  - **Data caveat:** only events from this build onward are clean; historical `session_ended` data stays duplicated. The analytics dashboard's emotion-sessions drill-down still carries a "read as proportions" note until this ships — remove that note after release.
-
-_(Analytics-worker dashboard changes — Emotion Sessions card/drill-down, Active/New users filter — are already deployed server-side and do NOT depend on an app release.)_
-
-**Draft "What's New" (Apple) — fill in at build time:**
+**What's New in This Version:**
 ```
-(TBD — add a reliability bullet if desired, e.g. "Emotion sessions are no longer interrupted by switching apps, and session data is more accurate.")
+This update makes your tools easier to reach and adds a calming new visual:
+
+• Tap a reminder or a tip link and you now land right on that tool, ready to use, not just the wallet.
+• Box Breathing has a new guided pacer. Read the steps, tap play, and follow the expanding square through four calm cycles (breathe in through the nose, out through the mouth).
+• Preview any tool in the library with a clear new Preview button before adding it.
+• Archive a tool and its reminders stop; restore it and they pick right back up.
+• Get occasional tips and reminders by email, opt in anytime from Settings.
+• Onboarding is clearer, plus fixes for right-to-left languages, app links on Android, and general polish.
+
+Have feedback? We'd love to hear it, reach us from Settings.
 ```
+
+**Notes:** Covers the deep-linking work (tips/reminders open the specific tool), the tip CTA upgrade, the Box Breathing visual pacer, the Library preview button, the archived-tool reminder fix, the in-app email opt-in, onboarding consent + clarity fixes, and the round-1 user-reported fixes (RTL, Android store link, collapsed-stack visibility). Also includes a behind-the-scenes emotion-session analytics accuracy fix (not user-visible enough for a bullet).
+
+**Data caveat (internal):** the emotion-session over-counting fix means only `session_ended` events from this build onward are clean; historical data stays duplicated. Remove the "read as proportions" note from the analytics dashboard's emotion-sessions drill-down after this ships.
+
+**Reviewer note (App Review Information):** this version adds deep links that open specific tools from reminders/tip links, and cards can open external media in a WebView. To test a deep link, tap a scheduled reminder or open a tip link; it should open the named tool.
 
 ### 1.0.3
 
@@ -171,6 +176,23 @@ Initial App Store release. (No "What's New" — first version.)
 ## Version History — Release Notes (Google Play)
 
 Google Play release notes use `<en-US>...</en-US>` language tags and have a **500-character limit per language**. Set them per release in Play Console → Production → (release) → Release notes. Newest first.
+
+### 1.0.4 (versionCode TBD — EAS auto-increments)
+
+```
+<en-US>
+• Tap a reminder or tip link and land right on that tool, not just the wallet.
+• New guided Box Breathing pacer: read the steps, tap play, follow four calm cycles.
+• Preview any library tool before adding it.
+• Archiving a tool now stops its reminders; restoring brings them back.
+• Opt in to email tips anytime from Settings.
+• Clearer onboarding, right-to-left language fixes, and polish.
+
+Feedback? Reach us from Settings.
+</en-US>
+```
+
+_(Note: fits the 500-char limit. Confirm the auto-incremented versionCode in Play Console at submit.)_
 
 ### 1.0.3 (versionCode 6)
 
