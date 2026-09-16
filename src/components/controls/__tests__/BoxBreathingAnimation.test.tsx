@@ -91,7 +91,7 @@ describe('BoxBreathingAnimation', () => {
     expect(screen.getByLabelText('Start breathing exercise')).toBeTruthy();
     expect(screen.getByText('Ready when you are')).toBeTruthy();
     // Not running: no live phase word and no cycle indicator yet.
-    expect(screen.queryByText('Breathe in')).toBeNull();
+    expect(screen.queryByText(/Breathe in/)).toBeNull();
     expect(screen.queryByText('Cycle 1 of 4')).toBeNull();
   });
 
@@ -105,7 +105,7 @@ describe('BoxBreathingAnimation', () => {
     fireEvent.press(screen.getByLabelText('Start breathing exercise'));
 
     await waitFor(() => {
-      expect(screen.getByText('Breathe in')).toBeTruthy();
+      expect(screen.getByText('Breathe in (nose)')).toBeTruthy();
     });
     // Inhale counts up: first second shows 1. The count lives inside an
     // accessibility-hidden stage, so include hidden elements in the query.
@@ -141,7 +141,7 @@ describe('BoxBreathingAnimation', () => {
       expect(screen.getByText('Completed')).toBeTruthy();
       expect(screen.getByLabelText('Restart breathing exercise')).toBeTruthy();
       // Not still running: no live phase word.
-      expect(screen.queryByText('Breathe in')).toBeNull();
+      expect(screen.queryByText(/Breathe in/)).toBeNull();
     } finally {
       jest.useRealTimers();
     }
