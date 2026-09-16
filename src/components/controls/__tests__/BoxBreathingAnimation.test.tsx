@@ -90,10 +90,9 @@ describe('BoxBreathingAnimation', () => {
     // Idle state: the Play affordance is shown and the pacer is not running yet.
     expect(screen.getByLabelText('Start breathing exercise')).toBeTruthy();
     expect(screen.getByText('Ready when you are')).toBeTruthy();
-    // Not running: no live phase word, no cycle indicator, no Pause control.
+    // Not running: no live phase word and no cycle indicator yet.
     expect(screen.queryByText('Breathe in')).toBeNull();
     expect(screen.queryByText('Cycle 1 of 4')).toBeNull();
-    expect(screen.queryByLabelText('Pause breathing exercise')).toBeNull();
   });
 
   it('starts the pacer on the first second of inhale (count 1, cycle 1) after Play', async () => {
@@ -112,28 +111,8 @@ describe('BoxBreathingAnimation', () => {
     // accessibility-hidden stage, so include hidden elements in the query.
     expect(screen.getByText('1', { includeHiddenElements: true })).toBeTruthy();
     expect(screen.getByText('Cycle 1 of 4')).toBeTruthy();
-    // Play affordance is replaced by a Pause control while running.
-    expect(screen.getByLabelText('Pause breathing exercise')).toBeTruthy();
+    // Once started, the Play affordance is gone (no pause/stop; restart = reopen).
     expect(screen.queryByLabelText('Start breathing exercise')).toBeNull();
-  });
-
-  it('returns to the idle Play state when paused', async () => {
-    mockReduceMotion(false);
-    await render(<BoxBreathingAnimation />);
-    await waitFor(() => {
-      expect(screen.getByLabelText('Start breathing exercise')).toBeTruthy();
-    });
-
-    fireEvent.press(screen.getByLabelText('Start breathing exercise'));
-    await waitFor(() => {
-      expect(screen.getByLabelText('Pause breathing exercise')).toBeTruthy();
-    });
-
-    fireEvent.press(screen.getByLabelText('Pause breathing exercise'));
-    await waitFor(() => {
-      expect(screen.getByLabelText('Start breathing exercise')).toBeTruthy();
-    });
-    expect(screen.getByText('Ready when you are')).toBeTruthy();
   });
 
 });
