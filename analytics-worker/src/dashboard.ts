@@ -196,6 +196,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     <span class="dot"></span>
     <span id="refresh-info">Auto-refreshing</span>
     <button id="refresh-now-btn" onclick="manualRefresh()" style="margin-left: 12px; cursor: pointer;">Refresh now</button>
+    <button id="pause-toggle-btn" onclick="togglePause()" style="margin-left: 8px; cursor: pointer;">Pause auto-refresh</button>
     <span id="last-updated" style="margin-left: auto;"></span>
   </div>
 
@@ -250,6 +251,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     let lastRefreshAt = null;   // Date of the last successful refresh
     let nextRefreshAt = null;   // Date the next auto-refresh is due
     let refreshTimer = null;    // setTimeout handle for the next auto-refresh
+    let paused = false;         // when true, auto-refresh is suspended (no D1 reads) until resumed
     let countdownTimer = null;  // setInterval handle for the countdown display
 
     async function fetchMilestones() {
@@ -784,6 +786,10 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     function updateRefreshInfo() {
       const info = document.getElementById('refresh-info');
       if (!info) return;
+      if (paused) {
+        info.textContent = 'Auto-refresh paused';
+        return;
+      }
       if (document.hidden) {
         info.textContent = 'Auto-refresh paused (tab in background)';
         return;
@@ -806,7 +812,9 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
 
     function scheduleNext() {
       if (refreshTimer) { clearTimeout(refreshTimer); refreshTimer = null; }
-      // Only schedule while the tab is visible; hidden tabs stop querying D1.
+      // Don't schedule while paused (manual) or while the tab is hidden — both
+      // stop querying D1.
+      if (paused) { nextRefreshAt = null; updateRefreshInfo(); return; }
       if (document.hidden) { nextRefreshAt = null; updateRefreshInfo(); return; }
       nextRefreshAt = new Date(Date.now() + REFRESH_INTERVAL_MS);
       refreshTimer = setTimeout(refreshAndSchedule, REFRESH_INTERVAL_MS);
@@ -833,6 +841,8 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
         nextRefreshAt = null;
         updateRefreshInfo();
       } else {
+        // Becoming visible again: if the user paused, stay paused (no query).
+        if (paused) { updateRefreshInfo(); return; }
         const elapsed = lastRefreshAt ? (Date.now() - lastRefreshAt.getTime()) : Infinity;
         if (elapsed >= REFRESH_INTERVAL_MS) {
           refreshAndSchedule();
@@ -841,6 +851,28 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
         }
       }
     });
+
+    // Pause/resume auto-refresh on demand. Paused = no scheduled D1 reads at all
+    // (the "Refresh now" button still works for an on-demand pull). Resuming
+    // refreshes immediately if the interval has already elapsed, then reschedules.
+    function togglePause() {
+      paused = !paused;
+      const btn = document.getElementById('pause-toggle-btn');
+      if (paused) {
+        if (refreshTimer) { clearTimeout(refreshTimer); refreshTimer = null; }
+        nextRefreshAt = null;
+        if (btn) btn.textContent = 'Resume auto-refresh';
+        updateRefreshInfo();
+      } else {
+        if (btn) btn.textContent = 'Pause auto-refresh';
+        const elapsed = lastRefreshAt ? (Date.now() - lastRefreshAt.getTime()) : Infinity;
+        if (!document.hidden && elapsed >= REFRESH_INTERVAL_MS) {
+          refreshAndSchedule();
+        } else {
+          scheduleNext();
+        }
+      }
+    }
 
     async function clearEvents() {
       if (!confirm('Clear ALL analytics events? This cannot be undone.')) return;
