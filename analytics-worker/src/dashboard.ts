@@ -667,7 +667,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
           }).join('') +
           '</tbody></table>' +
           '<p style="margin:16px 0 4px;font-weight:600;">Emotions selected (' + emotionsTotal + ')</p>' +
-          '<p style="margin-bottom:8px;color:#b26a00;font-size:0.78rem;">Note: from <code>session_ended</code>, which is currently over-fired by a known app bug (duplicate endings on app backgrounding). Read these as relative proportions, not exact session counts, until the app fix ships.</p>' +
+          '<p style="margin-bottom:8px;color:#b26a00;font-size:0.78rem;">Note: from <code>session_ended</code>. The duplicate-ending bug (extra events on app backgrounding) was fixed in the 1.0.4 build, so counts from 1.0.4 onward are accurate. Sessions from BEFORE 1.0.4 are over-counted — for windows that include pre-1.0.4 data, read the emotion/context split as relative proportions, not exact counts.</p>' +
           '<table><thead><tr><th>Emotion</th><th>Count</th><th>Percentage</th></tr></thead><tbody>' +
           esEmotions.map(function(e) {
             return '<tr><td>' + (e.emotion || '-') + '</td><td>' + e.count + '</td><td>' + (emotionsTotal > 0 ? (e.count / emotionsTotal * 100).toFixed(1) + '%' : '-') + '</td></tr>';
