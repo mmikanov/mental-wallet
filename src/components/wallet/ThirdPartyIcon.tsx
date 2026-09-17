@@ -23,8 +23,20 @@ export interface ThirdPartyIconProps {
 
 const DEFAULT_TIMEOUT_MS = 10000;
 
-/** Cache directory for downloaded icons */
-const ICON_CACHE_DIR = new Directory(Paths.cache, 'icon-cache');
+/**
+ * Cache directory for downloaded icons. Constructed lazily (not at module load)
+ * so importing this component has NO side effects: `new Directory(Paths.cache, ...)`
+ * touches the native expo-file-system API, which throws under jest (Paths is not
+ * mocked) and would otherwise crash every test suite whose import graph reaches
+ * this file. Only the download path (inside a useEffect) ever calls this.
+ */
+let iconCacheDir: Directory | null = null;
+function getIconCacheDir(): Directory {
+  if (!iconCacheDir) {
+    iconCacheDir = new Directory(Paths.cache, 'icon-cache');
+  }
+  return iconCacheDir;
+}
 
 /** In-memory map of URI → local file URI (avoids re-checking filesystem) */
 const resolvedCache = new Map<string, string>();
@@ -87,12 +99,13 @@ export default function ThirdPartyIcon({
     async function resolveIcon() {
       try {
         // Ensure cache directory exists
-        if (!ICON_CACHE_DIR.exists) {
-          ICON_CACHE_DIR.create({ intermediates: true });
+        const cacheDir = getIconCacheDir();
+        if (!cacheDir.exists) {
+          cacheDir.create({ intermediates: true });
         }
 
         const fileName = getCacheFileName(uri);
-        const cachedFile = new File(ICON_CACHE_DIR, fileName);
+        const cachedFile = new File(cacheDir, fileName);
 
         // Check if already cached on disk
         if (cachedFile.exists) {
@@ -104,7 +117,7 @@ export default function ThirdPartyIcon({
         }
 
         // Download and cache using the new File.downloadFileAsync API
-        const targetFile = new File(ICON_CACHE_DIR, fileName);
+        const targetFile = new File(cacheDir, fileName);
         const downloadedFile = await File.downloadFileAsync(uri, targetFile, { idempotent: true });
         if (downloadedFile.exists) {
           if (!cancelled && mountedRef.current) {
