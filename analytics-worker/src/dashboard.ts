@@ -231,7 +231,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     // How often the dashboard auto-refreshes, in milliseconds. Change this one
     // value to adjust the cadence. Auto-refresh also pauses while the tab is
     // hidden, so a forgotten open tab does not keep querying D1 in the background.
-    const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+    const REFRESH_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 
     // D1 health indicator thresholds (event count as a proxy for read-budget risk).
     // The dashboard can't read the account's actual D1 rows_read, so it warns based on
