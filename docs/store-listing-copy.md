@@ -143,7 +143,7 @@ Have feedback? We'd love to hear it, reach us from Settings.
 
 **Notes:** Covers the deep-linking work (tips/reminders open the specific tool), the tip CTA upgrade, the Box Breathing visual pacer, the Library preview button, the archived-tool reminder fix, the in-app Tips feed, the in-app email opt-in (privacy-preserving link-out, no email stored in the app), onboarding consent + clarity fixes, and the round-1 user-reported fixes (RTL, Android store link, collapsed-stack visibility). Also includes a behind-the-scenes emotion-session analytics accuracy fix (not user-visible enough for a bullet).
 
-**Data caveat (internal):** the emotion-session over-counting fix means only `session_ended` events from this build onward are clean; historical data stays duplicated. Remove the "read as proportions" note from the analytics dashboard's emotion-sessions drill-down after this ships.
+**Data caveat (internal):** the emotion-session over-counting fix means only `session_ended` events from the 1.0.4 build onward are clean; pre-1.0.4 historical data stays duplicated. DONE: the analytics dashboard's emotion-sessions drill-down note was **reworded** (not removed) to say counts are accurate from 1.0.4 onward but pre-1.0.4 windows are over-counted (read as proportions) — since the dashboard still shows historical windows where the old data is inflated.
 
 **Reviewer note (App Review Information):** this version adds deep links that open specific tools from reminders/tip links, and cards can open external media in a WebView. To test a deep link, tap a scheduled reminder or open a tip link; it should open the named tool.
 
