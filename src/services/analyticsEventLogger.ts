@@ -25,6 +25,7 @@ const VALID_EVENT_TYPES: readonly AnalyticsEventType[] = [
   'start_mode_selected',
   'session_started',
   'tool_added',
+  'tool_preview_opened',
   'tool_archived',
   'tool_unarchived',
   'tool_created',

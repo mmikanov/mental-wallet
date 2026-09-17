@@ -6,6 +6,44 @@ at the top of the relevant section with a short rationale and the files involved
 
 ---
 
+## expo-file-system mock breaks ~1/5 of the Jest suite at import time
+
+**Type:** Bug / test infrastructure
+**Priority:** Medium (blocks real coverage on affected suites)
+**Discovered:** During the `1.0.4-wallet-growth-instrumentation` work — running `npx jest`
+showed 21 of 158 suites failing (28 tests) with `TypeError: Cannot read properties of
+undefined (reading 'cache')`. Confirmed pre-existing: the identical `21 failed / 28 failed`
+result reproduces on a clean tree (with all feature changes stashed), so it is unrelated to
+that feature.
+
+**Root cause:** `src/components/wallet/ThirdPartyIcon.tsx:27` runs
+`new Directory(Paths.cache, 'icon-cache')` at module load. Under jest-expo, `Paths` (from the
+new `expo-file-system` API) is not mocked, so `Paths.cache` is `undefined` and the `new
+Directory(...)` throws **at import time**. Any suite whose import graph reaches
+`ThirdPartyIcon` (via `renderCardIcon` → `CardPreviewSheet`, `LibraryToolPreview`,
+`ArchiveScreen`, `SessionView`, `ToolPreviewCard`, etc.) fails to even load — before any test
+assertion runs. This means those suites currently provide **no** coverage, and code paths that
+happen to touch them (e.g. the widened `onAddToWallet` signature) are only guarded by the
+typechecker, not by a running test.
+
+**Proposed fix:** add a jest mock for the `expo-file-system` `Paths`/`Directory` API (in the
+jest setup or `__mocks__`) that returns a stub cache dir, OR lazily construct `ICON_CACHE_DIR`
+inside the function that needs it instead of at module top-level, so importing the component
+never throws. Prefer the mock so component tests exercise the real module.
+
+**Files:**
+- `jest.config.js` / jest setup (add the mock) — or `src/components/wallet/ThirdPartyIcon.tsx`
+  (defer the `new Directory(...)` off module load)
+- Affected suites (examples): `src/components/session/__tests__/SessionLauncherContent.walletState.test.tsx`,
+  `ToolPreviewCard.test.ts`, `SessionView.test.tsx`, `CardPreviewSheet.test.tsx`,
+  `LibraryToolPreview.crisisNav.test.tsx`, `ArchiveScreen.originBadge.test.tsx`, and ~15 others.
+
+**Risk if deferred:** Medium — a fifth of the suite silently doesn't run, so regressions in
+those components (including the session add/preview flows just instrumented) won't be caught by
+CI until the mock is fixed.
+
+---
+
 ## Onboarding state reset should use a shared default (avoid per-field drift)
 
 **Type:** Refactor / maintainability

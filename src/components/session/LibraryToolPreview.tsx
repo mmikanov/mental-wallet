@@ -19,7 +19,7 @@ import { renderCardIcon } from '@/utils/renderCardIcon';
 interface LibraryToolPreviewProps {
   card: CuratedCardDefinition;
   onClose: () => void;
-  onAddToWallet: (cardId: string) => void;
+  onAddToWallet: (cardId: string, entryPoint: 'list' | 'preview') => void;
   isAddedToWallet: boolean;
 }
 
@@ -111,7 +111,7 @@ export default function LibraryToolPreview({
         ) : (
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() => onAddToWallet(card.id)}
+            onPress={() => onAddToWallet(card.id, 'preview')}
             accessibilityRole="button"
             accessibilityLabel={`Add ${card.title} to wallet`}
           >

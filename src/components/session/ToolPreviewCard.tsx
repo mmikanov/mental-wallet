@@ -25,7 +25,7 @@ export interface ToolPreviewCardProps {
   source: 'wallet' | 'library';
   onPress: (cardId: string) => void;
   showAddToWallet?: boolean;
-  onAddToWallet?: (cardId: string) => void;
+  onAddToWallet?: (cardId: string, entryPoint: 'list' | 'preview') => void;
   isAddedToWallet?: boolean;
   /** The in-a-nutshell text for the rationale entry point */
   rationaleInANutshell?: string;
@@ -105,7 +105,7 @@ export default function ToolPreviewCard({
             <Text style={styles.addedText}>Added ✓</Text>
           ) : (
             <TouchableOpacity
-              onPress={() => onAddToWallet?.(cardId)}
+              onPress={() => onAddToWallet?.(cardId, 'list')}
               accessibilityRole="button"
               accessibilityLabel={`Add ${title} to wallet`}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}

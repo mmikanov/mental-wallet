@@ -56,11 +56,13 @@ Tools opened *inside* a session are stored on-device only and are out of scope.
 
 ## Future Requirements (Phase 2 — NOT implemented now)
 
-### Requirement 4 (future): Track adds from emotion-session suggestions
+### Requirement 4 (IMPLEMENTED in `1.0.4-wallet-growth-instrumentation`): Track adds from emotion-session suggestions
 
 **User Story:** As the operator, I want to know when a user adds a tool to their wallet from the emotion-session suggestions, so I can measure whether the suggestions drive wallet growth.
 
-#### Notes / Acceptance Criteria (for when this is built)
+> **Status: DONE.** Implemented as part of the `1.0.4-wallet-growth-instrumentation` spec — emotion-session adds now emit `tool_added` with `source: 'emotion_session'` and an `entry_point` (`list`/`preview`), the two library call sites carry `source: 'library_browser'`, and the dashboard Wallet Growth KPI + `/details/wallet-growth` drill-down attribute by source. That spec also added a `tool_preview_opened` event (preview-open tracking) beyond this requirement's original scope. See that spec's requirements/design/tasks for details.
+
+#### Notes / Acceptance Criteria (as originally scoped — all satisfied)
 
 1. THE app SHALL emit a `tool_added` analytics event when a tool is added from the emotion-session suggestions. Both suggestion entry points — the suggestion list (`ToolPreviewCard`) and the preview (`LibraryToolPreview`) — funnel through the single `SessionLauncherContent.handleAddToWallet` callback, so one `logEvent` call there covers both.
 2. THE `tool_added` event SHALL carry a `source` property (e.g. `'emotion_session'` vs `'library_browser'`) so adds can be attributed. The two existing `LibraryBrowserScreen` call sites SHALL be updated to send `source: 'library_browser'`.
