@@ -136,10 +136,12 @@ This update makes your tools easier to reach and adds a calming new visual:
 • Tap a reminder or a tip link and you now land right on that tool, ready to use, not just the wallet.
 • Preview any tool in the library with a clear new Preview button before adding it.
 • Archive a tool and its reminders stop; restore it and they pick right back up.
-• Onboarding is clearer, plus fixes for right-to-left languages, app links on Android, and general polish.
+• Onboarding is clearer, plus fixes for right-to-left languages and general polish.
 
 Have feedback? We'd love to hear it, reach us from Settings.
 ```
+
+**Apple copy rule:** Never mention Android (or any third-party platform) in Apple "What's New" / metadata. Apple rejected 1.0.4 under Guideline 2.3.10 for an "app links on Android" reference. Keep Android-specific notes in the Google Play section only.
 
 **Notes:** Covers the deep-linking work (tips/reminders open the specific tool), the tip CTA upgrade, the Box Breathing visual pacer, the Library preview button, the archived-tool reminder fix, the in-app Tips feed, the in-app email opt-in (privacy-preserving link-out, no email stored in the app), onboarding consent + clarity fixes, and the round-1 user-reported fixes (RTL, Android store link, collapsed-stack visibility). Also includes a behind-the-scenes emotion-session analytics accuracy fix (not user-visible enough for a bullet).
 
