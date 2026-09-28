@@ -30,6 +30,7 @@ import {
 } from '@/services/analyticsSession';
 import { logEvent } from '@/services/analyticsEventLogger';
 import { getDaysSinceInstall } from '@/services/analyticsRetention';
+import { createActiveDurationTracker } from '@/utils/activeDurationTracker';
 
 export default function App() {
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
@@ -89,6 +90,15 @@ export default function App() {
     return () => {
       subscription.remove();
     };
+  }, []);
+
+  useEffect(() => {
+    // Drive active-duration tracking off the app lifecycle. The tracker
+    // registers its own AppState listener (idempotent) and a 15-min background
+    // timeout, coexisting with the analytics listener above.
+    const tracker = createActiveDurationTracker();
+    tracker.initialize();
+    return () => tracker.teardown();
   }, []);
 
   return (

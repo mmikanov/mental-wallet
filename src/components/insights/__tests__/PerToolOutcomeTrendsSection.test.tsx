@@ -89,6 +89,19 @@ describe('PerToolOutcomeTrendsSection', () => {
     });
   });
 
+  describe('Practice-time disclosure (Req 6.1, 6.2, 6.3)', () => {
+    it('renders the practice-time disclosure caption near the chart', async () => {
+      await render(<PerToolOutcomeTrendsSection data={validData} />);
+
+      expect(screen.getByTestId('practice-time-disclosure')).toBeTruthy();
+      expect(
+        screen.getByText(
+          "Practice time counts time you spend using a tool in the app. It doesn't include time in other apps or external media."
+        )
+      ).toBeTruthy();
+    });
+  });
+
   describe('Accessibility attributes', () => {
     it('container has accessibilityRole="summary"', async () => {
       await render(<PerToolOutcomeTrendsSection data={validData} />);

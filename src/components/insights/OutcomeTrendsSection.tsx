@@ -13,6 +13,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import DualAxisChart from './DualAxisChart';
+import { PracticeTimeDisclosure } from './PracticeTimeDisclosure';
 import { TierProgressCard } from './TierProgressCard';
 import type { InsightTier, TierProgress } from '@/services/tierEvaluator';
 import type { WalletCorrelationResult } from '@/services/correlationEngine';
@@ -201,6 +202,9 @@ function ConfidentView({ walletCorrelation }: ConfidentViewProps) {
           granularity={walletCorrelation.granularity}
           rangeStartDate={walletCorrelation.rangeStartDate}
         />
+
+        {/* Practice-time disclosure caption near the chart (Req 6.1, 6.2, 6.3) */}
+        <PracticeTimeDisclosure />
       </View>
     </View>
   );

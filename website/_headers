@@ -2,8 +2,16 @@
 # extension, so Cloudflare can't infer the type; iOS/validators expect
 # application/json. (assetlinks.json already gets application/json from its
 # extension, but we pin it too for clarity.)
+# Cloudflare Workers Assets defaults these files to `Cache-Control: public,
+# max-age=0, must-revalidate`. The Android App Links verifier and Google's
+# Digital Asset Links cache behave poorly with a no-cache statement file — a
+# clean Play-Store install can fail to auto-verify (domain stuck in state
+# 1024) even though the file content + fingerprints are correct. Serve both
+# association files with a normal, cacheable policy instead.
 /.well-known/apple-app-site-association
   Content-Type: application/json
+  Cache-Control: public, max-age=3600
 
 /.well-known/assetlinks.json
   Content-Type: application/json
+  Cache-Control: public, max-age=3600

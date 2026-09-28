@@ -32,6 +32,7 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
   await runOriginBadgeAppMigration(db);
   await runOutcomeResponsesMigration(db);
   await runDurationRecordsMigration(db);
+  await runDurationEndStatusCheckMigration(db);
   await runControlTypeCheckMigration(db);
 }
 
@@ -794,19 +795,81 @@ export async function runDurationRecordsMigration(db: SQLiteDatabase): Promise<v
   await db.execAsync(DURATION_RECORDS_SCHEMA_SQL);
 }
 
-const DURATION_RECORDS_SCHEMA_SQL = `
+export const DURATION_RECORDS_SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS duration_records (
   id TEXT PRIMARY KEY,
   card_id TEXT NOT NULL,
   started_at TEXT NOT NULL,
   ended_at TEXT NOT NULL,
   active_duration_sec INTEGER NOT NULL,
-  end_status TEXT NOT NULL CHECK(end_status IN ('completed', 'collapsed'))
+  end_status TEXT NOT NULL CHECK(end_status IN ('completed', 'collapsed', 'timed_out'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_duration_records_card ON duration_records(card_id);
 CREATE INDEX IF NOT EXISTS idx_duration_records_ended_at ON duration_records(ended_at);
 `;
+
+/**
+ * Migrates the duration_records table CHECK constraint on end_status to include
+ * 'timed_out' (auto-ended sessions, spec 1.0.5-fixes). The tracker persists a
+ * 'timed_out' row when a session auto-ends after inactivity; the original
+ * constraint only allowed 'completed'/'collapsed', so that insert was rejected
+ * and the time was silently lost.
+ *
+ * SQLite cannot ALTER a CHECK constraint in place, so we rebuild the table when
+ * the current constraint doesn't allow the new value. Idempotent: detects the
+ * current constraint by reading the table's DDL from sqlite_master.
+ */
+export async function runDurationEndStatusCheckMigration(db: SQLiteDatabase): Promise<void> {
+  const row = await db.getFirstAsync<{ sql: string }>(
+    `SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'duration_records'`
+  );
+  // If the table doesn't exist yet (fresh DB just created the three-value schema)
+  // or the constraint already lists the new value, there's nothing to do.
+  if (!row?.sql || row.sql.includes('timed_out')) {
+    return;
+  }
+
+  // Rebuild the duration_records table with the updated CHECK constraint.
+  // Disable foreign keys so the DROP doesn't cascade-delete anything, and so the
+  // rebuilt rows copy over cleanly.
+  await db.execAsync('PRAGMA foreign_keys = OFF');
+  await db.execAsync('BEGIN TRANSACTION');
+  try {
+    await db.execAsync(`
+      CREATE TABLE duration_records_new (
+        id TEXT PRIMARY KEY,
+        card_id TEXT NOT NULL,
+        started_at TEXT NOT NULL,
+        ended_at TEXT NOT NULL,
+        active_duration_sec INTEGER NOT NULL,
+        end_status TEXT NOT NULL CHECK(end_status IN ('completed', 'collapsed', 'timed_out'))
+      )
+    `);
+
+    await db.execAsync(`
+      INSERT INTO duration_records_new
+        SELECT id, card_id, started_at, ended_at, active_duration_sec, end_status
+        FROM duration_records
+    `);
+
+    await db.execAsync('DROP TABLE duration_records');
+    await db.execAsync('ALTER TABLE duration_records_new RENAME TO duration_records');
+    await db.execAsync(
+      'CREATE INDEX IF NOT EXISTS idx_duration_records_card ON duration_records(card_id)'
+    );
+    await db.execAsync(
+      'CREATE INDEX IF NOT EXISTS idx_duration_records_ended_at ON duration_records(ended_at)'
+    );
+
+    await db.execAsync('COMMIT');
+    await db.execAsync('PRAGMA foreign_keys = ON');
+  } catch (error) {
+    await db.execAsync('ROLLBACK');
+    await db.execAsync('PRAGMA foreign_keys = ON');
+    throw error;
+  }
+}
 
 /**
  * Migrates the controls table CHECK constraint to include 'breathing_animation'

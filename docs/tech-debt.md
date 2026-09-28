@@ -6,6 +6,78 @@ at the top of the relevant section with a short rationale and the files involved
 
 ---
 
+## react-native-webview has no Jest mock — blocks ExpandedContent (and any WebView-reaching) suites at import time
+
+**Type:** Bug / test infrastructure
+**Priority:** Medium (blocks coverage on affected suites)
+**Discovered:** During the `1.0.5-fixes` work (Bug 2, wiring duration tracking into
+`ExpandedContent.tsx`). `src/components/wallet/__tests__/ExpandedContent.test.ts` fails to
+LOAD — not an assertion failure, an import-time crash — so the suite provides no coverage.
+
+**Root cause:** the import graph `ExpandedContent -> ControlRenderer -> DisplayMediaControl ->
+PlatformEmbed -> react-native-webview` reaches `src/components/media/PlatformEmbed.tsx:22`
+(`import { WebView } from 'react-native-webview'`). Under jest-expo there is no mock for
+`react-native-webview` (checked: not in `jest.config.js`, jest setup, or `__mocks__`), so its
+native `RNCWebViewModule` TurboModule is unavailable and the module throws when the suite is
+loaded. This is the same class of problem as the `expo-file-system` item below (a native module
+resolved at import time with no jest stub).
+
+**Proposed fix:** add a jest mock for `react-native-webview` (a stub `WebView` component +
+`WebViewNavigation` type) in the jest setup or a `__mocks__/react-native-webview.js`, so any
+suite whose import graph touches `PlatformEmbed` can load. Prefer the shared mock so the many
+media/preview/wallet suites all benefit.
+
+**Files:**
+- `jest.config.js` / jest setup (add the mock) — or a `__mocks__/react-native-webview.js`
+- Import chain: `src/components/media/PlatformEmbed.tsx` (the `react-native-webview` import)
+- Affected suite (example): `src/components/wallet/__tests__/ExpandedContent.test.ts`
+
+**Risk if deferred:** Medium — `ExpandedContent` (and other WebView-reaching component suites)
+can't run, so regressions in those components — including the duration-tracking `stopTracking`
+wiring just added to `ExpandedContent` in 1.0.5 — are guarded only by the typechecker, not a
+running test.
+
+---
+
+## Curated-library rationale tests drift from `curatedLibrary.ts` content (3 failing assertions)
+
+**Type:** Bug / test-vs-data drift
+**Priority:** Medium (real red tests; masks genuine rationale regressions)
+**Discovered:** During the `1.0.5-fixes` work — confirmed PRE-EXISTING and unrelated to the
+three bugs in that spec (nothing in 1.0.5 touched `curatedLibrary.ts` or these tests). Surfaced
+because the run exercised the full Jest suite.
+
+**Symptoms (in `src/data/__tests__/curatedLibrary.rationale.grounding.test.ts` and
+`...rationale.property.test.ts`):**
+- `lib-grounding-54321 has correct approach` — expects a specific `approach`, receives
+  `"somatic techniques"` (the static data and the test's `EXPECTED_APPROACHES` map disagree).
+- `learnMoreLinks use credible domains only` — a `learnMoreLinks` entry's `title.length`
+  exceeds the 100-char cap the test enforces (received 115 for `lib-box-breathing`/`lib-pmr`,
+  121 for `lib-name-it-tame-it`), and at least one link's hostname is not in the test's
+  `CREDIBLE_DOMAINS` allow-list.
+- Property 9 (`every card rationale passes validateRationaleMetadata`) also flags a card.
+
+**Root cause:** the rationale content in `src/data/curatedLibrary.ts` (approach value, link
+titles, link domains) has diverged from the constraints these tests assert. Either the data was
+edited without updating the tests, or the tests encode rules the data was never trimmed to meet.
+Needs a decision per assertion: fix the data (shorten titles to <=100, use an allow-listed
+domain, correct the approach) OR update the test's expectations if the rule/expected value is
+stale.
+
+**Files:**
+- `src/data/curatedLibrary.ts` (rationale for `lib-grounding-54321`, `lib-box-breathing`
+  (L146), `lib-pmr` (L209), `lib-name-it-tame-it` (L261) — approach, `learnMoreLinks` titles/URLs)
+- `src/data/__tests__/curatedLibrary.rationale.grounding.test.ts` (`EXPECTED_APPROACHES`,
+  `CREDIBLE_DOMAINS`, the <=100 title-length rule)
+- `src/data/__tests__/curatedLibrary.rationale.property.test.ts` (Property 9)
+
+**Risk if deferred:** Medium — these suites are red, so a real future rationale regression
+(bad domain, over-long title, wrong approach) is indistinguishable from the existing failures
+and would slip through. Also note the admin-editing/export flow validates rationale
+(`validateExportReadiness`), so drift here can affect what an admin can export.
+
+---
+
 ## expo-file-system mock breaks ~1/5 of the Jest suite at import time
 
 **Type:** Bug / test infrastructure

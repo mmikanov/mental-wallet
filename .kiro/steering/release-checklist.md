@@ -11,12 +11,20 @@ When the user is about to build, submit, or release a new app version (any menti
 
 ## Before building
 
-1. **Bump the marketing version** if the previous version was already submitted/approved on either store. Apple REJECTS a duplicate `CFBundleShortVersionString`. Because this project uses the bare workflow (committed `ios/`/`android/`), the version must be updated in ALL FOUR places and kept identical:
+1. **Bump the marketing version** if the previous version was already submitted/approved on either store. Apple REJECTS a duplicate `CFBundleShortVersionString`.
+
+   **Use the one-command script** — do not hand-edit the files:
+   ```
+   npm run set-version -- 1.0.5
+   ```
+   Because this project uses the bare workflow (committed `ios/`/`android/`), the marketing version lives in multiple files that must stay identical. `scripts/set-version.js` writes them all from the single argument:
    - `app.json` → `version`
    - `ios/MentalWallet/Info.plist` → `CFBundleShortVersionString`
    - `ios/MentalWallet.xcodeproj/project.pbxproj` → `MARKETING_VERSION` (both Debug and Release)
    - `android/app/build.gradle` → `versionName`
-   (Build numbers auto-increment via EAS `autoIncrement` — don't touch those.)
+   - `package.json` → `version` (kept in sync for tidiness; not used by the build)
+
+   (Build numbers auto-increment via EAS `autoIncrement` — the script does NOT touch those.) The script is idempotent, so re-running it to confirm is safe. The full prebuild migration (making `app.json` the single source of truth and removing this multi-file sync entirely) is still tracked in `.kiro/specs/prebuild-migration/`.
 2. **Confirm the working tree is committed and pushed** so the build reflects the intended code.
 3. **Prepare release notes** for both stores. Keep/track the copy in `docs/store-listing-copy.md` (Version History sections). Add a new version entry there. To see everything landed since the last release, diff against the previous release tag: `git log <last-tag>..HEAD` (e.g. `git log v1.0.3..HEAD`). The "Unreleased" section in `docs/store-listing-copy.md` is the running draft — finalize it into the new version's entry.
 

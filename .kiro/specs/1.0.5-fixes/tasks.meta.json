@@ -1,0 +1,458 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "3.1 (Exploration) Add a unit test for the duration-axis label generation in `DualAxisChart` that reproduces the bug: with all-zero duration data (`durationMax=1, durationMin=0`), assert the three tick labels are NOT all-distinct today (top and midpoint both `1m`). Confirms the bug on unfixed code.": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937102496
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937182984
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937291370
+      }
+    ],
+    "3.2 (Preservation) Add a test capturing correct behavior for a normal multi-minute range (distinct labels), so the fix doesn't regress normal charts.": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937102575
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937295882
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937346727
+      }
+    ],
+    "3.3 (Fix) In `src/components/insights/DualAxisChart.tsx`, dedupe the right-axis (duration) ticks: if the midpoint label equals the top or bottom label, render the midpoint as empty. Scope strictly to the duration labels; leave the left score axis (`10/5/1`) and the \"Felt better\" series untouched.": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937102621
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937351027
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937424277
+      }
+    ],
+    "3.4 (Verify) Run the label tests for all three cases (zero, tiny <2 min, normal); `npm run typecheck` clean. Visually confirm both Insights surfaces (per-tool and wallet-level) via the same shared chart.": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937102655
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937428109
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937911478
+      }
+    ],
+    "3.5 (Checkpoint) Bug 3 green and self-contained.": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937102688
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937914445
+      }
+    ],
+    "2.1 (Exploration) Add a test that persisting a `duration_records` row with `end_status='timed_out'` FAILS against the current schema (CHECK allows only `completed`/`collapsed`). Confirms the latent bug.": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937102758
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937918678
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789938045708
+      }
+    ],
+    "2.2 (Preservation) Add/confirm a test that existing `completed` and `collapsed` rows still persist and existing rows survive a migration.": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937102797
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789938049012
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789938138160
+      }
+    ],
+    "2.3 (Fix) Add `runDurationEndStatusCheckMigration(db)` in `src/data/migrations.ts` following the `runControlTypeCheckMigration` rebuild pattern (idempotency guard on the table DDL; rebuild table with `CHECK(end_status IN ('completed','collapsed','timed_out'))`; copy rows; recreate both indexes; FK off/on; rollback on error). Register it in `runMigrations` after `runDurationRecordsMigration`. Update `DURATION_RECORDS_SCHEMA_SQL` to the three-value CHECK for fresh installs.": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937102831
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789938142656
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789938269403
+      }
+    ],
+    "2.4 (Verify) Re-run 2.1 (now passes — `timed_out` persists), 2.2 (still green), and a migration-idempotency test (running twice is a no-op, rows preserved).": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937102870
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789938272875
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789938446774
+      }
+    ],
+    "2.5 (Checkpoint) Cycle A green.": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937102903
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789938449822
+      }
+    ],
+    "2.6 (Exploration) Add a test asserting that expanding a card starts tracking and completing it persists a `completed` duration record — failing today because nothing calls `startTracking`/`stopTracking` (no production caller exists).": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937102936
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789938464305
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789938575786
+      }
+    ],
+    "2.7 (Preservation) Capture baselines that must not change: the < 3s discard rule still drops short sessions; switching cards doesn't double-count; the graph query still reads only `end_status='completed'` (no query change).": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937102970
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789938579487
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789938790934
+      }
+    ],
+    "2.8 (Fix — init) In `App.tsx`, add a mount effect that calls `createActiveDurationTracker().initialize()` and tears it down on unmount, alongside the existing effects.": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937103007
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789938796442
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789938847960
+      }
+    ],
+    "2.9 (Fix — start) In `src/stores/walletStore.ts`, call `startTracking(focusedCardId)` from `expandCard()` (the single entry-into-active-use chokepoint).": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937103072
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789938852128
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789938922889
+      }
+    ],
+    "2.10 (Fix — stop/completed) In `src/components/wallet/ExpandedContent.tsx`, call `stopTracking('completed')` on the successful completion paths (`handleSubmit` non-KPI, `handleLinkOnlyAutoComplete`) BEFORE the existing `collapseCard()`. Also call it on the KPI check-in success path (`recordKpi`) so KPI sessions aren't mislabeled.": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937103155
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789938928928
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789939041693
+      }
+    ],
+    "2.11 (Fix — stop/collapsed) In `walletStore.ts`, call `stopTracking('collapsed')` from `returnToStack()` and from `collapseCard()` only if a session is still active (completion already stopped it, so this becomes a no-op after completes). Rely on `stopTracking`'s `!isTracking` early-return for safety.": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937103208
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789939045774
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789939163878
+      }
+    ],
+    "2.12 (Verify) Re-run 2.6 (now passes) and 2.7 (still green). Add coverage: expand→complete → one `completed` row; expand→collapse without completing → one `collapsed` row; expand→return-to-stack → `collapsed`; expand card A then expand card B → no double-count. `npm run typecheck` clean.": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937103257
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789939168222
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789939328695
+      }
+    ],
+    "2.13 (Checkpoint — on-device note) State plainly: unit-verified at the store/DB layer. The real expand→record→graph loop and the background/foreground pause + 15-min timeout must be confirmed on a device/simulator — use a tool for a measurable time, finish it, confirm the Practice time line is non-zero. This can't be proven in CI.": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937103331
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789939337897
+      }
+    ],
+    "2.14 (Fix) Add a short, muted caption near the chart on BOTH surfaces — `PerToolOutcomeTrendsSection.tsx` (after `<DualAxisChart>`) and `OutcomeTrendsSection.tsx` (inside `contentCard`, after `<DualAxisChart>`). Extract the copy into a shared constant/component so both read identically. Draft: \"Practice time counts time you spend using a tool in the app. It doesn't include time in other apps or external media.\"": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937103390
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789939343320
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789939466743
+      }
+    ],
+    "2.15 (Verify) Confirm the note renders on both Insights pages, is unobtrusive (caption, not a dialog), and is accessible. Sanity-check the existing \"Practice time\" tooltip/help text still matches the now-populated line; adjust wording only if it implied a different source (no methodology change — explainability update chain not triggered).": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937103455
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789939471377
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789939566744
+      }
+    ],
+    "2.16 (Checkpoint) Bug 2 complete (Cycles A–C green; on-device pass noted as pending).": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937103524
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789939570498
+      }
+    ],
+    "1.1 (1a evidence) On the Play-signed build: run `adb shell pm get-app-links com.mentalwallet.app` and record the domain verification state; `curl -sSL https://mentalhealthwallet.productsforgood.co/.well-known/assetlinks.json` to confirm it's live, `application/json`, no redirect, and which fingerprints it lists; read the **App signing key** SHA-256 from Play Console → App signing and compare.": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937103586
+      }
+    ],
+    "1.2 (1b evidence) Add temporary `if (__DEV__) console.log('[dl] …')` in `src/navigation/linking.ts` at the `getInitialURL` (post-`getLastNotificationResponseAsync`) and `subscribe` response-listener points; run on the device; tap a reminder cold and warm; capture Logcat showing whether the handler fires and whether `data.cardId` arrives.": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937103636
+      }
+    ],
+    "1.3 (Checkpoint) Write down the answers: is the domain `verified`? is Play's fingerprint in the file? does the notification handler fire on-device with `data.cardId`? These drive the fixes below.": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937103671
+      }
+    ],
+    "1.4 (Fix) IF the fingerprint is missing: add Play's app-signing SHA-256 to the live `assetlinks.json` (keep the existing upload/EAS fingerprint), redeploy the worker, and update the repo copy `website/.well-known/assetlinks.json` to match. Confirm `_headers` still pins `Content-Type: application/json`.": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937103711
+      }
+    ],
+    "1.5 (Verify — on device) Reinstall from the track (or `pm verify-app-links --re-verify`), then `pm get-app-links` → `verified`; tapping `…/app/checkin` opens the app on the check-in card with no browser. Confirm `mentalwallet://checkin` still works as the local fallback.": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937103750
+      }
+    ],
+    "1.6 (Checkpoint) 1a verified on the physical Play-signed build (note: not verifiable in CI or emulator side-load).": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937103870
+      }
+    ],
+    "1.7 (Fix) Based on the 1.2 log (not a guess), address the specific gap the log shows (e.g. notification `data` survival / channel setup, or response-listener registration timing). Extract the notification-`data`→`mentalwallet://wallet?focusCardId=<id>` mapping into a small pure helper if it isn't already, to make it testable.": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937103902
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789940067767
+      }
+    ],
+    "1.8 (Regression test) Unit-test the mapping/helper at the layer that was broken (not just route parsing): given a `card_reminder` notification `data`, it produces the correct deep-link URL; malformed/absent data degrades gracefully.": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937103935
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789940159818
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789940237231
+      }
+    ],
+    "1.9 (Verify — on device) Tap a tool's reminder cold (app killed) and warm (backgrounded) → opens that tool. Remove all temporary `[dl]` logs (grep the tag) before committing.": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937103968
+      }
+    ],
+    "1.10 (Checkpoint) 1b verified on-device; diagnostics removed.": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937104003
+      }
+    ],
+    "R.1 Finalize the 1.0.5 \"What's New\" copy in `docs/store-listing-copy.md` (Apple copy must not mention Android — per steering). Version already bumped to 1.0.5 across the four native files + package.json via `npm run set-version`.": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937104037
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789940241871
+      },
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789940344729
+      }
+    ],
+    "R.2 Commit the 1.0.5 fixes together with the pending version bump + `scripts/set-version.js` + release-checklist steering change.": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937104068
+      }
+    ],
+    "R.3 Follow the release checklist (build, submit, set store release notes, tag `v1.0.5` on the built commit).": [
+      {
+        "executionId": "6b942fcb-d6c5-4d9a-9b50-7d6b4bd5a3bd",
+        "chatSessionId": "sess_37b84929-47aa-47b2-8458-df44f9ff0af0",
+        "timestamp": 1789937104109
+      }
+    ]
+  }
+}
