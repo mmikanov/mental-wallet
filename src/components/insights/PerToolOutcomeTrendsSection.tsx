@@ -13,6 +13,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import DualAxisChart from './DualAxisChart';
+import { PracticeTimeDisclosure } from './PracticeTimeDisclosure';
 import type { WalletCorrelationResult } from '@/services/correlationEngine';
 
 // --- Props ---
@@ -53,6 +54,9 @@ export function PerToolOutcomeTrendsSection({
         granularity={data.granularity}
         rangeStartDate={data.rangeStartDate}
       />
+
+      {/* Practice-time disclosure caption near the chart (Req 6.1, 6.2, 6.3) */}
+      <PracticeTimeDisclosure />
 
       {/* Summary text below chart (Req 2.6, 4.3) */}
       <Text style={styles.summaryText}>{data.summaryText}</Text>

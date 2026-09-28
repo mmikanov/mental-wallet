@@ -27,6 +27,32 @@ import type { RootStackParamList } from './types';
 const CUSTOM_SCHEME_PREFIX = 'mentalwallet://';
 const UNIVERSAL_LINK_PREFIX = 'https://mentalhealthwallet.productsforgood.co/app';
 
+/**
+ * Map a tapped notification's `data` payload to the deep-link URL that focuses +
+ * expands the reminded card. Returns a `mentalwallet://wallet?focusCardId=<id>`
+ * URL only for a well-formed `card_reminder` payload; otherwise returns null.
+ *
+ * Extracted as a pure, side-effect-free helper (shared by getInitialURL and
+ * subscribe) so the mapping is testable in isolation. Robust to malformed input:
+ * undefined, null, non-objects, wrong `type`, missing/empty `cardId` → null.
+ *
+ * Validates: 1.0.5-fixes Requirements 3.1, 3.2.
+ */
+export function reminderNotificationDataToUrl(data: unknown): string | null {
+  if (
+    data != null &&
+    typeof data === 'object' &&
+    'type' in data &&
+    (data as { type?: unknown }).type === 'card_reminder' &&
+    'cardId' in data &&
+    (data as { cardId?: unknown }).cardId
+  ) {
+    const cardId = (data as { cardId: unknown }).cardId;
+    return `${CUSTOM_SCHEME_PREFIX}wallet?focusCardId=${cardId}`;
+  }
+  return null;
+}
+
 export const linking: LinkingOptions<RootStackParamList> = {
   prefixes: [CUSTOM_SCHEME_PREFIX, UNIVERSAL_LINK_PREFIX],
   config: {
@@ -108,10 +134,10 @@ export const linking: LinkingOptions<RootStackParamList> = {
    */
   async getInitialURL() {
     const response = await Notifications.getLastNotificationResponseAsync();
-    const data = response?.notification.request.content.data;
-    if (data?.type === 'card_reminder' && data?.cardId) {
-      return `${CUSTOM_SCHEME_PREFIX}wallet?focusCardId=${data.cardId}`;
-    }
+    const notificationUrl = reminderNotificationDataToUrl(
+      response?.notification.request.content.data
+    );
+    if (notificationUrl) return notificationUrl;
 
     // Fall back to the actual URL the app was launched with (scheme or https).
     const url = await Linking.getInitialURL();
@@ -124,10 +150,8 @@ export const linking: LinkingOptions<RootStackParamList> = {
   subscribe(listener) {
     const notificationSub = Notifications.addNotificationResponseReceivedListener(
       (response) => {
-        const data = response.notification.request.content.data;
-        if (data?.type === 'card_reminder' && data?.cardId) {
-          listener(`${CUSTOM_SCHEME_PREFIX}wallet?focusCardId=${data.cardId}`);
-        }
+        const url = reminderNotificationDataToUrl(response.notification.request.content.data);
+        if (url) listener(url);
       }
     );
 

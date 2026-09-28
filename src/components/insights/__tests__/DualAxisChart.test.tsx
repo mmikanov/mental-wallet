@@ -6,7 +6,7 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react-native';
-import DualAxisChart from '../DualAxisChart';
+import DualAxisChart, { computeDurationAxisLabels } from '../DualAxisChart';
 
 describe('DualAxisChart', () => {
   const defaultProps = {
@@ -216,6 +216,122 @@ describe('DualAxisChart', () => {
       expect(screen.getByText('Wed')).toBeTruthy();
       expect(screen.getByText('Fri')).toBeTruthy();
       expect(screen.getByText('Today')).toBeTruthy();
+    });
+  });
+
+  describe('duration axis labels — Bug 3 (duplicate "1m")', () => {
+    /**
+     * Validates: Requirements 8.1, 8.2, 8.5
+     *
+     * This is the Bug 3 case (all-zero practice-time data). The component floors
+     * the range to durationMax=1 / durationMin=0 (via Math.max(...,1) /
+     * Math.min(...,0)). BEFORE the fix the three ticks were:
+     *   top    = format(1)           → "1m"
+     *   mid    = format((1+0)/2=0.5) → round → 1 → "1m"   ← collided with top
+     *   bottom = format(0)           → "0"
+     * which showed a duplicate "1m" on the axis.
+     *
+     * AFTER the fix (task 3.3) the midpoint is blanked when it would collide
+     * with the top or bottom, so no VISIBLE label repeats:
+     *   top = "1m", mid = "" (blanked), bottom = "0".
+     */
+    it('blanks the midpoint for a near-zero range so no visible duration label repeats (fixed behavior)', () => {
+      // Mirrors the component's floored range for all-zero duration data.
+      const durationMax = 1;
+      const durationMin = 0;
+
+      const { top, mid, bottom } = computeDurationAxisLabels(durationMax, durationMin);
+
+      // Top and bottom are unchanged; the colliding midpoint is now blanked.
+      expect(top).toBe('1m');
+      expect(mid).toBe('');
+      expect(bottom).toBe('0');
+
+      // No VISIBLE label repeats (empty string is not a visible label).
+      const visibleLabels = [top, mid, bottom].filter((l) => l !== '');
+      const noVisibleDuplicate = new Set(visibleLabels).size === visibleLabels.length;
+      expect(noVisibleDuplicate).toBe(true);
+    });
+
+    /**
+     * Validates: Requirements 8.3, 8.4
+     *
+     * PRESERVATION TEST (bugfix workflow). Captures the correct baseline for a
+     * NORMAL multi-minute range: the three duration ticks are already all
+     * distinct today, and the upcoming dedupe fix (task 3.3) must NOT alter
+     * them. This proves the fix is scoped to the near-zero collision case and
+     * leaves normal charts untouched (Req 8.3 — only the minute labels change,
+     * and only when they would otherwise repeat; Req 8.4 — the normal
+     * multi-minute case shows no repeated label).
+     *
+     * Must PASS on the current (unfixed) code AND remain true after the fix.
+     */
+    it('keeps all three duration labels distinct for a normal multi-minute range (baseline, must not regress)', () => {
+      // Case 1: max=30, min=0 → top "30m", mid "15m", bottom "0" — all distinct.
+      {
+        const { top, mid, bottom } = computeDurationAxisLabels(30, 0);
+
+        expect(top).toBe('30m');
+        expect(mid).toBe('15m');
+        expect(bottom).toBe('0');
+
+        const allDistinct = new Set([top, mid, bottom]).size === 3;
+        expect(allDistinct).toBe(true);
+      }
+
+      // Case 2: another normal range max=28, min=10 → top "28m", mid "19m", bottom "10m".
+      {
+        const { top, mid, bottom } = computeDurationAxisLabels(28, 10);
+
+        expect(top).toBe('28m');
+        expect(mid).toBe('19m');
+        expect(bottom).toBe('10m');
+
+        const allDistinct = new Set([top, mid, bottom]).size === 3;
+        expect(allDistinct).toBe(true);
+      }
+    });
+
+    /**
+     * Validates: Requirements 8.4, 8.5
+     *
+     * The "tiny amount (under a couple of minutes)" case from Req 8.4 — a
+     * non-zero but very small practice-time range. This is distinct from the
+     * all-zero (max=1/min=0) case above and from the normal multi-minute case.
+     * It exercises BOTH sub-cases of a sub-2-minute range:
+     *
+     *   (i)  max=2, min=1 → top "2m", mid (1.5→round→2) "2m" collides with top,
+     *        so mid is blanked; visible labels are ["2m", "1m"] — no repeat.
+     *   (ii) max=3, min=0 → top "3m", mid (1.5→round→2) "2m", bottom "0" — a
+     *        tiny range that does NOT collide and stays all-distinct.
+     *
+     * In neither sub-case does a VISIBLE minute label repeat.
+     */
+    it('shows no repeated label for a tiny sub-2-minute range (near-collision and non-collision)', () => {
+      // (i) Near-collision: midpoint rounds to the top → blanked.
+      {
+        const { top, mid, bottom } = computeDurationAxisLabels(2, 1);
+
+        expect(top).toBe('2m');
+        expect(mid).toBe(''); // collided with top → blanked
+        expect(bottom).toBe('1m');
+
+        const visibleLabels = [top, mid, bottom].filter((l) => l !== '');
+        const noVisibleDuplicate = new Set(visibleLabels).size === visibleLabels.length;
+        expect(noVisibleDuplicate).toBe(true);
+      }
+
+      // (ii) Tiny but distinct: no collision, all three remain visible + unique.
+      {
+        const { top, mid, bottom } = computeDurationAxisLabels(3, 0);
+
+        expect(top).toBe('3m');
+        expect(mid).toBe('2m');
+        expect(bottom).toBe('0');
+
+        const allDistinct = new Set([top, mid, bottom]).size === 3;
+        expect(allDistinct).toBe(true);
+      }
     });
   });
 });

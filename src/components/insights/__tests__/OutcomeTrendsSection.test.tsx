@@ -261,6 +261,23 @@ describe('OutcomeTrendsSection', () => {
       expect(screen.getByTestId('outcome-trends-confident-empty')).toBeTruthy();
       expect(screen.getByText('Unable to load trend data')).toBeTruthy();
     });
+
+    it('renders the practice-time disclosure caption inside the chart card (Req 6.1, 6.2, 6.3)', async () => {
+      await render(
+        <OutcomeTrendsSection
+          tier="confident"
+          tierProgress={mockTierProgress}
+          walletCorrelation={mockWalletCorrelation}
+        />
+      );
+
+      expect(screen.getByTestId('practice-time-disclosure')).toBeTruthy();
+      expect(
+        screen.getByText(
+          "Practice time counts time you spend using a tool in the app. It doesn't include time in other apps or external media."
+        )
+      ).toBeTruthy();
+    });
   });
 
   describe('accessibility', () => {

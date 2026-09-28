@@ -124,6 +124,24 @@ A card-based toolkit to build coping habits and discover what works for you.
 
 Track the release notes submitted for each Apple version here. Newest first.
 
+### 1.0.5
+
+**What's New in This Version:**
+```
+This update brings your Insights to life and smooths out a few rough edges:
+
+• Practice time now counts for real. The time you actively spend using a tool is measured and shown on your Insights graph, so the "Practice time" line finally reflects your real practice instead of sitting at zero.
+• A short note on the Insights graph makes it clear that practice time is the time you spend on a tool inside the app — not time in other apps or external media.
+• Cleaned up a small graph glitch where a minute label could show up twice.
+• Reliability fixes so reminders and links open the right tool more dependably.
+
+Have feedback? We'd love to hear it, reach us from Settings.
+```
+
+**Notes:** Covers wiring up practice-time (duration) tracking so the Insights "Practice time" line records real usage (Bug 2), the in-app disclosure caption clarifying practice time is in-app time on a tool (Req 6), the duplicate minute-axis label fix on the Outcome Trends graph (Bug 3), and reminder/link tap reliability fixes (Bug 1 — described platform-neutrally; the Android-specific work lives in the Google Play entry only). No new deep-link or WebView surfaces were added in this release.
+
+**Reviewer note (App Review Information):** this release is bug fixes only — it turns on practice-time tracking in Insights, polishes a graph label, and improves reminder/link reliability. It adds no new deep-link or WebView surfaces beyond 1.0.4. To sanity-check Insights, use a tool for a minute or so and finish it; the "Practice time" line should show a non-zero value.
+
 ### 1.0.4
 
 **What's New in This Version:**
@@ -136,10 +154,12 @@ This update makes your tools easier to reach and adds a calming new visual:
 • Tap a reminder or a tip link and you now land right on that tool, ready to use, not just the wallet.
 • Preview any tool in the library with a clear new Preview button before adding it.
 • Archive a tool and its reminders stop; restore it and they pick right back up.
-• Onboarding is clearer, plus fixes for right-to-left languages, app links on Android, and general polish.
+• Onboarding is clearer, plus fixes for right-to-left languages and general polish.
 
 Have feedback? We'd love to hear it, reach us from Settings.
 ```
+
+**Apple copy rule:** Never mention Android (or any third-party platform) in Apple "What's New" / metadata. Apple rejected 1.0.4 under Guideline 2.3.10 for an "app links on Android" reference. Keep Android-specific notes in the Google Play section only.
 
 **Notes:** Covers the deep-linking work (tips/reminders open the specific tool), the tip CTA upgrade, the Box Breathing visual pacer, the Library preview button, the archived-tool reminder fix, the in-app Tips feed, the in-app email opt-in (privacy-preserving link-out, no email stored in the app), onboarding consent + clarity fixes, and the round-1 user-reported fixes (RTL, Android store link, collapsed-stack visibility). Also includes a behind-the-scenes emotion-session analytics accuracy fix (not user-visible enough for a bullet).
 
@@ -177,6 +197,21 @@ Initial App Store release. (No "What's New" — first version.)
 ## Version History — Release Notes (Google Play)
 
 Google Play release notes use `<en-US>...</en-US>` language tags and have a **500-character limit per language**. Set them per release in Play Console → Production → (release) → Release notes. Newest first.
+
+### 1.0.5 (versionCode TBD — EAS auto-increments)
+
+```
+<en-US>
+• Practice time now counts for real: the time you actively spend using a tool is measured and shown on your Insights graph, instead of always sitting at zero.
+• A short note clarifies that practice time is in-app time on a tool, not time in other apps or external media.
+• Fixed a graph glitch where a minute label could appear twice.
+• Fixed reminder and link taps so they reliably open the right tool on Android.
+
+Feedback? Reach us from Settings.
+</en-US>
+```
+
+_(Note: 466 characters inside the `<en-US>` tags including the tags — under the 500-char limit. Confirm the auto-incremented versionCode in Play Console at submit.)_
 
 ### 1.0.4 (versionCode TBD — EAS auto-increments)
 

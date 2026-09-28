@@ -20,6 +20,7 @@ import OutcomePrompt from './OutcomePrompt';
 import { useCompletionStore } from '@/stores/completionStore';
 import { useWalletStore } from '@/stores/walletStore';
 import { useKpiStore } from '@/stores/kpiStore';
+import { useDurationTrackingStore } from '@/stores/durationTrackingStore';
 import { logEvent, logExternalAppLaunched } from '@/services/analyticsEventLogger';
 import { getOutcomePromptEnabled } from '@/services/settingsService';
 import { CURATED_LIBRARY } from '@/data/curatedLibrary';
@@ -178,6 +179,10 @@ export default function ExpandedContent({ card }: ExpandedContentProps) {
 
     try {
       await submitCompletion(card.id, card.controls);
+      // Mark the active duration session as completed BEFORE collapse so it is
+      // labeled 'completed' rather than 'collapsed' (Req 4.2). stopTracking
+      // early-returns when no session is active, so this is safe.
+      void useDurationTrackingStore.getState().stopTracking('completed');
       // Log tool_completed analytics event
       const analyticsCardId = card.sourceLibraryId || card.id;
       void logEvent('tool_completed', {
@@ -269,6 +274,12 @@ export default function ExpandedContent({ card }: ExpandedContentProps) {
       } else {
         await submitCompletion(card.id, card.controls);
       }
+      // Mark the active duration session as completed BEFORE any collapse so it
+      // is labeled 'completed' rather than 'collapsed'. Covers both the KPI
+      // check-in path (Req 4.6 — KPI sessions not mislabeled) and the non-KPI
+      // completion path (Req 4.2). stopTracking early-returns when no session
+      // is active, so this is safe on all branches.
+      void useDurationTrackingStore.getState().stopTracking('completed');
       // Log tool_completed analytics event
       const analyticsCardId = card.sourceLibraryId || card.id;
       void logEvent('tool_completed', {

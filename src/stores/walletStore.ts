@@ -8,6 +8,7 @@
 import { create } from 'zustand';
 import { createCardService } from '@/services/cardService';
 import { resetStaleStreaks } from '@/services/completionService';
+import { useDurationTrackingStore } from '@/stores/durationTrackingStore';
 import type { Card } from '@/types/index';
 import type { CardService } from '@/types/services';
 
@@ -67,15 +68,31 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
     const { focusedCardId } = get();
     if (focusedCardId) {
       set({ isExpanded: true });
+      // Entering active use is the single chokepoint for starting a duration
+      // session — arrow tap, primary action, deep link, and tutorial all funnel
+      // through expandCard(). (Req 4.2)
+      useDurationTrackingStore.getState().startTracking(focusedCardId);
     }
   },
 
   collapseCard() {
     set({ isExpanded: false });
+    // Close a duration session as "closed without finishing" (Req 4.2).
+    // Completion-first ordering: on a genuine completion, ExpandedContent calls
+    // stopTracking('completed') BEFORE collapseCard() runs, so by the time we
+    // get here the session is already stopped and stopTracking() early-returns
+    // (!isTracking) — a safe no-op that preserves the 'completed' label. Only a
+    // genuine collapse/dismiss without completing leaves the session active, in
+    // which case this records a 'collapsed' session.
+    useDurationTrackingStore.getState().stopTracking('collapsed');
   },
 
   returnToStack() {
     set({ focusedCardId: null, isExpanded: false });
+    // Full dismiss without finishing → closed without finishing (Req 4.2).
+    // Same completion-first no-op safety as collapseCard(): if a completion
+    // already stopped the session, this early-returns.
+    useDurationTrackingStore.getState().stopTracking('collapsed');
   },
 
   enterReorderMode() {

@@ -1,5 +1,28 @@
 # Workflow Preferences
 
+## Spec Language — requirements in product language, not developer language
+
+The audience for `requirements.md` is a **product manager**, not a developer. Write requirements
+in plain, product-focused language and keep implementation detail out of them.
+
+**In `requirements.md`:**
+- Describe **what** the user experiences and **why** it matters — outcomes and behavior, not mechanism.
+- User stories and acceptance criteria SHALL read in plain language. Prefer "the app saves the
+  session" over "insert a row into `duration_records`".
+- NO code symbols, file paths, function/table/column names, SQL, framework APIs, shell
+  commands (`adb`, `curl`), or class names. If a term is unavoidable, define it in plain words
+  in a short glossary and note that the technical detail lives in the design doc.
+- A short **Background** paragraph in plain language is welcome when it helps the reader
+  understand why a requirement exists.
+- When a product decision has options or a tradeoff (e.g. whether to count a certain case in a
+  metric), state the decision and its rationale in product terms so the PM can confirm it.
+
+**Put the technical detail in `design.md` and `tasks.md` instead** — that's the right home for
+file names, symbols, data model, migrations, exact commands, API calls, and code-level plans.
+
+Rule of thumb: a PM should be able to read `requirements.md` end to end and confirm scope
+without asking what a term means; an engineer should be able to read `design.md` for the how.
+
 ## Bugfix Specs — Per-Bug Sequential Tasks
 
 When creating implementation tasks for bugfix specs that contain multiple bugs, structure the task list **per-bug sequentially** — not by phase across all bugs.

@@ -77,10 +77,23 @@ device — the `xcodebuild` steps above install it.
 
 ### Making `expo run:ios` work again (after 1.0.4)
 
+> **RESOLVED (post-1.0.4):** `expo run:ios` now works. The fix was step 4 below —
+> `DEVELOPMENT_TEAM = J2XVWUDH2V` is now committed in `project.pbxproj` (both Debug and
+> Release), and a local Apple Development certificate exists in the keychain (created via
+> Xcode → Automatically manage signing). For the **simulator**, the build signs ad-hoc
+> (`CODE_SIGN_IDENTITY = -`), so no provisioning profile or team-owned cert is required — a
+> full `npx expo run:ios` build+bundle+launch was verified working. The `xcodebuild`
+> workaround above still works and is kept as a fallback.
+>
+> Note on teams: the local keychain cert is under a personal free team, but the simulator
+> build signs ad-hoc regardless, so it doesn't matter for local dev. Testing entitlement-gated
+> behavior (Universal Links) on a **real device** still needs an EAS build (which uses the
+> real `J2XVWUDH2V` remote credentials), not a local `expo run:ios`.
+
 `expo run:ios` is nicer than the `xcodebuild` workaround (one command, handles Metro, device
-selection, etc.). It only fails today because there's no local development signing set up and
-the associated-domains entitlement forces signing even for the simulator. One-time fix, to do
-after 1.0.4 ships (deferred so we don't touch native signing config right before release):
+selection, etc.). It previously failed because there was no local development signing set up and
+the associated-domains entitlement forces signing even for the simulator. The one-time fix
+(now done):
 
 1. Open the workspace in Xcode: `xed ios`
 2. Select the **MentalWallet** target → **Signing & Capabilities**

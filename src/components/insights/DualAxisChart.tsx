@@ -213,6 +213,34 @@ function formatDurationAxisLabel(minutes: number): string {
 }
 
 /**
+ * Computes the three right-axis (duration) tick labels — top, midpoint, bottom —
+ * from the duration range. Extracted as a pure, exported helper so the label
+ * generation is unit-testable independently of rendering.
+ *
+ * Bug 3 dedupe (task 3.3): a near-zero range (max=1, min=0) makes the midpoint
+ * round to the same string as the top ("1m") — a visible duplicate on the axis.
+ * To avoid repeating a visible label, the midpoint is blanked ('') whenever it
+ * matches the top OR the bottom. Scoped strictly to the duration axis; the left
+ * score axis (10/5/1) and the "Felt better" series are unaffected.
+ */
+export function computeDurationAxisLabels(
+  durationMax: number,
+  durationMin: number
+): { top: string; mid: string; bottom: string } {
+  const top = formatDurationAxisLabel(durationMax);
+  const bottom = formatDurationAxisLabel(durationMin);
+  let mid = formatDurationAxisLabel((durationMax + durationMin) / 2);
+
+  // Dedupe: an empty string is not a visible label, so blanking the midpoint
+  // when it collides guarantees no two VISIBLE labels repeat.
+  if (mid === top || mid === bottom) {
+    mid = '';
+  }
+
+  return { top, mid, bottom };
+}
+
+/**
  * Normalizes a value within a [min, max] range to a 0–1 proportion.
  */
 function normalize(value: number, min: number, max: number): number {
@@ -488,15 +516,22 @@ export default function DualAxisChart({
 
         {/* Right Y-axis labels (duration in minutes) */}
         <View style={styles.yAxisLabelsRight}>
-          <Text style={[styles.yAxisLabel, { color: DURATION_COLOR }]}>
-            {formatDurationAxisLabel(durationMax)}
-          </Text>
-          <Text style={[styles.yAxisLabel, { color: DURATION_COLOR }]}>
-            {formatDurationAxisLabel((durationMax + durationMin) / 2)}
-          </Text>
-          <Text style={[styles.yAxisLabel, { color: DURATION_COLOR }]}>
-            {formatDurationAxisLabel(durationMin)}
-          </Text>
+          {(() => {
+            const durationLabels = computeDurationAxisLabels(durationMax, durationMin);
+            return (
+              <>
+                <Text style={[styles.yAxisLabel, { color: DURATION_COLOR }]}>
+                  {durationLabels.top}
+                </Text>
+                <Text style={[styles.yAxisLabel, { color: DURATION_COLOR }]}>
+                  {durationLabels.mid}
+                </Text>
+                <Text style={[styles.yAxisLabel, { color: DURATION_COLOR }]}>
+                  {durationLabels.bottom}
+                </Text>
+              </>
+            );
+          })()}
         </View>
       </View>
 
