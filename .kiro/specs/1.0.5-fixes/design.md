@@ -149,9 +149,46 @@ Unit-test the label generation for: all-zero (max=1,min=0), tiny non-zero (e.g. 
 
 ---
 
+## Item 4 — Longer (multi-line) journaling text fields
+
+### Current state (verified)
+
+The curated library (`src/data/curatedLibrary.ts`) defines two entry control types: `text_input` (single-line, `TextInputControl`) and `text_area` (multi-line, `TextAreaControl`). `TextAreaControl` already renders a comfortable box (`multiline`, `numberOfLines={4}`, `minHeight: 100`, `textAlignVertical: 'top'`) and its config does not read a `maxLength`. Several library cards already use `text_area` for the same kind of writing (e.g. "Win of the Day", the two "Evidence For & Against" fields, the "Gratitude Message" body, and the SEE/TOUCH/HEAR fields of 5-4-3-2-1).
+
+### Fix
+
+Convert the reviewer-selected `text_input` fields to `type: 'text_area'` and drop their `maxLength` (to match the existing multi-line fields — no separate cap). No component change is needed; the fix is data-only in `curatedLibrary.ts`. The exact fields are recorded in `text-field-review.md` (14 converted, 5 kept single-line). Also normalize a stray `maxLength: 150` on Sensory Comfort Kit → "What did you choose?" to `200` (it was the only 150 in the library; every other content field is 200, and the two intentional 100s are name fields). That field stays single-line.
+
+Per the admin-editing steering, curated-card edits only affect newly-added wallet copies (no OTA update to existing cards); this is expected and acceptable for 1.0.5.
+
+### Tests
+
+No new control-type unit test is required (the data change is exercised by the existing library/type checks and `tsc`). The pre-existing `curatedLibrary.rationale.*` test failures are unrelated (tracked in `docs/tech-debt.md`).
+
+---
+
+## Item 5 — First-time Daily Check-in message
+
+### Root cause (verified)
+
+`src/utils/kpiBadgeUtils.ts` → `formatExplanationMessage(daysElapsed, hasEverCheckedIn)`. The `!hasEverCheckedIn` branch returned `` `${daysElapsed} ${dayWord} since you added the app — how are you feeling today?` ``. The `hasEverCheckedIn` flag already exists (set in `kpiStore` from whether any `kpi_records` row exists; `FocusedCardView` derives it), so the plumbing is in place — only the copy needed changing.
+
+### Fix
+
+In the `!hasEverCheckedIn` branch, return a plain encouragement with NO day count:
+`You haven't checked in yet — how are you feeling today?`. The returning-user branch ("It's been N days since your last check-in") is unchanged. Copy-only; no data/streak/counting change.
+
+### Tests
+
+Unit tests in `kpiBadgeUtils.test.ts`: never-checked-in returns the encouragement and contains no digit; returning user still returns the "N days since last check-in" message. Property test (Property 6) still holds (it exercises the returning-user default).
+
+---
+
 ## Testing & verification summary
 
 - **Bug 1:** on-device only; unit regression test on the notification-`data`→URL mapping. State plainly that App Links + reminder delivery are verified on the physical Play-signed build, not in CI.
 - **Bug 2:** unit tests for the `timed_out` migration (row persists; idempotent; existing rows preserved) and the start/stop wiring (expand→start, complete→'completed', collapse/return→'collapsed', switch-card no double count). On-device pass: use a tool for a bit, finish it, confirm the Practice time line shows non-zero. Duration is only provable at the DB/store level in CI; the expand→record loop needs a device/simulator pass.
 - **Bug 3:** unit tests on label generation (above). Visual check on both Insights surfaces.
+- **Item 4:** data-only change in `curatedLibrary.ts`; `tsc` clean; existing data suites green (the 2 failing rationale suites are pre-existing, unrelated). Optional on-device check: add a converted tool and confirm the taller box.
+- **Item 5:** `kpiBadgeUtils` unit tests (never-checked-in vs returning). Copy-only; no methodology/explainability change triggered.
 - Per project convention: `npm run typecheck` clean for touched files and relevant Jest suites green. Remove any temporary diagnostics.

@@ -377,4 +377,64 @@ describe('kpiService', () => {
       }
     });
   });
+
+  // 1.0.5: the check-in note field is seeded as 'text_area' for new users, while
+  // existing users' copies remain 'text_input'. recordKpi must write the note's
+  // control value for BOTH types — otherwise a new user's note would be silently
+  // dropped. These tests guard that.
+  describe('recordKpi writes the note value for both note-field types', () => {
+    function mockDbForRecord(noteControlType: 'text_input' | 'text_area') {
+      const controlValueInserts: Array<{ control_type: string; value: string }> = [];
+      const db = {
+        getFirstAsync: jest.fn(async (sql: string, params?: any[]) => {
+          if (sql.includes('settings') && params?.[0] === 'personal_kpi') {
+            return { value: 'Feeling calmer' };
+          }
+          if (sql.includes('cards') && sql.includes('source_library_id')) {
+            return { id: 'kpi-card-id' };
+          }
+          if (sql.includes('total_uses')) {
+            return { total_uses: 0, current_streak: 0, last_used_at: null };
+          }
+          return null;
+        }),
+        getAllAsync: jest.fn(async () => [
+          { id: 'ctrl-mood', type: 'mood_slider' },
+          { id: 'ctrl-note', type: noteControlType },
+        ]),
+        runAsync: jest.fn(async (sql: string, params?: any[]) => {
+          if (sql.includes('INSERT INTO control_values')) {
+            // params: [id, completion_id, control_id, control_type, value]
+            controlValueInserts.push({ control_type: params![3], value: params![4] });
+          }
+          return { changes: 1 };
+        }),
+        execAsync: jest.fn().mockResolvedValue(undefined),
+        withTransactionAsync: jest.fn(async (fn: () => Promise<void>) => { await fn(); }),
+      };
+      return { db, controlValueInserts };
+    }
+
+    it("saves the note when the note control is 'text_area' (new-user seed)", async () => {
+      const { db, controlValueInserts } = mockDbForRecord('text_area');
+      mockGetDatabase.mockResolvedValue(db as any);
+
+      await createKpiService().recordKpi(8, 'felt calmer after a walk');
+
+      const noteInsert = controlValueInserts.find((c) => c.control_type === 'text_area');
+      expect(noteInsert).toBeDefined();
+      expect(noteInsert!.value).toBe('felt calmer after a walk');
+    });
+
+    it("still saves the note when the note control is 'text_input' (existing copies)", async () => {
+      const { db, controlValueInserts } = mockDbForRecord('text_input');
+      mockGetDatabase.mockResolvedValue(db as any);
+
+      await createKpiService().recordKpi(5, 'a quick note');
+
+      const noteInsert = controlValueInserts.find((c) => c.control_type === 'text_input');
+      expect(noteInsert).toBeDefined();
+      expect(noteInsert!.value).toBe('a quick note');
+    });
+  });
 });

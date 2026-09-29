@@ -30,6 +30,19 @@ The two phases share the same goal (users benefit from curated improvements with
 history) and the same detection/diff building blocks. Phase 1 is a stepping-stone that delivers
 value immediately; Phase 2 can supersede it when we're ready to invest in the migration.
 
+**Scope also includes the built-in Daily Check-in tool.** The 🌱 check-in tool is seeded by
+`kpiService.ts` during onboarding rather than added from the library, but it carries
+`source_library_id = 'lib-personal-kpi'`, so the same version marker + detection + in-place
+update mechanism in Phase 1 applies to it unchanged. Wherever this spec says "library card,"
+read it as "any wallet card with a `source_library_id`," which includes the check-in tool.
+
+**First content change that will exercise this (from the `1.0.5-fixes` spec).** 1.0.5 converts
+several single-line note/reflective fields to multi-line (`text_area`), including the check-in
+tool's "Anything you want to note?" field. Those changes ship to **new** copies in 1.0.5 only;
+they are the first concrete edit that should bump a curated card's `version` (Req 1) and drive
+the "update available" flow so **existing** copies can opt in — the motivating first use case
+for Phase 1.
+
 Stack context (per steering): React Native 0.81 / Expo SDK 54, bare workflow, Zustand 5, SQLite
 via `expo-sqlite`. There is **no OTA** — curated cards ship with the app binary, so any of this
 only takes effect in a build the user installs.

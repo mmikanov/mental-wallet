@@ -83,14 +83,17 @@ export function getAccessibilityLabel(daysElapsed: number | null): string {
  * Generates the badge explanation message shown at the top of the focused
  * Daily Check-in card. Returns null when no message should be displayed.
  *
- * Uses singular "day" for 1, plural "days" for 2+.
- * When hasEverCheckedIn is false, shows a first-time prompt instead.
+ * Uses singular "day" for 1, plural "days" for 2+ (returning users).
+ * When hasEverCheckedIn is false, shows a first-time encouragement prompt with
+ * no day count (the count confused first-time users).
  */
 export function formatExplanationMessage(daysElapsed: number | null, hasEverCheckedIn: boolean = true): string | null {
   if (daysElapsed === null || daysElapsed === 0) return null;
   if (!hasEverCheckedIn) {
-    const dayWord = daysElapsed === 1 ? 'day' : 'days';
-    return `${daysElapsed} ${dayWord} since you added the app — how are you feeling today?`;
+    // First-time prompt: encourage the first check-in without showing a
+    // days-since-install counter (the count read like a meaningless install-age
+    // number rather than an invitation). See 1.0.5-fixes item 2.
+    return `You haven't checked in yet — how are you feeling today?`;
   }
   const dayWord = daysElapsed === 1 ? 'day' : 'days';
   return `It's been ${daysElapsed} ${dayWord} since your last check-in`;
