@@ -257,12 +257,11 @@ export function createKpiService(): KpiService {
         },
         {
           id: Crypto.randomUUID(),
-          type: 'text_input',
+          type: 'text_area',
           position: 1,
           config: JSON.stringify({
             label: 'Anything you want to note?',
             placeholder: 'A word or thought…',
-            maxLength: 200,
           }),
           isRequired: 0,
         },
@@ -430,14 +429,17 @@ export function createKpiService(): KpiService {
               [cardRow.id]
             );
 
-            // Write control values for mood_slider and text_input
+            // Write control values for mood_slider and the note field (text_input or text_area)
             for (const control of controls) {
               const controlValueId = Crypto.randomUUID();
               let controlValue: string;
 
               if (control.type === 'mood_slider') {
                 controlValue = String(value);
-              } else if (control.type === 'text_input') {
+              } else if (control.type === 'text_input' || control.type === 'text_area') {
+                // The note field is 'text_area' for check-in tools seeded in 1.0.5+
+                // and 'text_input' for older/existing copies — handle both so the
+                // note is always saved.
                 controlValue = note ?? '';
               } else {
                 continue;

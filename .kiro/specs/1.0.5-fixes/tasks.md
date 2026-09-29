@@ -103,6 +103,34 @@ Order: **Bug 3 → Bug 2 → Bug 1.** Rationale: Bug 3 is small, pure-JS, and in
 
 ---
 
+## Item 4 — Longer (multi-line) journaling text fields
+
+Library fields: data-only change in `src/data/curatedLibrary.ts` (selected in `text-field-review.md`). The built-in Daily Check-in note field lives in `src/services/kpiService.ts` and is handled in 4.4–4.6.
+
+- [x] 4.1 Convert the 14 reviewer-selected `text_input` fields to `type: 'text_area'` and drop their `maxLength` (match the existing multi-line fields). Keep the 5 short-answer fields single-line (name fields, one-word emotion, "Feeling").
+  - _Requirements: 9.1, 9.2, 9.3_
+- [x] 4.2 Normalize the stray `maxLength: 150` on Sensory Comfort Kit → "What did you choose?" to `200` (only 150 in the library; stays single-line).
+  - _Requirements: 9.2_
+- [x] 4.3 (Verify) `tsc` clean for `curatedLibrary.ts`; audit every text field's type against the review selections (14 converted, 5 kept); confirm no new test failures (the 2 failing `curatedLibrary.rationale.*` suites are pre-existing, unrelated — see `docs/tech-debt.md`).
+  - _Requirements: 9.1, 9.4_
+- [x] 4.4 (Seed) In `src/services/kpiService.ts`, change the built-in check-in note control ("Anything you want to note?") from `type: 'text_input'` to `type: 'text_area'` and drop its `maxLength`, so new users get a multi-line note field. (Existing users' copies are untouched — handled by `library-card-sync`.)
+  - _Requirements: 9.5_
+- [x] 4.5 (Coupling fix) In `kpiService.ts` `recordKpi`, write the note's `control_values` entry for BOTH `text_input` and `text_area` note controls (previously only `text_input` was handled, so a `text_area` note would be silently dropped). Existing single-line copies keep working.
+  - _Requirements: 9.6_
+- [x] 4.6 (Verify) Add unit tests: `recordKpi` saves the note when the note control is `text_area` (new-user seed) and still saves it when `text_input` (existing copies). All `kpiService` suites green; `tsc` clean for `kpiService.ts`.
+  - _Requirements: 9.5, 9.6_
+
+## Item 5 — First-time Daily Check-in message
+
+Copy-only change in `src/utils/kpiBadgeUtils.ts`.
+
+- [x] 5.1 In `formatExplanationMessage`, change the `!hasEverCheckedIn` branch to a plain encouragement with no day count: "You haven't checked in yet — how are you feeling today?". Leave the returning-user branch unchanged.
+  - _Requirements: 10.1, 10.2, 10.3_
+- [x] 5.2 (Verify) Add unit tests: never-checked-in returns the encouragement and contains no digit; returning user still shows "N days since last check-in". Existing suites (incl. Property 6, BadgeExplanationBanner, FocusedCardView badge) green.
+  - _Requirements: 10.1, 10.2_
+
+---
+
 ## Release wrap (when all three are done)
 
 - [x] R.1 Finalize the 1.0.5 "What's New" copy in `docs/store-listing-copy.md` (Apple copy must not mention Android — per steering). Version already bumped to 1.0.5 across the four native files + package.json via `npm run set-version`.

@@ -2,13 +2,20 @@
 
 ## Introduction
 
-This spec covers three defects found after the 1.0.4 release, to be fixed in **1.0.5**:
+This spec started with three defects found after the 1.0.4 release, to be fixed in **1.0.5**:
 
 1. **Android deep links fail on a physical device** (they work on iOS TestFlight and worked on the Android emulator, but not on a real Android installed from the Play Store). This affects both an externally-authored HTTPS link like `https://mentalhealthwallet.productsforgood.co/app/checkin` and the in-app per-card reminder tap.
 2. **The Insights "Practice time" series always shows 0.** The duration-tracking feature (store + service + AppState tracker) was fully built and unit-tested but was never wired into the card lifecycle, so `duration_records` is never written in normal use — only the dev seeder populates it.
 3. **The Outcome Trends graph renders the label "1m" twice** on the right (duration) axis when the duration range is near-zero, because the top and midpoint ticks both round to 1.
 
-Each bug is treated as a self-contained fix. Bugs 2 and 3 are pure-JS and shippable independently; Bug 1 is native/on-device and depends on the Play-Store signing key and the deployed `assetlinks.json`, so it requires an on-device verification pass and (per the debugging steering) an instrumentation step before any speculative code fix.
+Two smaller user-reported items were added to the 1.0.5 cycle after the original three:
+
+4. **Journaling text fields are too short.** Several library tools use a single-line entry field where users want room to write a full thought.
+5. **The first-time Daily Check-in message is confusing.** For a user who has never checked in, the message read like a days-since-install counter rather than an encouragement to check in.
+
+(A larger, related idea — letting existing users opt in to updated versions of tools they already have — was considered here but split out to its own feature spec, `library-card-sync`, since it's new functionality rather than a fix. In 1.0.5 the multi-line fields reach new copies only.)
+
+Each item is treated as a self-contained fix. Items 2, 3, 4, and 5 are pure-JS and shippable independently; Item 1 is native/on-device and depends on the Play-Store signing key and the deployed `assetlinks.json`, so it requires an on-device verification pass and (per the debugging steering) an instrumentation step before any speculative code fix.
 
 ## Glossary
 
@@ -159,6 +166,50 @@ Terms used in plain language below (the technical detail lives in the design doc
 8.4 THE fix SHALL be checked against three cases — no practice time at all, a small amount (under a couple of minutes), and a normal multi-minute amount — and none SHALL show a repeated label.
 
 8.5 THE fix SHALL apply everywhere this graph appears — both the per-tool Insights screen and the wallet-level insights section.
+
+---
+
+## Item 4 — Journaling text fields are too short
+
+### Requirement 9: Reflective fields give room to write
+
+**User Story:** As a user writing in a journaling-style tool, I want enough room to capture a full thought, so I'm not cut off by a cramped single-line box.
+
+**Background:** Some tools use a short, single-line entry field. Users told us that for reflective prompts (e.g. "What's on your mind?", a gratitude note, a permission-slip statement, or the built-in Daily Check-in's "Anything you want to note?") the single line feels too small. Other tools already use a taller, multi-line box for the same kind of writing, so this is about making the reflective fields consistent with those.
+
+#### Acceptance Criteria
+
+9.1 THE reflective / journaling entry fields agreed in review SHALL use the taller, multi-line entry box (the same style already used by tools like "Win of the Day" and "Evidence For & Against"). The specific fields are recorded in `text-field-review.md`.
+
+9.2 Short-answer fields SHALL stay single-line — specifically the ones that take a name or a single word (e.g. "Who will you thank?", "Who did you listen to?", the one-word emotion in "Name It to Tame It", and the "Feeling" field in Thought – Feeling – Action).
+
+9.3 THE multi-line fields SHALL behave like the app's existing multi-line fields (no separate length cap), consistent with how journaling entries already work.
+
+9.4 New copies of these tools (added after this release) SHALL get the multi-line fields directly. Tools **already in a user's wallet** keep the field they had when added — there is no over-the-air update to existing copies in 1.0.5. (Retroactively updating existing copies, with user opt-in and history preserved, is designed separately in the `library-card-sync` spec and is out of scope here.)
+
+9.5 THE built-in Daily Check-in tool's "Anything you want to note?" field SHALL also use the taller, multi-line box for **new** setups (users who set up the check-in tool after this release). As with 9.4, existing users' check-in tools are not changed automatically in 1.0.5 — that is handled by the `library-card-sync` opt-in upgrade.
+
+9.6 Saving a Daily Check-in SHALL correctly record the user's note regardless of whether the note field is the new multi-line style or the older single-line style, so no note is ever silently dropped.
+
+---
+
+## Item 5 — First-time Daily Check-in message
+
+### Requirement 10: The first-time message encourages, not counts
+
+**User Story:** As a first-time user who has never done a Daily Check-in, I want the message at the top of the check-in tool to invite me to check in, so it feels like an encouragement rather than a confusing counter of days since I installed the app.
+
+**Background:** For a user who has never checked in, the message previously showed a number of days since they added the app (e.g. "3 days since you added the app — how are you feeling today?"). That number read like an install-age counter and confused people, since it isn't tied to any check-in they did.
+
+#### Acceptance Criteria
+
+10.1 WHEN a user has never recorded a Daily Check-in, THE message at the top of the check-in tool SHALL be a plain encouragement to check in, with NO day count shown.
+
+10.2 WHEN a user has checked in before, THE existing "it's been N days since your last check-in" message SHALL be unchanged.
+
+10.3 This is copy only — it SHALL NOT change any check-in data, streak, or counting logic.
+
+---
 
 ---
 

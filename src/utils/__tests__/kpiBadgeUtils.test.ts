@@ -152,6 +152,21 @@ describe('formatExplanationMessage', () => {
   it('includes the numeric count in the message', () => {
     expect(formatExplanationMessage(42)).toContain('42');
   });
+
+  // 1.0.5-fixes item 2: never-checked-in users get an encouragement prompt with
+  // NO day count (the count read like an install-age counter, which confused
+  // first-time users).
+  it('returns a first-time encouragement (no day count) when the user has never checked in', () => {
+    const msg = formatExplanationMessage(3, false);
+    expect(msg).toBe("You haven't checked in yet — how are you feeling today?");
+    expect(msg).not.toMatch(/\d/); // no numeric day count
+  });
+
+  it('still shows the days-since-last-check-in message for returning users', () => {
+    expect(formatExplanationMessage(3, true)).toBe(
+      "It's been 3 days since your last check-in"
+    );
+  });
 });
 
 describe('validateDaysAgoInput', () => {

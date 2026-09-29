@@ -92,32 +92,29 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
       isRequired: false,
     },
     {
-      type: "text_input",
+      type: "text_area",
       position: 4,
       config: {
         label: "2 things you can SMELL",
         placeholder: "Any scents in the air?",
-        maxLength: 200,
       },
       isRequired: false,
     },
     {
-      type: "text_input",
+      type: "text_area",
       position: 5,
       config: {
         label: "1 thing you can TASTE",
         placeholder: "What taste do you notice?",
-        maxLength: 200,
       },
       isRequired: false,
     },
     {
-      type: "text_input",
+      type: "text_area",
       position: 6,
       config: {
         label: "Reflection",
         placeholder: "Anything you noticed during the exercise?",
-        maxLength: 200,
       },
       isRequired: false,
     },
@@ -342,12 +339,11 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: false,
       },
       {
-        type: 'text_input',
+        type: 'text_area',
         position: 1,
         config: {
           label: 'Thought',
           placeholder: 'What was the thought?',
-          maxLength: 200,
         },
         isRequired: true,
       },
@@ -362,12 +358,11 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: true,
       },
       {
-        type: 'text_input',
+        type: 'text_area',
         position: 3,
         config: {
           label: 'Action',
           placeholder: 'What did you do (or want to do)?',
-          maxLength: 200,
         },
         isRequired: true,
       },
@@ -545,12 +540,11 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: true,
       },
       {
-        type: 'text_input',
+        type: 'text_area',
         position: 1,
         config: {
           label: "What's on your mind?",
           placeholder: 'A brief thought or word...',
-          maxLength: 200,
         },
         isRequired: false,
       },
@@ -655,22 +649,20 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: false,
       },
       {
-        type: 'text_input',
+        type: 'text_area',
         position: 1,
         config: {
           label: 'What are you grateful for today?',
           placeholder: 'Something that made today a little better...',
-          maxLength: 200,
         },
         isRequired: false,
       },
       {
-        type: 'text_input',
+        type: 'text_area',
         position: 2,
         config: {
           label: 'What can you let go of tonight?',
           placeholder: 'A worry or tension to release...',
-          maxLength: 200,
         },
         isRequired: false,
       },
@@ -1028,17 +1020,16 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         config: {
           label: 'What did you choose?',
           placeholder: 'e.g. lavender candle, rain sounds...',
-          maxLength: 150,
+          maxLength: 200,
         },
         isRequired: false,
       },
       {
-        type: 'text_input',
+        type: 'text_area',
         position: 3,
         config: {
           label: 'How did it feel?',
           placeholder: 'What did you notice?',
-          maxLength: 200,
         },
         isRequired: false,
       },
@@ -1086,12 +1077,11 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
     allowBackgroundCustomization: true,
     controls: [
       {
-        type: 'text_input',
+        type: 'text_area',
         position: 0,
         config: {
           label: 'The belief',
           placeholder: 'e.g. "I always fail at this"',
-          maxLength: 200,
         },
         isRequired: true,
       },
@@ -1157,32 +1147,29 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
     allowBackgroundCustomization: true,
     controls: [
       {
-        type: 'text_input',
+        type: 'text_area',
         position: 0,
         config: {
           label: '1. First good thing',
           placeholder: 'Something that went well...',
-          maxLength: 200,
         },
         isRequired: true,
       },
       {
-        type: 'text_input',
+        type: 'text_area',
         position: 1,
         config: {
           label: '2. Second good thing',
           placeholder: 'Something you appreciated...',
-          maxLength: 200,
         },
         isRequired: true,
       },
       {
-        type: 'text_input',
+        type: 'text_area',
         position: 2,
         config: {
           label: '3. Third good thing',
           placeholder: 'Something that made you smile...',
-          maxLength: 200,
         },
         isRequired: true,
       },
@@ -1298,12 +1285,11 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
         isRequired: false,
       },
       {
-        type: 'text_input',
+        type: 'text_area',
         position: 1,
         config: {
           label: 'I give myself permission to...',
           placeholder: 'e.g. rest without guilt, say no, feel my feelings',
-          maxLength: 200,
         },
         isRequired: true,
       },
