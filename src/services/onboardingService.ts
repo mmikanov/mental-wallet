@@ -134,7 +134,7 @@ export function createOnboardingService(): OnboardingService {
         }));
 
         try {
-          await cardService.create(shell, controls, 'library', curatedDef.categoryId, curatedDef.id);
+          await cardService.create(shell, controls, 'library', curatedDef.categoryId, curatedDef.id, curatedDef.version ?? null);
         } catch (error) {
           console.warn(
             `[OnboardingService] Failed to seed card "${curatedDef.title}" (${cardId}):`,
