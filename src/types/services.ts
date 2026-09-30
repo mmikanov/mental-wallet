@@ -34,11 +34,21 @@ export interface CardService {
     controls: Omit<Control, 'id' | 'cardId'>[],
     originBadge: OriginBadge,
     categoryId?: string,
-    sourceLibraryId?: string
+    sourceLibraryId?: string,
+    sourceLibraryVersion?: number | null
   ): Promise<Card>;
 
   /** Update an existing card's fields. */
   update(id: string, updates: Partial<Card>): Promise<Card>;
+
+  /**
+   * History-preserving in-place update of a wallet card from its current curated
+   * definition. Refreshes shell + controls + category + version on the same
+   * `cards.id`, preserving stats, completions/control_values, custom background,
+   * and reminders. No-op (returns the card unchanged) when the card is not
+   * outdated or not updatable.
+   */
+  updateFromLibrary(cardId: string): Promise<Card>;
 
   /** Persist a new card order given an array of card IDs in desired order. */
   reorder(orderedIds: string[]): Promise<void>;

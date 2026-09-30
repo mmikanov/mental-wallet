@@ -40,6 +40,7 @@ function makeCard(overrides: Partial<Card> = {}): Card {
     previousStackPosition: overrides.previousStackPosition ?? null,
     allowBackgroundCustomization: overrides.allowBackgroundCustomization ?? false,
     sourceLibraryId: overrides.sourceLibraryId ?? null,
+    sourceLibraryVersion: overrides.sourceLibraryVersion ?? null,
     controls: overrides.controls ?? [],
     createdAt: overrides.createdAt ?? '2024-01-01T00:00:00Z',
     updatedAt: overrides.updatedAt ?? '2024-01-01T00:00:00Z',

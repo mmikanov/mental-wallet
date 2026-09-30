@@ -172,6 +172,7 @@ const mockCard: Card = {
   createdAt: '2024-01-01T00:00:00Z',
   updatedAt: '2024-01-01T00:00:00Z',
   sourceLibraryId: 'lib-grounding-54321',
+  sourceLibraryVersion: null,
 };
 
 const mockCuratedCard: CuratedCardDefinition = {

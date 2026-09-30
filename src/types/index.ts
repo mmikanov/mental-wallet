@@ -164,6 +164,7 @@ export interface Card extends CardShell {
   previousStackPosition: number | null;
   allowBackgroundCustomization: boolean;
   sourceLibraryId?: string | null;
+  sourceLibraryVersion: number | null;
   controls: Control[];
   createdAt: string;
   updatedAt: string;

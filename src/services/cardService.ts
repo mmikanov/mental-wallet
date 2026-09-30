@@ -3,6 +3,8 @@ import { getDatabase } from '../data/database';
 import { AppError, ErrorCode } from '../types/errors';
 import { copyOverlayToCard } from './backgroundOverlayService';
 import { validateThirdPartyUri } from '../utils/validateThirdPartyUri';
+import { evaluateOutdated, diffControls } from './librarySyncService';
+import { KPI_CARD_DEFINITION, formatKpiMoodLabel } from '../data/kpiCardDefinition';
 import type {
   Card,
   CardShell,
@@ -162,6 +164,7 @@ function mapRowToCard(row: Record<string, unknown>): Omit<Card, 'controls'> {
     previousStackPosition: (row.previous_stack_position as number) ?? null,
     allowBackgroundCustomization: (row.allow_background_customization as number) === 1,
     sourceLibraryId: (row.source_library_id as string) ?? null,
+    sourceLibraryVersion: (row.source_library_version as number) ?? null,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
@@ -199,7 +202,7 @@ export function createCardService(): CardService {
           c.background_type, c.background_value, c.category_id,
           c.origin_badge, c.stack_position, c.total_uses, c.current_streak,
           c.last_used_at, c.is_archived, c.archived_at, c.previous_stack_position,
-          c.allow_background_customization, c.source_library_id,
+          c.allow_background_customization, c.source_library_id, c.source_library_version,
           c.created_at, c.updated_at,
           bo.background_type AS overlay_background_type,
           bo.background_value AS overlay_background_value,
@@ -228,7 +231,7 @@ export function createCardService(): CardService {
           c.background_type, c.background_value, c.category_id,
           c.origin_badge, c.stack_position, c.total_uses, c.current_streak,
           c.last_used_at, c.is_archived, c.archived_at, c.previous_stack_position,
-          c.allow_background_customization, c.source_library_id,
+          c.allow_background_customization, c.source_library_id, c.source_library_version,
           c.created_at, c.updated_at,
           bo.background_type AS overlay_background_type,
           bo.background_value AS overlay_background_value,
@@ -258,7 +261,8 @@ export function createCardService(): CardService {
       controls: Omit<Control, 'id' | 'cardId'>[],
       originBadge: OriginBadge,
       categoryId?: string,
-      sourceLibraryId?: string
+      sourceLibraryId?: string,
+      sourceLibraryVersion?: number | null
     ): Promise<Card> {
       const shellValidation = validateShell(shell);
       if (!shellValidation.isValid) {
@@ -303,8 +307,8 @@ export function createCardService(): CardService {
 
         // Insert the card
         await db.runAsync(
-          `INSERT INTO cards (id, title, description, icon_type, icon_value, background_type, background_value, category_id, origin_badge, stack_position, total_uses, current_streak, last_used_at, is_archived, archived_at, previous_stack_position, allow_background_customization, source_library_id, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, NULL, 0, NULL, NULL, ?, ?, ?, ?)`,
+          `INSERT INTO cards (id, title, description, icon_type, icon_value, background_type, background_value, category_id, origin_badge, stack_position, total_uses, current_streak, last_used_at, is_archived, archived_at, previous_stack_position, allow_background_customization, source_library_id, source_library_version, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, NULL, 0, NULL, NULL, ?, ?, ?, ?, ?)`,
           [
             cardId,
             shell.title,
@@ -318,6 +322,7 @@ export function createCardService(): CardService {
             stackPosition,
             originBadge === 'library' || originBadge === 'community' ? 1 : 0,
             sourceLibraryId || null,
+            sourceLibraryVersion ?? null,
             now,
             now,
           ]
@@ -357,6 +362,236 @@ export function createCardService(): CardService {
         throw AppError.persistence(ErrorCode.PERSISTENCE_READ_FAILED, 'Failed to read created card');
       }
       return card;
+    },
+
+    /**
+     * History-preserving in-place update of a wallet card from its current
+     * curated definition. Refreshes shell + controls + category + version on the
+     * SAME `cards.id`, preserving stats, completions/control_values (surviving
+     * controls keep their UUIDs), custom background overlays, and reminders.
+     *
+     * Guards (all BEFORE opening any transaction):
+     *  - No `sourceLibraryId` / curated missing / not outdated ⇒ return the card
+     *    unchanged (idempotent no-op, Req 3.8 / Req 1.4).
+     *
+     * The mutation runs in a SINGLE transaction: shell `UPDATE cards` FIRST, then
+     * the control reconciliation (UPDATE surviving / INSERT new / DELETE removed).
+     * Any failure ROLLBACKs the whole thing, leaving the card in its prior state
+     * (Req 3.7).
+     *
+     * AFTER a successful COMMIT, if the update changed the card TITLE and the card
+     * has an ACTIVE reminder, the reminder is rescheduled so the notification body
+     * reflects the new title (Req 3.5). This runs outside the transaction (async
+     * notification I/O must never sit inside an open SQLite transaction — same rule
+     * archive/restore follow) and is best-effort: a notification failure NEVER fails
+     * the update, which has already committed.
+     *
+     * Validates: Requirements 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8
+     */
+    async updateFromLibrary(cardId: string): Promise<Card> {
+      const db = await getDatabase();
+
+      // 1. Load the card (with controls).
+      const card = await this.getById(cardId);
+      if (!card) {
+        throw AppError.persistence(ErrorCode.PERSISTENCE_NOT_FOUND, `Card not found: ${cardId}`);
+      }
+
+      // 2 + 3. Detection (covers: no sourceLibraryId, curated missing/unversioned,
+      // already-current). Guard BEFORE opening any transaction — a not-outdated
+      // card (including genuinely not-updatable ones) is a no-op that returns the
+      // card unchanged (Req 3.8, Req 1.4).
+      const { isOutdated, curated, curatedVersion } = evaluateOutdated(card);
+      if (!isOutdated || !curated) {
+        return card;
+      }
+
+      // 4. Compute the control reconciliation plan (matched by position).
+      const plan = diffControls(card.controls, curated.controls);
+
+      // Capture the pre-update title so, after COMMIT, we can tell whether the
+      // update changed it and only then reschedule the reminder (Req 3.5).
+      const previousTitle = card.title;
+
+      // Determine whether a custom background overlay exists. When it does, the
+      // user's background wins (Req 3.4) — we must NOT overwrite the card's own
+      // background_* columns (the overlay row itself is never touched here).
+      const overlay = await db.getFirstAsync<{ id: string }>(
+        `SELECT id FROM background_overlays WHERE card_id = ?`,
+        [cardId]
+      );
+      const hasOverlay = overlay != null;
+
+      const now = new Date().toISOString();
+
+      // 5. Single transaction: shell UPDATE first, then control reconciliation.
+      await db.execAsync('BEGIN TRANSACTION');
+
+      try {
+        // Shell + category + version. NEVER touch stats columns (total_uses,
+        // current_streak, last_used_at, stack_position, created_at). Skip
+        // background_* when a custom overlay exists.
+        const shellSet: string[] = [
+          'title = ?',
+          'description = ?',
+          'icon_type = ?',
+          'icon_value = ?',
+        ];
+        const shellParams: (string | number | null)[] = [
+          curated.title,
+          curated.description,
+          curated.iconType,
+          curated.iconValue,
+        ];
+
+        if (!hasOverlay) {
+          shellSet.push('background_type = ?', 'background_value = ?');
+          shellParams.push(curated.backgroundType, curated.backgroundValue);
+        }
+
+        shellSet.push('category_id = ?', 'source_library_version = ?', 'updated_at = ?');
+        shellParams.push(curated.categoryId, curatedVersion, now);
+        shellParams.push(cardId);
+
+        await db.runAsync(`UPDATE cards SET ${shellSet.join(', ')} WHERE id = ?`, shellParams);
+
+        // Controls reconciliation — the critical, history-preserving part. Runs
+        // AFTER the shell UPDATE inside the SAME txn (required by the P7 fault seam).
+        // toUpdate: keep the existing UUID so control_values references stay valid.
+        for (const { id, target } of plan.toUpdate) {
+          await db.runAsync(
+            `UPDATE controls SET type = ?, config = ?, is_required = ?, position = ? WHERE id = ?`,
+            [
+              target.type,
+              JSON.stringify(target.config),
+              target.isRequired ? 1 : 0,
+              target.position,
+              id,
+            ]
+          );
+        }
+
+        // toInsert: genuinely new controls get a fresh UUID.
+        for (const target of plan.toInsert) {
+          const newControlId = Crypto.randomUUID();
+          await db.runAsync(
+            `INSERT INTO controls (id, card_id, type, position, config, is_required, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [
+              newControlId,
+              cardId,
+              target.type,
+              target.position,
+              JSON.stringify(target.config),
+              target.isRequired ? 1 : 0,
+              now,
+            ]
+          );
+        }
+
+        // toDeleteIds: targeted DELETE for positions the new definition dropped.
+        // Cascades control_values for those specific controls only.
+        for (const removedId of plan.toDeleteIds) {
+          await db.runAsync(`DELETE FROM controls WHERE id = ?`, [removedId]);
+        }
+
+        // Check-in label preservation (Req 7.1, 7.2, 7.3). The generic
+        // reconciliation above just wrote KPI_CARD_DEFINITION's TEMPLATE mood_slider
+        // label ('How are you doing with your goal?') to position 0, clobbering the
+        // user's personalized label. For the check-in card only, re-derive the label
+        // from the user's CURRENT personal-KPI setting (authoritative — not a
+        // stale carry-over, not the template) and overwrite it here, inside the same
+        // transaction so it participates in the ROLLBACK-on-error semantics (P7).
+        //
+        // Design decision (A): read the personal_kpi setting DIRECTLY from the DB
+        // (the same settings row kpiService.getPersonalKpi reads) and format locally
+        // via formatKpiMoodLabel — no dependency on kpiService, avoiding a
+        // cardService → kpiService cycle.
+        if (card.sourceLibraryId === KPI_CARD_DEFINITION.id) {
+          const kpiRow = await db.getFirstAsync<{ value: string }>(
+            `SELECT value FROM settings WHERE key = ?`,
+            ['personal_kpi']
+          );
+          const kpi = kpiRow?.value?.trim();
+          // Null/empty setting: leave the label as-is (the template the reconciliation
+          // wrote) rather than formatting an empty goal into
+          // 'How are you doing with: ?'. The 8.4 tests always set the setting; this
+          // branch just keeps the update crash-safe and free of nonsense labels when
+          // no goal has been chosen yet.
+          if (kpi) {
+            // Target the mood_slider robustly: the surviving control at position 0 of
+            // type 'mood_slider' for this card (keeps its original UUID through the
+            // in-place UPDATE above). Re-read its current config so we preserve the
+            // rest of it (minLabel/maxLabel) and only change the label.
+            const moodRow = await db.getFirstAsync<{ id: string; config: string }>(
+              `SELECT id, config FROM controls WHERE card_id = ? AND type = 'mood_slider' AND position = 0`,
+              [cardId]
+            );
+            if (moodRow) {
+              let moodConfig: Record<string, unknown> = {};
+              try {
+                moodConfig = JSON.parse(moodRow.config) as Record<string, unknown>;
+              } catch {
+                moodConfig = {};
+              }
+              moodConfig.label = formatKpiMoodLabel(kpi);
+              await db.runAsync(`UPDATE controls SET config = ? WHERE id = ?`, [
+                JSON.stringify(moodConfig),
+                moodRow.id,
+              ]);
+            }
+          }
+        }
+
+        await db.execAsync('COMMIT');
+      } catch (error) {
+        await db.execAsync('ROLLBACK');
+        throw AppError.persistence(
+          ErrorCode.PERSISTENCE_WRITE_FAILED,
+          'Failed to update card from library',
+          error instanceof Error ? error : undefined
+        );
+      }
+
+      // 6. Reminder reschedule (Req 3.5) — AFTER the transaction, best-effort.
+      // Only needed when the update actually changed the TITLE (the reminder's
+      // notification body embeds the card title). If the title is unchanged, there
+      // is no reminder work to do at all.
+      if (curated.title !== previousTitle) {
+        try {
+          // Lazy require (see archive/restore) to keep expo-notifications out of
+          // cardService's static import graph for store/unit-test consumers.
+          const { createReminderService } = require('./reminderService');
+          const reminderService = createReminderService();
+          const reminder = await reminderService.getReminder(cardId);
+          if (reminder) {
+            // Reschedule via updateReminder (NOT scheduleNotification): scheduleNotification
+            // only schedules NEW notifications and overwrites notification_id, orphaning the
+            // previously scheduled OS notifications (which still carry the OLD title) — they
+            // would keep firing. updateReminder CANCELS the old notifications first, then
+            // reschedules from the current (now-updated) DB title, so the user sees exactly
+            // one reminder carrying the new title and no stale duplicate.
+            await reminderService.updateReminder(reminder.id, {
+              time: reminder.time,
+              frequency: reminder.frequency,
+            });
+          }
+        } catch {
+          // Non-fatal: the card update already committed. A stale reminder degrades
+          // gracefully; launch reconciliation re-arms active reminders whose OS
+          // notifications are missing. Matches the archive/restore convention.
+        }
+      }
+
+      // 7. Re-read and return the reloaded card.
+      const reloaded = await this.getById(cardId);
+      if (!reloaded) {
+        throw AppError.persistence(
+          ErrorCode.PERSISTENCE_READ_FAILED,
+          'Failed to read updated card'
+        );
+      }
+      return reloaded;
     },
 
     /**

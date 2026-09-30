@@ -51,6 +51,8 @@ function makeCard(id: string, title: string): Card {
     isArchived: false,
     archivedAt: null,
     previousStackPosition: null,
+    allowBackgroundCustomization: false,
+    sourceLibraryVersion: null,
     controls: [],
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',

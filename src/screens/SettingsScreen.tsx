@@ -29,6 +29,7 @@ import { useKpiStore } from '@/stores/kpiStore';
 import { useAnalyticsStore } from '@/stores/analyticsStore';
 import { AdminKpiBadgeTools } from '@/components/settings/AdminKpiBadgeTools';
 import { SeedInsightsButton } from '@/components/settings/SeedInsightsButton';
+import { DevReArmSyncButton } from '@/components/settings/DevReArmSyncButton';
 import { getFlushIntervalMs, setFlushIntervalMs } from '@/config/analytics';
 import * as WebBrowser from 'expo-web-browser';
 import { APP_NAME, PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL, SUBSCRIBE_URL } from '@/config/appInfo';
@@ -681,6 +682,7 @@ export default function SettingsScreen({ navigation }: Props) {
 
             <AdminKpiBadgeTools />
             <SeedInsightsButton />
+            <DevReArmSyncButton />
           </View>
         )}
       </ScrollView>

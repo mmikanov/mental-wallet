@@ -423,7 +423,8 @@ export default function LibraryBrowserScreen() {
           })),
           originBadge,
           card.categoryId,
-          card.id // Pass sourceLibraryId for future archive lookups
+          card.id, // Pass sourceLibraryId for future archive lookups
+          card.version ?? null // Snapshot curated version at add-time (Req 1.2)
         );
 
         // Reload wallet
@@ -523,7 +524,8 @@ export default function LibraryBrowserScreen() {
         })),
         originBadge,
         card.categoryId,
-        card.id
+        card.id,
+        card.version ?? null // Snapshot curated version at add-time (Req 1.2)
       );
 
       // Reload wallet and archived cards map

@@ -76,9 +76,10 @@ Admin edits create DB overrides that only affect *your* device. To ship changes 
 4. **Paste into code** — Replace the card's entry in the appropriate source file:
    - Native library cards: `src/data/curatedLibrary.ts`
    - External app cards: `src/data/externalAppCards.ts`
-5. **Delete the DB override** — In admin mode, tap Delete → "Revert to Original" (removes the DB copy so the updated static definition takes effect)
-6. **Verify again** — Confirm the card now loads from the static file (no Draft/Stale badge)
-7. **Build and deploy** — `eas build` → submit to App Store / Play Store
+5. **Bump the card's `version`** — In the same edit, set or increment the card's `version` (see "Card Versioning" below). Skipping this means existing users never get offered the improvement.
+6. **Delete the DB override** — In admin mode, tap Delete → "Revert to Original" (removes the DB copy so the updated static definition takes effect)
+7. **Verify again** — Confirm the card now loads from the static file (no Draft/Stale badge)
+8. **Build and deploy** — `eas build` → submit to App Store / Play Store
 
 ### Affiliate Link Workflow
 
@@ -94,3 +95,70 @@ Admin edits create DB overrides that only affect *your* device. To ship changes 
 - Cards already in a user's wallet retain their DB copy from when they were added. Updating the static definition does NOT retroactively update wallet copies.
 - The Draft badge means the DB override differs from the static source
 - The Stale badge means the static source was updated but the DB override still has old data — delete the override to pick up the new static version
+
+## Card Versioning — bump `version` whenever a curated card's content changes
+
+**The rule:** Any change to a curated card's **user-visible content** must set or bump that
+card's `version` in the curated source, in the same edit that makes the change.
+
+User-visible content means:
+- **Shell fields**: title, description, icon, background, category
+- **Controls**: type, config, `isRequired`, position (adding, removing, reordering, or retyping a control all count)
+- **Rationale metadata**: approach, in-a-nutshell, how-it-works, evidence level, research summary, learn-more links
+
+How to set the number:
+- **First-ever content change to a card** → set `version: 1`.
+- **Each subsequent content change** → increment by 1 (`1` → `2` → `3`, …).
+- **Cards whose content has NOT changed** since versioning was introduced stay **unversioned** — they have no `version` field at all. **Do NOT mass-assign `version: 1` to every card.** Only touch the cards you actually changed.
+
+This applies to every curated card with a `source_library_id`, including the built-in Daily
+Check-in tool (`lib-personal-kpi`) and external app cards in `externalAppCards.ts`.
+
+### Also update the developer re-arm tool in the same change
+
+Whenever you change a curated card's content and bump its `version`, you must ALSO update the
+developer re-arm tool (`src/services/devReArmLibrarySync.ts`) so it can reproduce the
+pre-change state for testing. Concretely: add or adjust the `WIDENED_CONTROLS` entries (or the
+equivalent downgrade) so re-arm reverses your new change — e.g. for a single-line → multi-line
+widening, add the `{ sourceLibraryId, position }` pair for each field you widened; for other
+kinds of change, add whatever in-place downgrade reproduces the old content. This lets the
+"Update available" flow be re-tested end-to-end on one install.
+
+**Why:** the app stores NO historical curated definitions, so the dev re-arm's downgrade list
+is the only record of "what the previous version looked like." If it isn't updated alongside
+the content change, re-arm nulls the stored version but can't revert the content — so
+re-applying the update is a silent no-op and `summarizeUpdate` shows the generic "We've
+improved this tool." fallback with no visible change (the exact bug this note prevents).
+
+### Why this matters
+
+Users who added a card keep a frozen copy of it (see "Cards already in a user's wallet retain
+their DB copy" above). The Library Card Sync "Update available" flow is the only way an
+already-added card picks up a curated improvement without the user losing their history. That
+flow keys entirely off `version`:
+
+- **Forgetting to bump** → the app can't tell the user's copy is behind, so the "Update
+  available" affordance never appears and users are silently stuck on the old content — the exact
+  problem this feature exists to solve.
+- **Spuriously bumping** (bumping when nothing user-visible changed) → users get nagged with an
+  "Update available" prompt that, when applied, is a no-op refresh. It erodes trust in the prompt.
+
+So the bump has to track real content changes precisely: bump when (and only when) the content
+changed.
+
+### Where it lives in code (context, not the rule)
+
+The rule itself is a process rule — the numbers above are what you follow. For reference, the
+mechanism is: `version?: number` on `CuratedCardDefinition` (`src/data/curatedLibrary.ts`),
+`librarySyncService.evaluateOutdated` (decides a wallet copy is behind), and
+`cardService.updateFromLibrary` (applies the update in place, preserving history). Detection
+relies on the version number being correct — there is no content-diff fallback, which is why the
+manual bump is mandatory.
+
+### Tie-in with the export workflow
+
+This is step 5 of "Operator Workflow: Shipping a Card Edit to Users" above. When you export an
+edited card and paste it into `curatedLibrary.ts` (or `externalAppCards.ts`), bump that card's
+`version` in the same edit before you delete the DB override and build. There is no OTA — the
+bump only reaches users in an installed build, so it must ship with the content change it
+describes.

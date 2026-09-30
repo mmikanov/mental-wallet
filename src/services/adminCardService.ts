@@ -50,6 +50,7 @@ function mapRowToCard(row: Record<string, unknown>): Omit<Card, 'controls'> {
     previousStackPosition: (row.previous_stack_position as number) ?? null,
     allowBackgroundCustomization: (row.allow_background_customization as number) === 1,
     sourceLibraryId: (row.source_library_id as string) ?? null,
+    sourceLibraryVersion: (row.source_library_version as number) ?? null,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
