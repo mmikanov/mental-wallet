@@ -131,8 +131,10 @@ Copy-only change in `src/utils/kpiBadgeUtils.ts`.
 
 ---
 
-## Release wrap (when all three are done)
+## Release wrap
 
 - [x] R.1 Finalize the 1.0.5 "What's New" copy in `docs/store-listing-copy.md` (Apple copy must not mention Android — per steering). Version already bumped to 1.0.5 across the four native files + package.json via `npm run set-version`.
-- [ ] R.2 Commit the 1.0.5 fixes together with the pending version bump + `scripts/set-version.js` + release-checklist steering change.
-- [ ] R.3 Follow the release checklist (build, submit, set store release notes, tag `v1.0.5` on the built commit).
+
+> Build, commit, submit, and tagging the release are **not** tracked here — the 1.0.5 release
+> bundles work from multiple specs, so those steps live with the release cycle (see the
+> release-checklist steering), not in this spec.
