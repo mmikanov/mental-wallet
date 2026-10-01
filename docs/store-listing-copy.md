@@ -128,8 +128,10 @@ Track the release notes submitted for each Apple version here. Newest first.
 
 **What's New in This Version:**
 ```
-This update brings your Insights to life and smooths out a few rough edges:
+This update adds a couple of handy improvements and smooths out some rough edges:
 
+• You can now update a tool in your wallet whenever we improve it. Tap "Update available" on the tool and it refreshes in place — your streak, past entries, reminder, and custom background all stay.
+• Bigger, multi-line text fields in several journaling and check-in tools, so longer entries have room to breathe.
 • Practice time now counts for real. The time you actively spend using a tool is measured and shown on your Insights graph, so the "Practice time" line finally reflects your real practice instead of sitting at zero.
 • A short note on the Insights graph makes it clear that practice time is the time you spend on a tool inside the app — not time in other apps or external media.
 • Cleaned up a small graph glitch where a minute label could show up twice.
@@ -138,9 +140,9 @@ This update brings your Insights to life and smooths out a few rough edges:
 Have feedback? We'd love to hear it, reach us from Settings.
 ```
 
-**Notes:** Covers wiring up practice-time (duration) tracking so the Insights "Practice time" line records real usage (Bug 2), the in-app disclosure caption clarifying practice time is in-app time on a tool (Req 6), the duplicate minute-axis label fix on the Outcome Trends graph (Bug 3), and reminder/link tap reliability fixes (Bug 1 — described platform-neutrally; the Android-specific work lives in the Google Play entry only). No new deep-link or WebView surfaces were added in this release.
+**Notes:** Covers the new in-wallet tool-update capability (library-card-sync: an "Update available" affordance refreshes an added tool in place, preserving streak/history/reminder/custom background), the multi-line text-field widening in several journaling + check-in tools (1.0.5 Item 4), wiring up practice-time (duration) tracking so the Insights "Practice time" line records real usage (Bug 2), the in-app disclosure caption clarifying practice time is in-app time on a tool (Req 6), the duplicate minute-axis label fix on the Outcome Trends graph (Bug 3), and reminder/link tap reliability fixes (Bug 1 — described platform-neutrally; the Android-specific work lives in the Google Play entry only). No new deep-link or WebView surfaces were added in this release.
 
-**Reviewer note (App Review Information):** this release is bug fixes only — it turns on practice-time tracking in Insights, polishes a graph label, and improves reminder/link reliability. It adds no new deep-link or WebView surfaces beyond 1.0.4. To sanity-check Insights, use a tool for a minute or so and finish it; the "Practice time" line should show a non-zero value.
+**Reviewer note (App Review Information):** this release adds an in-app "update available" affordance that lets a user refresh a tool they already added to their wallet (content ships with the binary; there is no over-the-air content delivery), widens some text-entry fields, turns on practice-time tracking in Insights, polishes a graph label, and improves reminder/link reliability. It adds no new deep-link or WebView surfaces beyond 1.0.4, and does not transmit user data. To sanity-check Insights, use a tool for a minute or so and finish it; the "Practice time" line should show a non-zero value.
 
 ### 1.0.4
 
@@ -202,9 +204,10 @@ Google Play release notes use `<en-US>...</en-US>` language tags and have a **50
 
 ```
 <en-US>
-• Practice time now counts for real: the time you actively spend using a tool is measured and shown on your Insights graph, instead of always sitting at zero.
-• A short note clarifies that practice time is in-app time on a tool, not time in other apps or external media.
-• Fixed a graph glitch where a minute label could appear twice.
+• You can now update a tool in your wallet when we improve it — your streak, history, reminder and notes all stay.
+• Bigger, multi-line text fields in several journaling tools, so longer entries fit.
+• Practice time now counts for real on your Insights graph, instead of sitting at zero.
+• Fixed a duplicate minute label on the graph.
 • Fixed reminder and link taps so they reliably open the right tool on Android.
 
 Feedback? Reach us from Settings.
