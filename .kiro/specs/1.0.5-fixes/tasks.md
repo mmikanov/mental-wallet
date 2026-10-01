@@ -1,12 +1,16 @@
 # Implementation Plan — 1.0.5 Fixes
 
+## Overview
+
 Structured **per-bug sequentially** (per workflow steering): complete one bug fully before the next. Each bug is a self-contained cycle — exploration test (fails on unfixed code) → preservation test (baseline that must not change) → fix + verify → checkpoint. UI/copy and native-only items note where a failing-test seam doesn't apply and use reproduce/verify instead.
 
 Order: **Bug 3 → Bug 2 → Bug 1.** Rationale: Bug 3 is small, pure-JS, and independent; Bug 2 is pure-JS and shippable; Bug 1 is native/on-device and gated on a physical-device pass, so it goes last and doesn't block the JS work.
 
 ---
 
-## Bug 3 — Duplicate minute-axis label (pure-JS, do first)
+## Tasks
+
+### Bug 3 — Duplicate minute-axis label (pure-JS, do first)
 
 - [x] 3.1 (Exploration) Add a unit test for the duration-axis label generation in `DualAxisChart` that reproduces the bug: with all-zero duration data (`durationMax=1, durationMin=0`), assert the three tick labels are NOT all-distinct today (top and midpoint both `1m`). Confirms the bug on unfixed code.
   - _Requirements: 8.1, 8.2_
@@ -20,7 +24,7 @@ Order: **Bug 3 → Bug 2 → Bug 1.** Rationale: Bug 3 is small, pure-JS, and in
 
 ---
 
-## Bug 2 — Wire up duration tracking (+ timed_out fix + disclosure)
+### Bug 2 — Wire up duration tracking (+ timed_out fix + disclosure)
 
 ### Cycle A — `timed_out` CHECK constraint
 
@@ -63,7 +67,7 @@ Order: **Bug 3 → Bug 2 → Bug 1.** Rationale: Bug 3 is small, pure-JS, and in
 
 ---
 
-## Bug 1 — Android deep links on a physical device (native/on-device, do last)
+### Bug 1 — Android deep links on a physical device (native/on-device, do last)
 
 > Per the debugging steering: instrument and get device ground truth BEFORE any code fix. Do not ship a second speculative fix for the same symptom without a log showing the first guess was wrong.
 
@@ -103,7 +107,7 @@ Order: **Bug 3 → Bug 2 → Bug 1.** Rationale: Bug 3 is small, pure-JS, and in
 
 ---
 
-## Item 4 — Longer (multi-line) journaling text fields
+### Item 4 — Longer (multi-line) journaling text fields
 
 Library fields: data-only change in `src/data/curatedLibrary.ts` (selected in `text-field-review.md`). The built-in Daily Check-in note field lives in `src/services/kpiService.ts` and is handled in 4.4–4.6.
 
@@ -120,7 +124,7 @@ Library fields: data-only change in `src/data/curatedLibrary.ts` (selected in `t
 - [x] 4.6 (Verify) Add unit tests: `recordKpi` saves the note when the note control is `text_area` (new-user seed) and still saves it when `text_input` (existing copies). All `kpiService` suites green; `tsc` clean for `kpiService.ts`.
   - _Requirements: 9.5, 9.6_
 
-## Item 5 — First-time Daily Check-in message
+### Item 5 — First-time Daily Check-in message
 
 Copy-only change in `src/utils/kpiBadgeUtils.ts`.
 
@@ -131,9 +135,13 @@ Copy-only change in `src/utils/kpiBadgeUtils.ts`.
 
 ---
 
-## Release wrap
+### Item 6 — Release store copy
 
-- [x] R.1 Finalize the 1.0.5 "What's New" copy in `docs/store-listing-copy.md` (Apple copy must not mention Android — per steering). Version already bumped to 1.0.5 across the four native files + package.json via `npm run set-version`.
+- [x] 6.1 Finalize the 1.0.5 "What's New" copy in `docs/store-listing-copy.md` (Apple copy must not mention Android — per steering). Version already bumped to 1.0.5 across the four native files + package.json via `npm run set-version`.
+
+---
+
+## Notes
 
 > Build, commit, submit, and tagging the release are **not** tracked here — the 1.0.5 release
 > bundles work from multiple specs, so those steps live with the release cycle (see the
