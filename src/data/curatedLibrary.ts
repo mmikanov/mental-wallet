@@ -36,6 +36,13 @@ export interface CuratedCardDefinition {
   timeTags?: TimeType[];
   rationale?: RationaleMetadata;
   externalApp?: ExternalAppConfig;
+  /**
+   * Present ONLY on cards whose user-visible content has changed since versioning
+   * was introduced. Absent = never changed = never prompts an update. First change
+   * sets 1; each subsequent change bumps by 1. Bump this in the same edit that changes
+   * shell, controls, or rationale (see steering rule, Req 1.6).
+   */
+  version?: number;
 }
 
 /**
@@ -45,6 +52,9 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
   // ─── Grounding & Calming (3) ───────────────────────────────────────────────
 {
   id: "lib-grounding-54321",
+  // v1: 1.0.5 converted the SMELL, TASTE, and Reflection fields from single-line
+  // text_input to multi-line text_area (dropped maxLength). First content change.
+  version: 1,
   title: "5-4-3-2-1 Grounding",
   description: "Use your senses to anchor yourself in the present moment when anxiety rises.",
   iconType: "emoji",
@@ -319,6 +329,9 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
   // ─── Cognitive Reframing (2) ───────────────────────────────────────────────
   {
     id: 'lib-thought-feeling-action',
+    // v1: 1.0.5 converted the Thought and Action fields from single-line
+    // text_input to multi-line text_area (dropped maxLength). First content change.
+    version: 1,
     title: 'Thought – Feeling – Action',
     description: 'When you notice a strong reaction, use this to understand what triggered it and how it shaped your response.',
     iconType: 'emoji',
@@ -520,6 +533,9 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
   // ─── Daily Check-In & Journaling (2) ──────────────────────────────────────
   {
     id: 'lib-daily-mood',
+    // v1: 1.0.5 converted the "What's on your mind?" field from single-line
+    // text_input to multi-line text_area (dropped maxLength). First content change.
+    version: 1,
     title: 'Daily Mood Check-In',
     description: 'Track your mood each day and reflect on what is on your mind.',
     iconType: 'emoji',
@@ -629,6 +645,10 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
 
   {
     id: 'lib-evening-gratitude',
+    // v1: 1.0.5 converted both journaling fields ("What are you grateful for today?"
+    // and "What can you let go of tonight?") from single-line text_input to
+    // multi-line text_area (dropped maxLength). First content change.
+    version: 1,
     title: 'Evening Gratitude',
     description: 'Wind down your day by reflecting on moments of gratitude and setting a calm intention for sleep.',
     iconType: 'emoji',
@@ -980,6 +1000,10 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
   },
   {
     id: 'lib-sensory-grounding',
+    // v1: 1.0.5 converted "How did it feel?" from single-line text_input to
+    // multi-line text_area (dropped maxLength), and bumped "What did you choose?"
+    // maxLength 150 -> 200. First content change.
+    version: 1,
     title: 'Sensory Comfort Kit',
     description: 'Engage your senses intentionally with textures, scents, or sounds that soothe.',
     iconType: 'emoji',
@@ -1067,6 +1091,9 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
   // ─── Additional Cognitive Reframing (1) ───────────────────────────────────
   {
     id: 'lib-evidence-for-against',
+    // v1: 1.0.5 converted "The belief" field from single-line text_input to
+    // multi-line text_area (dropped maxLength). First content change.
+    version: 1,
     title: 'Evidence For & Against',
     description: 'Challenge a negative belief by listing the evidence on both sides.',
     iconType: 'emoji',
@@ -1137,6 +1164,9 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
   // ─── Additional Daily Check-In & Journaling (1) ──────────────────────────
   {
     id: 'lib-gratitude-three',
+    // v1: 1.0.5 converted all three "good thing" fields from single-line
+    // text_input to multi-line text_area (dropped maxLength). First content change.
+    version: 1,
     title: 'Three Good Things',
     description: 'Write down three things you are grateful for today, big or small.',
     iconType: 'emoji',
@@ -1265,6 +1295,9 @@ export const CURATED_LIBRARY: CuratedCardDefinition[] = [
   },
   {
     id: 'lib-permission-slip',
+    // v1: 1.0.5 converted "I give myself permission to..." from single-line
+    // text_input to multi-line text_area (dropped maxLength). First content change.
+    version: 1,
     title: 'Permission Slip',
     description: 'Give yourself explicit permission to rest, feel, or set a boundary.',
     iconType: 'emoji',

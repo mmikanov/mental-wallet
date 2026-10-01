@@ -37,8 +37,13 @@ import type { RootStackParamList } from '@/navigation/types';
 import { isLightBackground } from '@/utils/cardColors';
 import { renderCardIcon } from '@/utils/renderCardIcon';
 import { CURATED_LIBRARY } from '@/data/curatedLibrary';
+import { evaluateOutdated, summarizeUpdate } from '@/services/librarySyncService';
 import { RationaleEntryPoint } from '@/components/rationale/RationaleEntryPoint';
 import { RationaleSheet } from '@/components/rationale/RationaleSheet';
+import { UpdateAvailableSheet } from './UpdateAvailableSheet';
+import { UpdateAvailableBanner } from './UpdateAvailableBanner';
+import { createCardService } from '@/services/cardService';
+import { useWalletStore } from '@/stores/walletStore';
 import OriginBadge from './OriginBadge';
 import StatsRow from './StatsRow';
 import ReminderDisplayRow from './ReminderDisplayRow';
@@ -72,6 +77,17 @@ export interface FocusedCardViewProps {
 
 const KPI_CARD_SOURCE_ID = 'lib-personal-kpi';
 
+// Lazy singleton CardService for the update-from-library flow. Kept module-level
+// (not per-render) so we don't recreate it on every render; tests mock
+// `@/services/cardService`'s `createCardService`.
+let sharedCardService: import('@/types/services').CardService | null = null;
+function getCardService(): import('@/types/services').CardService {
+  if (!sharedCardService) {
+    sharedCardService = createCardService();
+  }
+  return sharedCardService;
+}
+
 const SPRING_CONFIG = {
   damping: 18,
   stiffness: 80,
@@ -104,6 +120,15 @@ export default function FocusedCardView({
   const reminder = useCardReminder(card.id);
   const [bgImageFailed, setBgImageFailed] = useState(false);
   const [rationaleSheetVisible, setRationaleSheetVisible] = useState(false);
+  const [updateSheetVisible, setUpdateSheetVisible] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+  // Per-card session suppression for the update sheet. "Not now" records the
+  // card id here so any auto-open logic won't re-open the sheet for it this
+  // session (Req 2.4). Manual pill taps are always honored — this only gates
+  // automatic re-opening (there is none yet, but the ref + gate exist so the
+  // suppression state is respected).
+  const dismissedThisSession = useRef<Set<string>>(new Set());
   const translateY = useSharedValue(50);
   const opacity = useSharedValue(0.3);
   const prevExpanded = useRef(isExpanded);
@@ -113,13 +138,18 @@ export default function FocusedCardView({
   const lastCheckInDate = useKpiStore((s) => s.lastCheckInDate);
   const hasEverCheckedIn = card.totalUses > 0;
 
-  // Snapshot: capture daysElapsed on mount/card change, don't update while card is open
+  // Snapshot: capture daysElapsed on first render / card change, and don't update
+  // while the card is open. Computed synchronously during render (keyed by card.id)
+  // rather than in an effect, so the amber banner is present on the very first
+  // paint (a ref set in an effect wouldn't trigger a re-render). Still recalculated
+  // only when the focused card changes — preserving the "don't update while open"
+  // intent.
   const daysElapsedSnapshot = useRef<number | null>(null);
-  useEffect(() => {
-    if (isKpiCard) {
-      daysElapsedSnapshot.current = computeDaysElapsed(lastCheckInDate, new Date());
-    }
-  }, [card.id]); // Only recalculate when the focused card changes
+  const daysElapsedSnapshotCardId = useRef<string | null>(null);
+  if (isKpiCard && daysElapsedSnapshotCardId.current !== card.id) {
+    daysElapsedSnapshot.current = computeDaysElapsed(lastCheckInDate, new Date());
+    daysElapsedSnapshotCardId.current = card.id;
+  }
 
   // Track check-in completion: if lastCheckInDate becomes "today" while the card is open
   const [checkInCompleted, setCheckInCompleted] = useState(false);
@@ -142,6 +172,54 @@ export default function FocusedCardView({
     if (!card.sourceLibraryId) return null;
     return CURATED_LIBRARY.find((c) => c.id === card.sourceLibraryId) ?? null;
   }, [card.sourceLibraryId]);
+
+  // Is this wallet card's copy behind the current curated definition?
+  // Single source of truth (librarySyncService); returns false for my_tool,
+  // community, removed-curated, and current cards.
+  const outdated = useMemo(() => evaluateOutdated(card), [card]);
+
+  // Per-card, plain-language "what changed" lines shown in the update sheet
+  // (Req 8.5). Only meaningful when outdated + curated resolved; empty otherwise.
+  const changeSummary = useMemo(
+    () =>
+      outdated.isOutdated && outdated.curated
+        ? summarizeUpdate(card, outdated.curated)
+        : [],
+    [card, outdated]
+  );
+
+  // Tapping the banner always opens the sheet — a manual action is never
+  // suppressed. Session suppression (Req 2.4) only blocks *automatic* re-opening.
+  const handleUpdateBannerPress = useCallback(() => {
+    setUpdateError(null);
+    setUpdateSheetVisible(true);
+  }, []);
+
+  // "Not now": close without mutating, and record the card id so any auto-open
+  // stays suppressed for this session. The pill remains visible (card is still
+  // outdated), so the user can act later without repeated nagging (Req 2.4).
+  const handleUpdateNotNow = useCallback(() => {
+    dismissedThisSession.current.add(card.id);
+    setUpdateSheetVisible(false);
+  }, [card.id]);
+
+  // "Update": apply the in-place update, then reload the wallet so the caught-up
+  // card replaces this one and the pill disappears (Req 3.7, 4.2). On failure,
+  // show a non-blocking inline message and leave the card + pill as-is (no
+  // mutation) — the card stays usable.
+  const handleUpdateConfirm = useCallback(async () => {
+    setUpdating(true);
+    setUpdateError(null);
+    try {
+      await getCardService().updateFromLibrary(card.id);
+      await useWalletStore.getState().loadCards();
+      setUpdateSheetVisible(false);
+    } catch {
+      setUpdateError("We couldn't update this tool right now. Your tool is unchanged — please try again.");
+    } finally {
+      setUpdating(false);
+    }
+  }, [card.id]);
 
   const rationale = curatedCard?.rationale ?? null;
   const isDistressRelated = useMemo(() => {
@@ -277,7 +355,9 @@ export default function FocusedCardView({
       {/* Optional tooltip rendered below description */}
       {renderTooltip?.()}
 
-      {/* Origin badge */}
+      {/* Origin badge. The "Update available" affordance is now the prominent
+          UpdateAvailableBanner at the top of the card body (both collapsed and
+          expanded), not a pill here — see Addendum 2. */}
       <View style={styles.badgeRow}>
         <OriginBadge origin={card.originBadge} />
       </View>
@@ -349,6 +429,15 @@ export default function FocusedCardView({
             onCrisisResourcesPress={handleCrisisResourcesPress}
           />
         )}
+        <UpdateAvailableSheet
+          visible={updateSheetVisible}
+          cardTitle={card.title}
+          updating={updating}
+          errorMessage={updateError}
+          changeSummary={changeSummary}
+          onUpdate={handleUpdateConfirm}
+          onNotNow={handleUpdateNotNow}
+        />
       </>
     );
   }
@@ -376,6 +465,14 @@ export default function FocusedCardView({
                 nestedScrollEnabled={true}
                 keyboardShouldPersistTaps="handled"
               >
+              {/* Prominent update notice — shows collapsed AND expanded (Req 8.1,
+                  8.2). Stacked ABOVE the amber check-in banner on the KPI card
+                  (Req 8.3). */}
+              {outdated.isOutdated && (
+                <View style={styles.bannerContainer}>
+                  <UpdateAvailableBanner onPress={handleUpdateBannerPress} />
+                </View>
+              )}
               {isKpiCard && (
                 <BadgeExplanationBanner
                   daysElapsedSnapshot={daysElapsedSnapshot.current}
@@ -437,6 +534,14 @@ export default function FocusedCardView({
                 automaticallyAdjustKeyboardInsets={isExpanded}
                 keyboardShouldPersistTaps="handled"
               >
+              {/* Prominent update notice — shows collapsed AND expanded (Req 8.1,
+                  8.2). Stacked ABOVE the amber check-in banner on the KPI card
+                  (Req 8.3). */}
+              {outdated.isOutdated && (
+                <View style={styles.bannerContainer}>
+                  <UpdateAvailableBanner onPress={handleUpdateBannerPress} />
+                </View>
+              )}
               {isKpiCard && (
                 <BadgeExplanationBanner
                   daysElapsedSnapshot={daysElapsedSnapshot.current}
@@ -506,6 +611,15 @@ export default function FocusedCardView({
           onCrisisResourcesPress={handleCrisisResourcesPress}
         />
       )}
+      <UpdateAvailableSheet
+        visible={updateSheetVisible}
+        cardTitle={card.title}
+        updating={updating}
+        errorMessage={updateError}
+        changeSummary={changeSummary}
+        onUpdate={handleUpdateConfirm}
+        onNotNow={handleUpdateNotNow}
+      />
     </>
   );
 }
@@ -598,7 +712,15 @@ const styles = StyleSheet.create({
   },
   badgeRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 8,
+  },
+  // Horizontal inset so the full-width update banner aligns with the card body
+  // padding (headerContent uses padding: 20). The banner supplies its own
+  // vertical spacing (marginBottom).
+  bannerContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
   },
   affiliateDisclosure: {
     fontSize: 11,

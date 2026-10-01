@@ -175,6 +175,7 @@ const cardArb: fc.Arbitrary<Card> = fc.record({
   previousStackPosition: fc.constant(null),
   allowBackgroundCustomization: fc.boolean(),
   sourceLibraryId: fc.constant(null),
+  sourceLibraryVersion: fc.constant(null),
   controls: fc.array(controlArb, { minLength: 1, maxLength: 10 }),
   createdAt: fc.constant('2024-01-01T00:00:00Z'),
   updatedAt: fc.constant('2024-01-01T00:00:00Z'),

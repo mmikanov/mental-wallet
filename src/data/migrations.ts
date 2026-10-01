@@ -34,6 +34,7 @@ export async function runMigrations(db: SQLiteDatabase): Promise<void> {
   await runDurationRecordsMigration(db);
   await runDurationEndStatusCheckMigration(db);
   await runControlTypeCheckMigration(db);
+  await runSourceLibraryVersionMigration(db);
 }
 
 /**
@@ -328,6 +329,20 @@ async function runIconTypeCheckMigration(db: SQLiteDatabase): Promise<void> {
   await db.execAsync('PRAGMA foreign_keys = OFF');
   await db.execAsync('BEGIN TRANSACTION');
   try {
+    // Detect whether the old table already has source_library_version. This
+    // rebuild runs before runSourceLibraryVersionMigration in the sequence, so
+    // on a legacy DB the column may not exist yet — copy NULL in that case. The
+    // new table always defines the column so a rebuild preserves it going forward.
+    const oldColumns = await db.getAllAsync<{ name: string }>(
+      `PRAGMA table_info(cards)`
+    );
+    const hasSourceLibraryVersion = oldColumns.some(
+      (c) => c.name === 'source_library_version'
+    );
+    const sourceLibraryVersionSelect = hasSourceLibraryVersion
+      ? 'source_library_version'
+      : 'NULL AS source_library_version';
+
     // 1. Create temp table with new constraint
     await db.execAsync(`
       CREATE TABLE cards_new (
@@ -349,6 +364,7 @@ async function runIconTypeCheckMigration(db: SQLiteDatabase): Promise<void> {
         previous_stack_position INTEGER,
         allow_background_customization INTEGER NOT NULL DEFAULT 0,
         source_library_id TEXT,
+        source_library_version INTEGER,
         card_type TEXT NOT NULL DEFAULT 'standard' CHECK(card_type IN ('standard', 'session_launcher')),
         created_at TEXT NOT NULL DEFAULT (datetime('now')),
         updated_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -361,7 +377,7 @@ async function runIconTypeCheckMigration(db: SQLiteDatabase): Promise<void> {
         SELECT id, title, description, icon_type, icon_value, background_type, background_value,
                category_id, origin_badge, stack_position, total_uses, current_streak,
                last_used_at, is_archived, archived_at, previous_stack_position,
-               allow_background_customization, source_library_id, card_type, created_at, updated_at
+               allow_background_customization, source_library_id, ${sourceLibraryVersionSelect}, card_type, created_at, updated_at
         FROM cards
     `);
 
@@ -688,7 +704,7 @@ async function runOriginBadgeAppMigration(db: SQLiteDatabase): Promise<void> {
       'background_type', 'background_value', 'category_id', 'origin_badge',
       'stack_position', 'total_uses', 'current_streak', 'last_used_at',
       'is_archived', 'archived_at', 'previous_stack_position',
-      'allow_background_customization', 'source_library_id', 'card_type',
+      'allow_background_customization', 'source_library_id', 'source_library_version', 'card_type',
       'created_at', 'updated_at',
     ];
     const rationaleColumns = [
@@ -730,6 +746,7 @@ async function runOriginBadgeAppMigration(db: SQLiteDatabase): Promise<void> {
         previous_stack_position INTEGER,
         allow_background_customization INTEGER NOT NULL DEFAULT 0,
         source_library_id TEXT,
+        source_library_version INTEGER,
         card_type TEXT NOT NULL DEFAULT 'standard' CHECK(card_type IN ('standard', 'session_launcher')),
         created_at TEXT NOT NULL DEFAULT (datetime('now')),
         updated_at TEXT NOT NULL DEFAULT (datetime('now'))${rationaleColumnDefs}
@@ -931,5 +948,30 @@ export async function runControlTypeCheckMigration(db: SQLiteDatabase): Promise<
     await db.execAsync('ROLLBACK');
     await db.execAsync('PRAGMA foreign_keys = ON');
     throw error;
+  }
+}
+
+/**
+ * Adds the source_library_version column to the cards table if it doesn't
+ * already exist. This nullable INTEGER stores the curated definition's `version`
+ * captured at add-time, so a wallet copy can be compared against the current
+ * curated definition and detected as "outdated" (Library Card Sync, Req 1.2).
+ *
+ * NULL means the copy predates this card's versioning. ALTER TABLE is not
+ * idempotent, so we guard with PRAGMA table_info first (same shape as the
+ * source_library_id add in runEmotionMigration).
+ */
+export async function runSourceLibraryVersionMigration(db: SQLiteDatabase): Promise<void> {
+  const columns = await db.getAllAsync<{ name: string }>(
+    `PRAGMA table_info(cards)`
+  );
+  const hasSourceLibraryVersion = columns.some(
+    (col) => col.name === 'source_library_version'
+  );
+
+  if (!hasSourceLibraryVersion) {
+    await db.execAsync(
+      `ALTER TABLE cards ADD COLUMN source_library_version INTEGER`
+    );
   }
 }

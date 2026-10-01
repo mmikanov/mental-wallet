@@ -1,0 +1,328 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Add optional `version?: number` to `CuratedCardDefinition` in `src/data/curatedLibrary.ts` (do NOT assign a version to any card yet — untouched cards stay unversioned). Add `sourceLibraryVersion: number | null` to the `Card` domain type in `src/types` and read `row.source_library_version` in `mapRowToCard` (`src/services/cardService.ts`).": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716279052
+      },
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716291809
+      },
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716702301
+      }
+    ],
+    "1.2 (Test) Add a migration test: on a DB created before this column, running migrations adds `source_library_version` (nullable INTEGER) to `cards` exactly once and preserves existing rows; running twice is a no-op. Fails before the migration exists.": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716279262
+      },
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716707186
+      },
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716906821
+      }
+    ],
+    "1.3 (Migration) Add `runSourceLibraryVersionMigration(db)` in `src/data/migrations.ts` using the `PRAGMA table_info(cards)` + `.some(col => col.name === 'source_library_version')` guard (same shape as the `source_library_id` add); `ALTER TABLE cards ADD COLUMN source_library_version INTEGER`. Register it in the `runMigrations` sequence. Add the column to the `cards_new` definition + copy list in `runIconTypeCheckMigration` and to the dynamic `baseColumns` in `runOriginBadgeAppMigration` so a future table rebuild preserves it.": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716279352
+      },
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716914947
+      },
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790717271149
+      }
+    ],
+    "1.4 (Verify) Migration test (1.2) passes; `npm run typecheck` clean.": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716279452
+      },
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790717277200
+      },
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790717609037
+      }
+    ],
+    "2.1 (Test) Add tests: `cardService.create(..., sourceLibraryVersion)` writes the value to `source_library_version` (and null when omitted); `kpiService.seedKpiCard` persists the check-in card's current curated version (null while unversioned). Fails before the param is wired.": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716279536
+      },
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790717630816
+      },
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790718017898
+      }
+    ],
+    "2.2 (Fix) Add a trailing optional `sourceLibraryVersion?: number | null` param to `cardService.create` and include the column in the card INSERT. Pass `card.version ?? null` from `LibraryBrowserScreen.handleAddToWallet` and `handlePreviewAddToWallet`. In `kpiService.seedKpiCard`, write the KPI definition's `version ?? null` into the same column in its direct INSERT.": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716279755
+      },
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790718024183
+      },
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790718575765
+      }
+    ],
+    "2.3 (Verify) Tests (2.1) pass; `npm run typecheck` clean.": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716280029
+      },
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790718630018
+      }
+    ],
+    "3.1 (Property test) Create `src/services/__tests__/librarySyncService.test.ts`. With fast-check generators over cards/curated defs/versions, assert **Property 1**: `evaluateOutdated(card).isOutdated` equals `(hasSourceLibraryId && curatedExists && curated.version != null && (card.sourceLibraryVersion == null || card.sourceLibraryVersion < curated.version))`. Include the not-updatable cases: no `sourceLibraryId`, unversioned curated, curated removed.": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716280564
+      },
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790718635860
+      },
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790718962262
+      }
+    ],
+    "3.2 (Implement) Create `src/services/librarySyncService.ts` with `evaluateOutdated(card): OutdatedResult` (looks curated up in `CURATED_LIBRARY` by `sourceLibraryId`) and `diffControls(current, target)` returning `{ toUpdate, toInsert, toDeleteIds }` matched by `position` (comparison style borrowed from `adminCardService.isOverrideMatchingStatic`).": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716280733
+      },
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790718966820
+      },
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790719229272
+      }
+    ],
+    "3.3 (Test) Unit-test `diffControls` partitioning: same positions → toUpdate (keeps id); extra target positions → toInsert; current positions with no target → toDeleteIds.": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716280871
+      },
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790719233562
+      },
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790719361140
+      }
+    ],
+    "3.4 (Verify) Property + unit tests pass; `npm run typecheck` clean.": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716281038
+      },
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790719365856
+      },
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790719383970
+      }
+    ],
+    "4.1 (Property tests) Add `src/services/__tests__/updateFromLibrary.test.ts` over an in-memory SQLite DB. Encode Correctness Properties 2–8: update clears outdated + sets version (P2); idempotency / no-op when current (P3); surviving controls' `control_values` count+contents unchanged, only removed-position control_values disappear (P4); stats invariant (P5); `background_overlays` row unchanged (P6); injected mid-transaction fault ⇒ full rollback to prior state (P7); post-update controls equal the curated definition by position/type/config/isRequired (P8). These fail before the method exists.": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716281177
+      },
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790719390626
+      },
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790719886145
+      }
+    ],
+    "4.2 (Implement) Add `cardService.updateFromLibrary(cardId): Promise<Card>`: load card+controls; guard not-updatable (no `sourceLibraryId` / curated missing) and no-op when `evaluateOutdated` is false; compute `diffControls`; in a single `BEGIN/COMMIT` (ROLLBACK on error) UPDATE shell + category + `source_library_version` (skip `background_*` when a `background_overlays` row exists; never touch stats), then apply control `toUpdate` (UPDATE by existing id — keeps UUID), `toInsert` (fresh UUID), `toDeleteIds` (targeted DELETE). Throw `AppError.persistence(PERSISTENCE_WRITE_FAILED, ...)` on failure. Re-read via `getById`.": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716281334
+      },
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790719892706
+      }
+    ],
+    "4.3 (Reminder reschedule) After COMMIT, if the update changed the card **title** and the card has an **active** reminder, reschedule via `reminderService.scheduleNotification` (reads the now-updated title) — run AFTER the transaction, best-effort, never failing the update. No reminder work when the title is unchanged. Add a unit test: title change ⇒ reschedule called; no title change ⇒ not called.": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716281470
+      }
+    ],
+    "4.4 (Verify) All property tests (4.1), diff tests, and the reminder test pass; `npm run typecheck` clean. State plainly: DB/service layer is unit-verified; on-device notification text after a title-change update needs a manual pass.": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716281605
+      }
+    ],
+    "5.1 (Test) Component test for `FocusedCardView`: pill shows only when `evaluateOutdated(card).isOutdated`; hidden for `my_tool` / community / removed-curated / current cards; hidden while expanded.": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716281722
+      }
+    ],
+    "5.2 (Implement pill) In `src/components/wallet/FocusedCardView.tsx`, compute `const outdated = useMemo(() => evaluateOutdated(card), [card])` (reuse the existing curated lookup). Render a non-intrusive \"Update available\" pill in `badgeRow` next to `<OriginBadge />` when outdated; never block card use.": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716281825
+      }
+    ],
+    "5.3 (Implement sheet) Add `UpdateAvailableSheet` (bottom-sheet modal like `RationaleSheet`) with plain-language copy (\"We've improved this tool. Updating keeps all your history — streak, past entries, reminder, and custom background stay.\") and **Update** / **Not now** actions. Tapping the pill opens it.": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716281947
+      }
+    ],
+    "5.4 (Not-now suppression) Track a per-card `dismissedThisSession` ref: \"Not now\" closes the sheet without mutating and suppresses auto-reopening within the session; the pill stays visible so the user can act later (no repeated nag).": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716282084
+      }
+    ],
+    "5.5 (Wire Update) On **Update**, call `cardService.updateFromLibrary(card.id)`, then `walletStore.loadCards()`; on failure show a non-blocking message and leave the card + pill as-is. After success the pill disappears (version caught up). Add a test for the update→reload→pill-gone path and the failure path.": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716282184
+      }
+    ],
+    "5.6 (Kebab menu, optional entry point) Add optional `onUpdateFromLibrary?(cardId)` to `CardKebabMenu`; when provided and the card is outdated, push an \"Update from library\" `MenuItem` that runs the same flow.": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716282322
+      }
+    ],
+    "5.7 (Archive check) Confirm no archive-specific UI is added: an outdated archived card shows the pill only after `restore` (which already preserves history and applies no update). Add/confirm a test that restore does not change version or content.": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716282538
+      }
+    ],
+    "5.8 (Verify) Component tests pass; `npm run typecheck` clean.": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716282651
+      }
+    ],
+    "6.1 (Implement) Add a `__DEV__`-gated `DevReArmSyncButton` (self-contained, like `SeedInsightsButton`) into the Developer section of `src/screens/SettingsScreen.tsx`. Label states scope: \"Re-arm library update flow (all eligible cards)\". On press: `UPDATE cards SET source_library_version = NULL WHERE source_library_id IS NOT NULL`; where feasible apply a targeted content downgrade of fields the current update changed (e.g. flip the check-in note field back to `text_input`) so re-applying is visible; helper text notes re-applying may be a no-op refresh for some cards. Call `walletStore.loadCards()` after.": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716283035
+      }
+    ],
+    "6.2 (Test) Unit test: re-arm sets `source_library_version` to null for eligible cards and does NOT delete controls/completions/control_values/reminders/background_overlays or change stats; after re-arm `evaluateOutdated` is true again.": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716283134
+      }
+    ],
+    "6.3 (Verify) Test passes; confirm the control is absent in a production (`__DEV__ === false`) build; `npm run typecheck` clean.": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716283338
+      }
+    ],
+    "7.1 (Steering) Add a steering rule (paired with the admin export workflow) requiring that any change to a curated card's user-visible content sets/bumps its `version` (first change → 1, then +1); unchanged cards stay unversioned (no mass `version: 1`).": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716283507
+      }
+    ],
+    "7.2 (First bump) For the 1.0.5 `text_area` conversions (including the check-in \"Anything you want to note?\" field), set `version: 1` on exactly the curated definitions that changed, so existing installs' copies become outdated and can opt in. Confirm end-to-end on an in-memory DB: a copy at null/older version is detected outdated, Update applies the field change in place, history preserved, pill clears.": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716283617
+      }
+    ],
+    "7.3 (Verify) `npm test` for the sync suite green; `npm run typecheck` clean; `npm run lint` clean.": [
+      {
+        "executionId": "e5bfea5b-f43a-4f55-b7a9-03b5ac848228",
+        "chatSessionId": "sess_b80e3577-6535-4b85-97e9-5fb0329e7d9c",
+        "timestamp": 1790716283770
+      }
+    ]
+  }
+}

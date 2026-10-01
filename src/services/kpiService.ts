@@ -1,5 +1,6 @@
 import * as Crypto from 'expo-crypto';
 import { getDatabase } from '@/data/database';
+import { KPI_CARD_DEFINITION, formatKpiMoodLabel } from '@/data/kpiCardDefinition';
 import { AppError, ErrorCode } from '@/types/errors';
 
 // --- Interfaces ---
@@ -227,45 +228,39 @@ export function createKpiService(): KpiService {
       const cardId = Crypto.randomUUID();
       const now = new Date().toISOString();
 
-      // Fixed card definition
+      // Card shell + version come straight from the shared KPI_CARD_DEFINITION so
+      // the seeded card and the library-sync mechanism can never drift (Req 6.1).
       const card = {
         id: cardId,
-        title: 'My Check-In',
-        description: 'A moment to check in with yourself on what matters to you.',
-        iconType: 'emoji',
-        iconValue: '🌱',
-        backgroundType: 'color',
-        backgroundValue: '#E8F5E9',
-        categoryId: 'daily-checkin-journaling',
+        title: KPI_CARD_DEFINITION.title,
+        description: KPI_CARD_DEFINITION.description,
+        iconType: KPI_CARD_DEFINITION.iconType,
+        iconValue: KPI_CARD_DEFINITION.iconValue,
+        backgroundType: KPI_CARD_DEFINITION.backgroundType,
+        backgroundValue: KPI_CARD_DEFINITION.backgroundValue,
+        categoryId: KPI_CARD_DEFINITION.categoryId,
         originBadge: 'library',
-        sourceLibraryId: 'lib-personal-kpi',
-        allowBackgroundCustomization: 1,
+        sourceLibraryId: KPI_CARD_DEFINITION.id,
+        allowBackgroundCustomization: KPI_CARD_DEFINITION.allowBackgroundCustomization ? 1 : 0,
       };
 
-      // Build controls with dynamic kpiLabel for mood_slider
-      const controls = [
-        {
+      // Build controls from KPI_CARD_DEFINITION, overriding the mood_slider
+      // (position 0) template label with the real per-user label. The note field
+      // (position 1) is inserted as-is (text_area). The template label in the
+      // definition is a structural placeholder only and never reaches the DB.
+      const controls = KPI_CARD_DEFINITION.controls.map((def) => {
+        const config =
+          def.position === 0 && def.type === 'mood_slider'
+            ? { ...def.config, label: formatKpiMoodLabel(kpiLabel) }
+            : def.config;
+        return {
           id: Crypto.randomUUID(),
-          type: 'mood_slider',
-          position: 0,
-          config: JSON.stringify({
-            label: `How are you doing with: ${kpiLabel.toLowerCase()}?`,
-            minLabel: 'Struggling',
-            maxLabel: 'Thriving',
-          }),
-          isRequired: 1,
-        },
-        {
-          id: Crypto.randomUUID(),
-          type: 'text_area',
-          position: 1,
-          config: JSON.stringify({
-            label: 'Anything you want to note?',
-            placeholder: 'A word or thought…',
-          }),
-          isRequired: 0,
-        },
-      ];
+          type: def.type,
+          position: def.position,
+          config: JSON.stringify(config),
+          isRequired: def.isRequired ? 1 : 0,
+        };
+      });
 
       // Use transaction: shift cards at position >= 1 down, then insert KPI card at position 1
       await db.execAsync('BEGIN TRANSACTION');
@@ -278,8 +273,8 @@ export function createKpiService(): KpiService {
 
         // Insert the KPI card at position 1
         await db.runAsync(
-          `INSERT INTO cards (id, title, description, icon_type, icon_value, background_type, background_value, category_id, origin_badge, stack_position, total_uses, current_streak, last_used_at, is_archived, archived_at, previous_stack_position, allow_background_customization, source_library_id, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, 0, NULL, 0, NULL, NULL, ?, ?, ?, ?)`,
+          `INSERT INTO cards (id, title, description, icon_type, icon_value, background_type, background_value, category_id, origin_badge, stack_position, total_uses, current_streak, last_used_at, is_archived, archived_at, previous_stack_position, allow_background_customization, source_library_id, source_library_version, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, 0, NULL, 0, NULL, NULL, ?, ?, ?, ?, ?)`,
           [
             card.id,
             card.title,
@@ -292,6 +287,10 @@ export function createKpiService(): KpiService {
             card.originBadge,
             card.allowBackgroundCustomization,
             card.sourceLibraryId,
+            // Persist the check-in card's CURRENT curated version from the shared
+            // KPI_CARD_DEFINITION (now 1). A freshly seeded card therefore stores
+            // the current version and is not spuriously flagged outdated (Req 1.2).
+            KPI_CARD_DEFINITION.version ?? null,
             now,
             now,
           ]
@@ -353,7 +352,7 @@ export function createKpiService(): KpiService {
 
         // Parse config JSON, update label, stringify back
         const config = JSON.parse(controlRow.config);
-        config.label = `How are you doing with: ${newLabel.toLowerCase()}?`;
+        config.label = formatKpiMoodLabel(newLabel);
         const updatedConfig = JSON.stringify(config);
 
         // Update control config

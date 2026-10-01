@@ -29,6 +29,7 @@ import { useKpiStore } from '@/stores/kpiStore';
 import { useAnalyticsStore } from '@/stores/analyticsStore';
 import { AdminKpiBadgeTools } from '@/components/settings/AdminKpiBadgeTools';
 import { SeedInsightsButton } from '@/components/settings/SeedInsightsButton';
+import { DevReArmSyncButton } from '@/components/settings/DevReArmSyncButton';
 import { getFlushIntervalMs, setFlushIntervalMs } from '@/config/analytics';
 import * as WebBrowser from 'expo-web-browser';
 import { APP_NAME, PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL, SUBSCRIBE_URL } from '@/config/appInfo';
@@ -206,8 +207,9 @@ export default function SettingsScreen({ navigation }: Props) {
           style: 'destructive',
           onPress: async () => {
             const db = await getDatabase();
-            await db.runAsync("DELETE FROM settings WHERE key IN ('onboarding_state', 'disclaimer_acknowledged', 'start_mode')");
+            await db.runAsync("DELETE FROM settings WHERE key IN ('onboarding_state', 'disclaimer_acknowledged', 'start_mode', 'personal_kpi', 'personal_kpi_history')");
             await db.runAsync('DELETE FROM control_values');
+            await db.runAsync('DELETE FROM kpi_records');
             await db.runAsync('DELETE FROM completions');
             await db.runAsync('DELETE FROM reminders');
             await db.runAsync('DELETE FROM controls');
@@ -226,6 +228,15 @@ export default function SettingsScreen({ navigation }: Props) {
               collapsedStackHintSeen: false,
               isChecklistVisible: false,
               isChecklistComplete: false,
+            });
+            // Reset KPI check-in store so the seedling badge day-count doesn't
+            // survive the reset (kpi_records + personal_kpi settings were just deleted).
+            useKpiStore.setState({
+              personalKpi: null,
+              isLoading: false,
+              lastCheckInDate: null,
+              hasEverCheckedIn: false,
+              lastCheckInLoaded: false,
             });
             // Clear the cached DB singleton so seedData re-runs and re-creates session launcher
             await closeDatabase();
@@ -681,6 +692,7 @@ export default function SettingsScreen({ navigation }: Props) {
 
             <AdminKpiBadgeTools />
             <SeedInsightsButton />
+            <DevReArmSyncButton />
           </View>
         )}
       </ScrollView>

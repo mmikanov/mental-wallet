@@ -22,6 +22,7 @@ import {
   Pressable,
 } from 'react-native';
 import type { Card } from '@/types/index';
+import { evaluateOutdated } from '@/services/librarySyncService';
 
 export interface CardKebabMenuProps {
   visible: boolean;
@@ -34,6 +35,12 @@ export interface CardKebabMenuProps {
   onArchive: (cardId: string) => void;
   onCustomizeBackground?: (cardId: string) => void;
   onViewInsights?: (cardId: string) => void;
+  /**
+   * Optional secondary entry point to the library-card-sync update flow (Req 4.1).
+   * When provided AND the card is outdated (`evaluateOutdated(card).isOutdated`),
+   * an "Update from library" item is shown. Absent prop or up-to-date card ⇒ no item.
+   */
+  onUpdateFromLibrary?: (cardId: string) => void;
 }
 
 interface MenuItem {
@@ -72,6 +79,7 @@ export default function CardKebabMenu({
   onArchive,
   onCustomizeBackground,
   onViewInsights,
+  onUpdateFromLibrary,
 }: CardKebabMenuProps) {
   const isEditable = card.originBadge === 'my_tool';
 
@@ -126,6 +134,11 @@ export default function CardKebabMenu({
     onViewInsights?.(card.id);
   };
 
+  const handleUpdateFromLibrary = () => {
+    onClose();
+    onUpdateFromLibrary?.(card.id);
+  };
+
   // Build menu items based on origin badge (Req 10.1, 10.2, 10.4)
   const menuItems: MenuItem[] = [];
 
@@ -146,6 +159,17 @@ export default function CardKebabMenu({
   // Customize background — only for Library/Community cards with the flag enabled
   if (!isEditable && card.allowBackgroundCustomization && onCustomizeBackground) {
     menuItems.push({ label: 'Customize background', icon: '🎨', action: handleCustomizeBackground });
+  }
+
+  // Update from library — secondary entry point to the sync flow (Req 4.1). Only
+  // when the caller wired the handler AND the card is genuinely outdated versus
+  // the current curated definition. Placed near the bottom, just before Archive.
+  if (onUpdateFromLibrary && evaluateOutdated(card).isOutdated) {
+    menuItems.push({
+      label: 'Update from library',
+      icon: '🔄',
+      action: handleUpdateFromLibrary,
+    });
   }
 
   menuItems.push({
