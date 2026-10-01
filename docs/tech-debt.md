@@ -6,6 +6,76 @@ at the top of the relevant section with a short rationale and the files involved
 
 ---
 
+## ESLint was never installed — 470 issues surfaced on first-ever lint run
+
+**Type:** Tooling gap / code hygiene backlog
+**Priority:** Low–Medium (not blocking; mostly warnings. 2 real React-hooks errors worth a look.)
+**Discovered:** 2026-10-01, during `library-card-sync`. The repo had a `lint` script (`eslint .`)
+in `package.json` from early on, but **ESLint and its config were never actually installed** — so
+`npm run lint` only ever errored (`eslint: command not found`) / hung trying to `npx`-download it.
+It had therefore never run in ~2 months of development, and no code had ever been linted.
+
+**What was done now:** ran `npx expo lint`, which installed `eslint@^9` + `eslint-config-expo@~10`
+(added to `devDependencies`) and created `eslint.config.js` (Expo flat config). `npm run lint`
+now works.
+
+**First full run:** `✖ 470 problems (46 errors, 424 warnings)`.
+
+By area:
+- app source (`src/`, `App.tsx`): 163
+- tests (`__tests__`, `*.test.*`): 288
+- scripts / tooling / workers / website: 19
+
+By rule (top offenders):
+| count | sev | rule | nature |
+|------:|-----|------|--------|
+| 146 | warn | `import/first` | imports after non-import statements — almost all from the test pattern `jest.mock(...)` before `import` (intentional in those suites) |
+| 87 | warn | `@typescript-eslint/no-require-imports` | `require(...)` calls (lazy requires, jest mocks, Node scripts) |
+| 78 | warn | `@typescript-eslint/no-unused-vars` | unused imports/vars/args |
+| 55 | warn | `@typescript-eslint/array-type` | `T[]` vs `Array<T>` style preference |
+| 36 | **error** | `react/no-unescaped-entities` | unescaped `'`/`"`/`—` in JSX text — cosmetic, auto-fixable |
+| 30 | warn | `react-hooks/exhaustive-deps` | missing/extra hook deps — worth triaging case by case |
+| 21 | **error** | `import/no-duplicates` | same module imported twice (merge-able) |
+| 7 | **error** | `no-undef` | all `__dirname` in CommonJS Node scripts (`scripts/`, `tools/`, `website/`) — a config-scoping issue, **not real bugs**: those files need a Node/CommonJS env in the eslint config |
+| 7 | **error** | `react-hooks/rules-of-hooks` + others | see "genuine issues" below |
+
+**Auto-fixable:** 203 of 470 messages are fixable with `eslint . --fix` (the entity-escaping,
+duplicate-imports, array-type, and many import-order ones). A `--fix` pass would clear roughly
+half with no behavior change.
+
+**Genuine issues worth a real look (not just style):**
+- **`src/components/wallet/ThirdPartyIcon.tsx:91,145` — `react-hooks/rules-of-hooks`**: two
+  `useEffect`s called **conditionally**. This is a real React correctness smell (hook call order
+  can change between renders) and should be reviewed/fixed deliberately, not auto-fixed.
+- **`react-hooks/exhaustive-deps` (30)**: each is a potential stale-closure/missed-update bug;
+  triage individually — some are intentional and just need an eslint-disable with a reason.
+- The 7 `no-undef` are **false alarms** from the config not marking the Node-script files as a
+  CommonJS/Node environment — fix the config, not the code.
+
+**Impact on the recent `library-card-sync` work:** 20 warnings across 6 of our files, **zero
+errors**. Breakdown: 11 `no-require-imports` + 3 `import/first` (both from the deliberate
+`jest.mock(...)`-before-import test pattern we used), 4 `import/no-duplicates`, 2 unused-vars.
+Nothing functional; safe to clean up in the general pass.
+
+**Proposed approach (deferrable):**
+1. Scope the config so Node scripts (`scripts/`, `tools/`, `website/`, `*-worker/`) get a
+   Node/CommonJS env — clears the 7 `no-undef` and many `no-require-imports` with no code change.
+2. Run `eslint . --fix` for the ~203 auto-fixable style issues; review the diff (should be
+   behavior-preserving).
+3. Fix the 2 `ThirdPartyIcon.tsx` conditional-hook errors by hand.
+4. Triage `exhaustive-deps` (30) and remaining `no-unused-vars` (78) incrementally.
+5. Decide a baseline policy: either get to zero and add lint to CI, or set `--max-warnings` and
+   gate only on errors to prevent backsliding while the warning backlog is burned down.
+
+**Files:** project-wide; config at `eslint.config.js`; script at `package.json` `"lint"`.
+
+**Risk if deferred:** Low for correctness (type-checking + tests already cover the important
+classes of bugs), but the longer it sits the more the warning count grows and the harder it is to
+adopt lint-in-CI. The one item not to defer indefinitely is the `ThirdPartyIcon.tsx` conditional
+hooks — that's a latent React bug, not a style nit.
+
+---
+
 ## react-native-webview has no Jest mock — blocks ExpandedContent (and any WebView-reaching) suites at import time
 
 **Type:** Bug / test infrastructure
