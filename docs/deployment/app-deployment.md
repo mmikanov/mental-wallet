@@ -1,5 +1,54 @@
 # App Deployment
 
+## Release Checklist (every production submission)
+
+A quick end-to-end checklist. The sections below have the detailed commands; this is the
+order to run them in and the easy-to-forget steps. (Mirrors the `release-checklist` steering.)
+
+### Before building
+1. **Bump the marketing version** if the previous version was already submitted/approved on
+   either store (Apple REJECTS a duplicate `CFBundleShortVersionString`). Use the one-command
+   script — do NOT hand-edit the files:
+   ```bash
+   npm run set-version -- 1.0.5
+   ```
+   It writes `app.json`, `ios/.../Info.plist`, `ios/.../project.pbxproj` (both configs),
+   `android/app/build.gradle`, and `package.json` from the single argument. It is idempotent, so
+   re-running it to confirm "already X.Y.Z" everywhere is safe. (Build numbers auto-increment via
+   EAS — the script does not touch those.) See **Version Management** below for why all files must
+   match.
+2. **Confirm the working tree is committed and pushed** so the build reflects the intended code
+   (`git status` clean; `git push`). EAS builds from your committed native project.
+3. **Prepare release notes** for both stores in `docs/store-listing-copy.md` (finalize the new
+   version's entry; Apple copy must NOT mention Android — Guideline 2.3.10).
+
+### Build & submit
+4. Build and submit per the platform sections below (`eas build` / `eas submit`).
+
+### After submitting (NOT automated by EAS)
+5. **Set release notes in each console** — EAS does not push these:
+   - **App Store Connect** → the version → **"What's New in This Version"** → paste the Apple block.
+   - **Play Console** → Production (or track) → the release → **"Release notes"** → paste the
+     `<en-US>…</en-US>` block (500-char limit).
+6. **Confirm the correct build / versionCode is selected** in each console before final submit.
+7. **iOS App Review notes** — if the release touches anything a reviewer should test (e.g. a new
+   capability, a WebView/media feature), add notes under **App Review Information**. Keep/track the
+   copy in `store-listing-copy.md`.
+8. **Android rollout** — remember `track: "production"` publishes to 100% with no manual gate; use
+   a staged rollout or a testing track once there are real users (see **Rollout safety** below).
+
+### After the build's code is committed
+9. **Tag the release** on the exact commit that built it, and push the tag, so "changes since last
+   release" stays a one-command diff:
+   ```bash
+   git tag -a v1.0.5 <commit> -m "Release 1.0.5 — <short summary>"
+   git push origin v1.0.5
+   ```
+   Use `v` + the marketing version. Existing tags: `v1.0.1`–`v1.0.4` (`v1.0.2` was Google-Play-only,
+   skipped on the App Store). Tag the commit that actually built the release, not necessarily HEAD.
+
+---
+
 ## Push to TestFlight (via App Store Connect)
 
 TestFlight lets you distribute beta builds to up to 10,000 testers.
@@ -218,7 +267,13 @@ There are two version values:
 
 Because committed `ios/` and `android/` directories exist, **EAS Build uses the native project values and ignores most `app.json` fields** (including `version`). Bumping `app.json` alone is NOT enough — the App Store rejected a build for this exact reason (submitted `1.0.1` instead of the intended bump).
 
-**To bump the marketing version, update ALL of these to the same value:**
+**To bump the marketing version, run the one-command script — do NOT hand-edit the files:**
+
+```bash
+npm run set-version -- 1.0.6
+```
+
+It writes the same value to ALL of these (keeping them in sync, which is what the store requires):
 
 | File | Field |
 |------|-------|
@@ -226,6 +281,10 @@ Because committed `ios/` and `android/` directories exist, **EAS Build uses the 
 | `ios/MentalWallet/Info.plist` | `CFBundleShortVersionString` |
 | `ios/MentalWallet.xcodeproj/project.pbxproj` | `MARKETING_VERSION` (both Debug and Release configs) |
 | `android/app/build.gradle` | `versionName` |
+| `package.json` | `version` (kept in sync for tidiness; not used by the build) |
+
+The script is idempotent (re-running reports "already X.Y.Z"), and leaves build numbers alone
+(EAS `autoIncrement` handles those).
 
 > Once the [prebuild migration](../../.kiro/specs/prebuild-migration/requirements.md) is done, `app.json` alone will be the source of truth and this manual sync goes away.
 
@@ -250,6 +309,6 @@ eas build:list
 # View build logs
 eas build:view
 
-# Update app version before a new submission
-# Edit version in app.json, then rebuild
+# Bump the marketing version before a new submission (writes all 4 files + package.json)
+npm run set-version -- 1.0.6
 ```
