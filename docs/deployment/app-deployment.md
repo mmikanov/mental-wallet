@@ -24,21 +24,37 @@ order to run them in and the easy-to-forget steps. (Mirrors the `release-checkli
 
 ### Build & submit
 4. Build and submit per the platform sections below (`eas build` / `eas submit`).
+5. **Verify EACH build's source commit BEFORE submitting — the single most important check.**
+   On the EAS build page (or `eas build:list`), read the **Commit** hash for every platform build
+   and confirm it equals the commit you intend to ship (normally `main` HEAD / the release commit).
+   Do this per-platform: iOS and Android are separate builds and can end up on different commits.
+
+   > ⚠️ **Why:** the version number is NOT a safe signal. EAS can stamp the configured marketing
+   > version onto a build whose source is an OLD commit (e.g. remote/EAS version management applies
+   > `1.0.5` even though that commit's `build.gradle` still says `1.0.4`). In the 1.0.5 release an
+   > Android build was created from a 3-week-old commit (`a6d1d2f`, pre-feature) yet reported
+   > "1.0.5" — caught only by checking the build's **Commit** field. A `*` after the commit on the
+   > EAS page means there were uncommitted changes at build time; prefer a clean tree.
+   >
+   > Fast check: the build's Commit should match `git rev-parse HEAD` on your up-to-date `main`.
+   > If it doesn't, discard that build and rebuild from a fresh, clean `main` checkout.
 
 ### After submitting (NOT automated by EAS)
-5. **Set release notes in each console** — EAS does not push these:
+6. **Set release notes in each console** — EAS does not push these:
    - **App Store Connect** → the version → **"What's New in This Version"** → paste the Apple block.
    - **Play Console** → Production (or track) → the release → **"Release notes"** → paste the
      `<en-US>…</en-US>` block (500-char limit).
-6. **Confirm the correct build / versionCode is selected** in each console before final submit.
-7. **iOS App Review notes** — if the release touches anything a reviewer should test (e.g. a new
+7. **Confirm the correct build is selected** in each console before final submit — match BOTH
+   the versionCode/build number AND (where visible) that it corresponds to the commit verified
+   in step 5. Picking a leftover older build here is the same trap as a stale-commit build.
+8. **iOS App Review notes** — if the release touches anything a reviewer should test (e.g. a new
    capability, a WebView/media feature), add notes under **App Review Information**. Keep/track the
    copy in `store-listing-copy.md`.
-8. **Android rollout** — remember `track: "production"` publishes to 100% with no manual gate; use
+9. **Android rollout** — remember `track: "production"` publishes to 100% with no manual gate; use
    a staged rollout or a testing track once there are real users (see **Rollout safety** below).
 
 ### After the build's code is committed
-9. **Tag the release** on the exact commit that built it, and push the tag, so "changes since last
+10. **Tag the release** on the exact commit that built it, and push the tag, so "changes since last
    release" stays a one-command diff:
    ```bash
    git tag -a v1.0.5 <commit> -m "Release 1.0.5 — <short summary>"
