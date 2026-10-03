@@ -126,6 +126,8 @@ Track the release notes submitted for each Apple version here. Newest first.
 
 ### 1.0.5
 
+**Status:** ✅ Released 2026-10-03 — live on both stores. iOS 1.0.5 (build 23) + Android 1.0.5 (versionCode 11), both built from commit `8440392`, tagged `v1.0.5`.
+
 **What's New in This Version:**
 ```
 This update adds a couple of handy improvements and smooths out some rough edges:
