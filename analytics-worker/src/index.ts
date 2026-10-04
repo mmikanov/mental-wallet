@@ -9,6 +9,7 @@
  */
 
 import { DASHBOARD_HTML } from './dashboard';
+import { computeCohortRetention, type CohortUserRow } from './retention';
 
 export interface Env {
   DB: D1Database;
@@ -441,7 +442,9 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
   const walletFirst = modeRows.find(r => r.mode === 'wallet_first')?.count || 0;
   const emotionFirst = modeRows.find(r => r.mode === 'emotion_first')?.count || 0;
 
-  // Compute retention buckets
+  // Compute retention buckets (LEGACY diagnostic: raw opens by days-since-install).
+  // Kept only to power the "Opens by days-since-install (diagnostic)" table; the headline
+  // D7/D30 cards now use the cohort metric computed below, not these buckets.
   const retentionRows = retentionResult.results as Array<{ days: number; users: number }>;
   const retention = { D0: 0, D1: 0, D7: 0, D30: 0 };
   for (const row of retentionRows) {
@@ -451,6 +454,43 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
     if (d >= 1 && d <= 7) retention.D7 += row.users;
     if (d >= 1 && d <= 30) retention.D30 += row.users;
   }
+
+  // --- Cohort-based retention (true install-day cohort) ---
+  // Per-user aggregation over the user's FULL app_opened history (NO date filter) so that
+  // "did they return" is never truncated by the phase window. Only users with a non-null
+  // days_since_install are included (Req 1.5); excluded internal users are removed (Req 1.6).
+  let cohortExclusion = '';
+  const cohortParams: string[] = [];
+  if (excludedIds.length > 0) {
+    cohortExclusion = ` AND anonymous_user_id NOT IN (${excludedIds.map(() => '?').join(', ')})`;
+    cohortParams.push(...excludedIds);
+  }
+  const cohortSql = `
+    SELECT
+      anonymous_user_id,
+      MIN(timestamp) AS first_open_ts,
+      MAX(CAST(json_extract(properties, '$.days_since_install') AS INTEGER)) AS max_dsi,
+      COUNT(*) AS opens
+    FROM events
+    WHERE event_type = 'app_opened'
+      AND json_extract(properties, '$.days_since_install') IS NOT NULL${cohortExclusion}
+    GROUP BY anonymous_user_id
+  `;
+  const cohortStmt = env.DB.prepare(cohortSql);
+  const cohortResult = await (cohortParams.length > 0 ? cohortStmt.bind(...cohortParams) : cohortStmt)
+    .all<CohortUserRow>();
+  const allCohortRows = (cohortResult.results || []) as CohortUserRow[];
+
+  // Cohort membership: keep users whose INSTALL DAY (first_open_ts) falls within the active
+  // phase window [from, to) (Req 2.1). For All Time (no from/to) keep everyone (Req 2.3).
+  const cohortRows = allCohortRows.filter((u) => {
+    if (fromDate && u.first_open_ts < fromDate) return false;
+    if (toDate && u.first_open_ts >= toDate) return false;
+    return true;
+  });
+
+  const nowISO = new Date().toISOString();
+  const cohortRetention = computeCohortRetention(cohortRows, nowISO, [7, 30]);
 
   // Compute outcome breakdown
   const outcomeRows = outcomeResult.results as Array<{ response: string; count: number }>;
@@ -488,8 +528,13 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
   // Avg completions per user per week over 14 days (2 weeks)
   const weeklyEngagement = activeUsers14d > 0 ? (totalCompletions14d / activeUsers14d) / 2 : 0;
 
-  const retentionD7Pct = retention.D0 > 0 ? (retention.D7 / retention.D0) * 100 : 0;
-  const retentionD30Pct = retention.D0 > 0 ? (retention.D30 / retention.D0) * 100 : 0;
+  // Cohort-based retention: number (0-100) or null when the eligible cohort is empty
+  // ("n/a — cohort too recent/small"). The server owns the null decision; the dashboard
+  // renders n/a off null rather than off window length.
+  const retentionD7Pct = cohortRetention[7].pct;
+  const retentionD30Pct = cohortRetention[30].pct;
+  const retentionD7Cohort = cohortRetention[7].cohort;
+  const retentionD30Cohort = cohortRetention[30].cohort;
 
   const shareTaps = shareTapsResult?.count || 0;
   const usersWhoAddedTools = walletGrowthResult?.users_who_added || 0;
@@ -530,6 +575,8 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
       activeUsers14d,
       retentionD7Pct,
       retentionD30Pct,
+      retentionD7Cohort,
+      retentionD30Cohort,
       shareTaps,
       usersWhoAddedTools,
     },

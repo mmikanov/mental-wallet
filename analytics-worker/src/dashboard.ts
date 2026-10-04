@@ -351,39 +351,14 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
       return params;
     }
 
-    // Length of the currently selected phase window in days.
-    // A missing "to" means the window runs up to now (open-ended phases like
-    // Post-Release and Cold Acquisition), so we measure to the current time,
-    // NOT infinity. A missing "from" (only All Time) is genuinely unbounded
-    // into the past and is treated as long enough.
-    function phaseWindowDays() {
-      if (currentPhase === 'all') return Infinity;
-      var r = getActiveRange();
-      if (!r.from) return Infinity;
-      var toMs = r.to ? new Date(r.to).getTime() : Date.now();
-      var ms = toMs - new Date(r.from).getTime();
-      if (!isFinite(ms)) return Infinity;
-      if (ms < 0) return 0; // degenerate/empty window -> treat as too short (n/a)
-      return ms / (24 * 60 * 60 * 1000);
-    }
-
-    // Renders a retention percentage, or "n/a" when the selected window is
-    // shorter than the bucket horizon (a DN number over a few hours is
-    // meaningless because days_since_install is per-event, not per-window).
-    function retentionValue(pctValue, horizonDays) {
-      if (phaseWindowDays() < horizonDays) {
+    // Cohort retention value: the SERVER returns null when the eligible cohort is empty
+    // (no user old enough to have reached day N), so we render "n/a" purely off null.
+    // The old window-length suppression is gone — the server now owns the n/a decision.
+    function retentionValue(pctValue) {
+      if (pctValue === null || pctValue === undefined) {
         return '<span style="color:#999;">n/a</span>';
       }
       return pct(pctValue);
-    }
-
-    // Same suppression for the raw unique-user counts in the bottom table:
-    // a DN bucket over a window shorter than N days is misleading.
-    function retentionCount(count, horizonDays) {
-      if (phaseWindowDays() < horizonDays) {
-        return '<span style="color:#999;">n/a</span>';
-      }
-      return count;
     }
 
     function updatePhaseRange() {
@@ -545,17 +520,17 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
             <div class="detail">Avg card completions/user/week (last 14 days, \${kpis.launch.activeUsers14d} active users)</div>
             <div class="detail" style="margin-top:4px;font-size:0.75rem;color:\${kpis.launch.weeklyEngagement >= 3 ? '#4caf50' : '#6c757d'}">Target: 3+/week</div>
           </div>
-          <div class="card" style="border-left: 4px solid \${phaseWindowDays() < 7 ? '#ddd' : kpis.launch.retentionD7Pct >= 40 ? '#4caf50' : kpis.launch.retentionD7Pct >= 25 ? '#ff9800' : '#e53935'}">
+          <div class="card" style="border-left: 4px solid \${kpis.launch.retentionD7Pct === null ? '#ddd' : kpis.launch.retentionD7Pct >= 40 ? '#4caf50' : kpis.launch.retentionD7Pct >= 25 ? '#ff9800' : '#e53935'}">
             <h3>D7 Retention</h3>
-            <div class="value">\${retentionValue(kpis.launch.retentionD7Pct, 7)}</div>
-            <div class="detail">Users returning within 7 days of install</div>
-            <div class="detail" style="margin-top:4px;font-size:0.75rem;color:\${phaseWindowDays() < 7 ? '#999' : kpis.launch.retentionD7Pct >= 40 ? '#4caf50' : '#6c757d'}">\${phaseWindowDays() < 7 ? 'Window shorter than 7 days' : 'Target: 40%+'}</div>
+            <div class="value">\${retentionValue(kpis.launch.retentionD7Pct)}</div>
+            <div class="detail">Of users who installed ≥7 days ago, the share who returned on/after day 7</div>
+            <div class="detail" style="margin-top:4px;font-size:0.75rem;color:\${kpis.launch.retentionD7Pct === null ? '#999' : kpis.launch.retentionD7Pct >= 40 ? '#4caf50' : '#6c757d'}">\${kpis.launch.retentionD7Pct === null ? 'n/a — cohort too recent' : 'Target: 40%+'} · Cohort: \${num(kpis.launch.retentionD7Cohort)} users</div>
           </div>
-          <div class="card" style="border-left: 4px solid \${phaseWindowDays() < 30 ? '#ddd' : kpis.launch.retentionD30Pct >= 25 ? '#4caf50' : kpis.launch.retentionD30Pct >= 15 ? '#ff9800' : '#e53935'}">
+          <div class="card" style="border-left: 4px solid \${kpis.launch.retentionD30Pct === null ? '#ddd' : kpis.launch.retentionD30Pct >= 25 ? '#4caf50' : kpis.launch.retentionD30Pct >= 15 ? '#ff9800' : '#e53935'}">
             <h3>D30 Retention</h3>
-            <div class="value">\${retentionValue(kpis.launch.retentionD30Pct, 30)}</div>
-            <div class="detail">Users returning within 30 days of install</div>
-            <div class="detail" style="margin-top:4px;font-size:0.75rem;color:\${phaseWindowDays() < 30 ? '#999' : kpis.launch.retentionD30Pct >= 25 ? '#4caf50' : '#6c757d'}">\${phaseWindowDays() < 30 ? 'Window shorter than 30 days' : 'Target: 25%+'}</div>
+            <div class="value">\${retentionValue(kpis.launch.retentionD30Pct)}</div>
+            <div class="detail">Of users who installed ≥30 days ago, the share who returned on/after day 30</div>
+            <div class="detail" style="margin-top:4px;font-size:0.75rem;color:\${kpis.launch.retentionD30Pct === null ? '#999' : kpis.launch.retentionD30Pct >= 25 ? '#4caf50' : '#6c757d'}">\${kpis.launch.retentionD30Pct === null ? 'n/a — cohort too recent' : 'Target: 25%+'} · Cohort: \${num(kpis.launch.retentionD30Cohort)} users</div>
           </div>
           <div class="card">
             <h3>Share Taps</h3>
@@ -571,11 +546,17 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
 
         <div id="detail-panel"></div>
 
-        <div class="section-title">Retention (unique users by days since install)</div>
+        <div class="section-title">D7 / D30 Retention — how it's computed</div>
         <div class="detail" style="margin-bottom:8px;color:#6c757d;font-size:0.8rem;">
-          These buckets count app opens by each event's <em>days since install</em>, within the selected phase window.
-          They are not a tracked install cohort: the D7/D30 users can be different people from the D0 users.
-          When a phase window is shorter than the bucket horizon, D7/D30 percentages show "n/a" because a returning user who installed earlier would otherwise inflate them.
+          The D7 / D30 cards above are a true <em>install-day cohort</em> metric. A user's install day is the date of their first app open;
+          they are "retained at day N" if they opened the app again on or after day N. Each percentage is
+          (retained users ÷ users who installed long enough ago to have reached day N) within the selected phase window's install cohort.
+          Users too new to have reached day N are excluded from the denominator (not counted as churned), so a card shows "n/a" when no one in the cohort is old enough yet.
+        </div>
+        <div class="section-title" style="font-size:0.95rem;">Opens by days-since-install (diagnostic)</div>
+        <div class="detail" style="margin-bottom:8px;color:#6c757d;font-size:0.8rem;">
+          Raw diagnostic only — distinct users with an app open at each install-age bucket, within the phase window.
+          This is NOT cohort retention (the buckets can be different people); use the cards above for retention.
         </div>
         <table>
           <thead>
@@ -584,8 +565,8 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
           <tbody>
             <tr><td><strong>D0</strong></td><td>Install day</td><td>\${kpis.retention.D0}</td></tr>
             <tr><td><strong>D1</strong></td><td>Day 1 after install</td><td>\${kpis.retention.D1}</td></tr>
-            <tr><td><strong>D7</strong></td><td>Within first 7 days</td><td>\${retentionCount(kpis.retention.D7, 7)}</td></tr>
-            <tr><td><strong>D30</strong></td><td>Within first 30 days</td><td>\${retentionCount(kpis.retention.D30, 30)}</td></tr>
+            <tr><td><strong>D7</strong></td><td>Within first 7 days</td><td>\${kpis.retention.D7}</td></tr>
+            <tr><td><strong>D30</strong></td><td>Within first 30 days</td><td>\${kpis.retention.D30}</td></tr>
           </tbody>
         </table>
       \`;
