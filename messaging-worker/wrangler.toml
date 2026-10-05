@@ -2,6 +2,11 @@ name = "mental-wallet-messaging"
 main = "src/index.ts"
 compatibility_date = "2025-07-01"
 
+# Daily drip automation. Runs once a day at 14:00 UTC. Keep DRIP_CRON_HOUR_UTC in
+# src/index.ts in sync with this hour (it powers the "next run" status estimate).
+[triggers]
+crons = ["0 14 * * *"]
+
 # D1 Database binding
 # Create with: npx wrangler d1 create messaging-db
 # then paste the returned database_id below.

@@ -1,3 +1,7 @@
 node_modules/
 .wrangler/
 .dev.vars
+
+# D1 backups / exports — contain subscriber emails (PII); never commit
+backups/
+*.sql.bak

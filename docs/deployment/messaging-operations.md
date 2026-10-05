@@ -93,25 +93,19 @@ Reads the tip markdown, renders it, and emails it. Recipient must be subscribed.
 # Preview only (no send):
 DRY_RUN=1 npm run send:tip -- --slug emotion-based-session --to you@example.com
 
-# Send for real — test/preview (NOT recorded; won't affect campaign dedupe):
+# Send for real:
 MESSAGING_BASE_URL=https://mental-wallet-messaging.mentalwallet.workers.dev \
 ADMIN_SECRET=YOUR_ADMIN_SECRET \
 npm run send:tip -- --slug emotion-based-session --to you@example.com
-
-# Send for real AND record it, so a later campaign for this tip skips this recipient:
-MESSAGING_BASE_URL=https://mental-wallet-messaging.mentalwallet.workers.dev \
-ADMIN_SECRET=YOUR_ADMIN_SECRET \
-npm run send:tip -- --slug emotion-based-session --to jane@example.com --record
 ```
 
 Available slugs = filenames in `content/tips/` without `.md`
 (`emotion-based-session`, `outcome-capture`, `personal-kpi-check-in`,
 `learn-more-evidence`, `discover-third-party-apps`).
 
-**`--record`** counts a one-off send toward the tip's dedupe history (writes a `sent` row in
-`tip_sends`), so a later campaign for the same tip skips this recipient. Omit it for
-test/preview sends (default: not recorded, so previewing to yourself never excludes anyone
-from a real campaign).
+> The old `--record` flag was **removed**. Dedupe is now per **campaign**, not per tip, so a
+> one-off `/send-tip` has no campaign to record against and is never written to `tip_sends`.
+> (See "Drip automation" below.)
 
 ---
 
@@ -160,20 +154,19 @@ npm run run:campaign -- --id CAMPAIGN_ID --mode production
 - **Send ONE message first, then observe** (per `docs/message-release-plan.md`) rather than
   a backlog dump.
 
-**Same-day fatigue guard (always on):** a campaign automatically **excludes anyone who
-already received an email from us today**, across ALL tips/campaigns — not just this one. So
-if you run two different campaigns on the same day, no recipient gets both; whoever got the
-first is skipped by the second and rolls into a later run. Details:
+**N-day gap guard (always on; generalizes the old same-day guard):** each campaign has a
+`gap_days` (min/default **1**). A campaign **excludes anyone who received an email from us in
+the last `gap_days` days**, across ALL campaigns — not just this one. `gap_days = 1` is
+exactly the old "no two emails on the same day". Larger values add deliberate spacing (used by
+the drip sequence). Details:
 
-- "Today" is the **UTC** calendar date (matches how send times are stored).
-- Only actually-**sent** emails count. A `pending`/`failed` attempt does NOT shield a
-  recipient.
-- The **dry-run already reflects this** — the previewed list and count are the post-guard
-  audience, so what you see is what will send.
-- Excluded-only-by-the-guard recipients are **deferred, not marked** as having received this
-  tip; running the campaign again on a later day reaches them.
-- It's always on (a politeness rule), and layers on top of consent + per-tip dedupe. There's
-  no bypass flag today.
+- The cutoff is computed in **UTC**. Only actually-**sent** emails count; a `pending`/`failed`
+  attempt does NOT shield a recipient.
+- The **dry-run already reflects this** — the previewed list is the post-gap audience.
+- Excluded-only-by-the-gap recipients are **deferred, not marked** as having received the
+  campaign; a later run reaches them once the gap passes.
+- Set a campaign's gap via `gap_days` on create/update (`POST`/`PATCH /campaigns`).
+- Layers on top of consent + **per-campaign** dedupe (dedupe changed from per-tip; see below).
 
 ---
 
@@ -208,6 +201,45 @@ npm run deploy
 
 # Live worker logs (from messaging-worker/)
 npm run tail
+```
+
+---
+
+## Drip automation (daily sequence)
+
+The drip sends a single global, ordered **sequence** of campaigns automatically once a day
+(Cloudflare Cron Trigger, 14:00 UTC). Subscribers move through it one at a time. Full design:
+`.kiro/specs/messaging-drip-automation/`; worker docs: `messaging-worker/README.md`.
+
+- **Dedupe is per campaign** now (changed from per tip, migration `0004`): the same tip can be
+  sent by more than one campaign. `tip_sends` is keyed by `(campaign_id, email)`.
+- **Per-campaign `gap_days`** (migration `0005`, min/default 1): the N-day gap guard above.
+- **Build the sequence by hand** (no seed script); intended via the admin UI once built. An
+  **empty sequence = the daily run sends nothing**, so it is safe to leave empty.
+- The engine ships **paused**. Nothing goes out until the sequence is built and you `resume`.
+- Tip content for the cron comes from the marketing site's `/content/index.json` (the worker
+  can't read `content/tips/*.md`).
+
+```bash
+# All admin; wrap any URL containing & in single quotes.
+# Status (paused/running + next run) and pause/resume
+curl -s 'https://mental-wallet-messaging.mentalwallet.workers.dev/drip/status?secret=YOUR_ADMIN_SECRET' | python3 -m json.tool
+curl -s -X POST 'https://mental-wallet-messaging.mentalwallet.workers.dev/drip/pause?secret=YOUR_ADMIN_SECRET'
+curl -s -X POST 'https://mental-wallet-messaging.mentalwallet.workers.dev/drip/resume?secret=YOUR_ADMIN_SECRET'
+
+# View / build / edit the sequence
+curl -s 'https://mental-wallet-messaging.mentalwallet.workers.dev/drip/sequence?secret=YOUR_ADMIN_SECRET' | python3 -m json.tool
+curl -s -X POST 'https://mental-wallet-messaging.mentalwallet.workers.dev/drip/sequence/steps?secret=YOUR_ADMIN_SECRET' -H 'Content-Type: application/json' -d '{"campaign_id":"<id>"}'
+curl -s -X PATCH 'https://mental-wallet-messaging.mentalwallet.workers.dev/drip/sequence/steps/<stepId>?secret=YOUR_ADMIN_SECRET' -H 'Content-Type: application/json' -d '{"position":2}'
+curl -s -X DELETE 'https://mental-wallet-messaging.mentalwallet.workers.dev/drip/sequence/steps/<stepId>?secret=YOUR_ADMIN_SECRET'
+
+# Preview the next real run (dry-run, no sends)
+curl -s -X POST 'https://mental-wallet-messaging.mentalwallet.workers.dev/drip/preview?secret=YOUR_ADMIN_SECRET' | python3 -m json.tool
+
+# Time-travel testing (test-only subscribers)
+curl -s -X POST 'https://mental-wallet-messaging.mentalwallet.workers.dev/drip/test/create?secret=YOUR_ADMIN_SECRET'   # REPLACE cohort (ages derived from the sequence)
+curl -s -X POST 'https://mental-wallet-messaging.mentalwallet.workers.dev/drip/test/reset?secret=YOUR_ADMIN_SECRET'    # KEEP cohort, clear send history
+curl -s -X POST 'https://mental-wallet-messaging.mentalwallet.workers.dev/drip/simulate?secret=YOUR_ADMIN_SECRET' -H 'Content-Type: application/json' -d '{"startDate":"2026-02-10","days":14,"mode":"dry-run"}' | python3 -m json.tool
 ```
 
 ---

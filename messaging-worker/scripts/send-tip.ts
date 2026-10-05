@@ -12,9 +12,6 @@
  *
  * Optional:
  *   --scope tips|reminders   (default: tips)
- *   --record                 record this send in tip_sends so a later campaign for the
- *                            same tip skips this recipient (default: NOT recorded — safe
- *                            for test/preview sends)
  *   --tips-dir <path>        (default: ../content/tips relative to this script)
  *   DRY_RUN=1                print the parsed tip + payload without sending
  */
@@ -139,15 +136,9 @@ try {
   process.exit(1);
 }
 
-// --record makes this one-off send count toward the tip's dedupe history, so a later
-// campaign for the same tip skips this recipient. Off by default (test/preview sends
-// should not pollute dedupe). Passes tip_slug as the dedupe key.
-const record = process.argv.includes('--record');
+// NOTE: the former --record flag was removed. Dedupe is now per-campaign (not per-tip), so a
+// one-off tip send is never recorded against campaign dedupe. This script just sends the tip.
 const payload: Record<string, unknown> = { email: to, scope, tip };
-if (record) {
-  payload.record = true;
-  payload.tip_slug = slug;
-}
 
 console.log(`Tip: "${tip.title}"`);
 console.log(`  summary: ${tip.summary}`);

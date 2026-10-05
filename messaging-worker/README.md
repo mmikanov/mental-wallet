@@ -146,10 +146,12 @@ ADMIN_SECRET=<ADMIN_SECRET> \
 npm run send:tip -- --slug emotion-based-session --to you@example.com
 ```
 
-Options: `--scope tips|reminders` (default `tips`), `--record` (record this send in
-`tip_sends` so a later campaign for the same tip skips this recipient — default OFF so
-test/preview sends don't affect dedupe), `--tips-dir <path>` (default `../content/tips`).
-Note the `--` before script args when using `npm run`.
+Options: `--scope tips|reminders` (default `tips`), `--tips-dir <path>` (default
+`../content/tips`). Note the `--` before script args when using `npm run`.
+
+> The old `--record` flag was **removed**. Dedupe is now per **campaign**, not per tip
+> (see the drip automation change below), so a one-off `/send-tip` has no campaign to
+> record against and is never written to `tip_sends`.
 
 The tip email includes a personalized greeting, the hero image (if the tip sets one), the
 summary (and body), the CTA link, and the same `List-Unsubscribe` headers + footer as all
@@ -182,8 +184,9 @@ Endpoints (all admin-only):
 - `mode` on the **campaign** is `new_only` (default; reaches only those who haven't received
   the tip) or `resend_all` (deliberately re-sends the tip to everyone; clears the tip's send
   history at run start).
-- Dedupe is keyed by **tip slug** (not campaign id): deleting a campaign never causes a
-  re-send, and campaign ids are UUIDs that are never reused.
+- Dedupe is keyed by **campaign id** (changed from tip slug — see the drip automation
+  section below). The same tip can be sent by more than one campaign; each campaign tracks
+  who it has reached independently. `resend_all` clears **that campaign's** send history.
 
 ### Run a campaign (driver script)
 
@@ -203,13 +206,86 @@ npm run run:campaign -- --id <campaignId> --mode production
 
 Options: `--limit <n>` (chunk size, default 50), `--pace-ms <n>` (delay between chunks,
 default 1000). Interrupting is safe — resume by running again; already-sent recipients are
-skipped (idempotent via a per-tip send record + a Resend idempotency key).
+skipped (idempotent via a per-campaign send record + a Resend idempotency key).
 
 ### Migrations
 
 Campaigns use two additional tables (`campaigns`, `tip_sends`), created by
 `0002_create_campaigns.sql` and `0003_create_tip_sends.sql`. `npm run db:migrate:local` /
 `db:migrate:remote` apply all migrations in order.
+
+## Drip Automation (daily sequence)
+
+Implements the `messaging-drip-automation` spec. A single global, ordered **sequence** of
+campaigns that every subscriber moves through one at a time, sent automatically once a day by
+a Cloudflare **Cron Trigger** (`0 14 * * *`, i.e. 14:00 UTC — see `wrangler.toml [triggers]`
+and `DRIP_CRON_HOUR_UTC` in `src/index.ts`).
+
+Key model (vs. the manual campaigns above):
+
+- **Per-campaign dedupe** (migration `0004`): `tip_sends` is keyed by `(campaign_id, email)`,
+  not `(tip_slug, email)`. A tip MAY recur via a different campaign later in the sequence.
+- **N-day gap** (migration `0005`): each campaign has `gap_days` (min/default 1). A subscriber
+  is eligible for a campaign only if they received no email in the last `gap_days` days. A gap
+  of 1 = the old "no two emails on the same day". The gap carries over: a subscriber not yet
+  caught up on an earlier step can't jump ahead.
+- **Derived position** (migration `0006`, `sequence_steps`): a subscriber's next campaign is
+  the earliest enabled step they haven't received and are eligible for — computed live, never
+  stored, so editing the sequence just works.
+- **Content** is fetched at run time from the marketing site's `${SITE_ORIGIN}/content/index.json`
+  (title/summary/heroImage/cta per slug). The worker has no filesystem; the cron can't read
+  `content/tips/*.md`, so it reads the published index instead.
+- **Run state** (migration `0007`, `drip_state`): `paused` flag + `running_since` +
+  `last_run_at`.
+- **Test subscribers** (migration `0008`, `subscribers.is_test`): isolated, relative-age
+  testers for the time-travel harness; never mixes with real subscribers.
+
+### Endpoints (all admin; wrap `&` URLs in single quotes)
+
+```bash
+B=https://mental-wallet-messaging.mentalwallet.workers.dev
+S=<ADMIN_SECRET>
+
+# Status: paused/running + next scheduled run
+curl -s "$B/drip/status?secret=$S" | python3 -m json.tool
+
+# Pause / resume the daily automation
+curl -s -X POST "$B/drip/pause?secret=$S"
+curl -s -X POST "$B/drip/resume?secret=$S"
+
+# View / edit the sequence (build it one step at a time; no seed script)
+curl -s "$B/drip/sequence?secret=$S" | python3 -m json.tool
+curl -s -X POST "$B/drip/sequence/steps?secret=$S" -H 'Content-Type: application/json' \
+  -d '{"campaign_id":"<id>"}'                 # append a campaign as a step
+curl -s -X PATCH "$B/drip/sequence/steps/<stepId>?secret=$S" -H 'Content-Type: application/json' \
+  -d '{"position":2}'                          # reorder; or {"enabled":false} to disable
+curl -s -X DELETE "$B/drip/sequence/steps/<stepId>?secret=$S"   # remove (keeps the campaign)
+
+# Preview the next real run (dry-run, no sends; optional {"asOf":"YYYY-MM-DD"})
+curl -s -X POST "$B/drip/preview?secret=$S" | python3 -m json.tool
+
+# Time-travel testing (test-only subscribers; never touches real ones)
+curl -s -X POST "$B/drip/test/create?secret=$S"   # REPLACE cohort; ages derived from the sequence
+curl -s -X POST "$B/drip/test/reset?secret=$S"    # KEEP cohort, clear their send history
+curl -s -X POST "$B/drip/simulate?secret=$S" -H 'Content-Type: application/json' \
+  -d '{"startDate":"2026-02-10","days":14,"mode":"dry-run"}' | python3 -m json.tool
+#   dry-run advances state VIRTUALLY (no email) so you see the full day-by-day progression;
+#   run test/reset or test/create afterward to clear the virtual sends.
+#   mode:"production" actually sends, ONLY to the test cohort.
+```
+
+### Build the live sequence
+
+There is **no seed script** — build the sequence by adding steps (the editorial order lives
+in `docs/message-release-plan.md`). This is intended to be done via the admin UI
+(`messaging-drip-admin-ui` spec) once built. An **empty sequence makes the daily run a
+no-op** (sends nothing), so it is safe to deploy before the sequence exists.
+
+### Safety
+
+The daily cron sends to real `tips`/`reminders` subscribers once the sequence is non-empty
+and the drip is not paused. To hold sends, `POST /drip/pause`. The engine ships **paused** so
+nothing goes out until you build the sequence and `resume`.
 
 ## Local Development
 
