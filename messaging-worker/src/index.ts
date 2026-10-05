@@ -1437,6 +1437,14 @@ async function sendOneDrip(
  * @param now    evaluation date (injectable for the test harness / simulate).
  * @param onlySubscribers optional explicit subscriber list (e.g. test cohort); default = all.
  */
+type PlanStatus = 'next' | 'waiting' | 'finished' | 'not_yet';
+interface PlanEntry {
+  email: string;
+  status: PlanStatus;
+  campaign_id?: string;
+  tip_slug?: string;
+  sent?: string;
+}
 async function runDripPass(
   env: Env,
   opts: {
@@ -1451,7 +1459,7 @@ async function runDripPass(
      */
     simulateAdvance?: boolean;
   }
-): Promise<{ plan: Array<{ email: string; status: 'next' | 'waiting' | 'finished'; campaign_id?: string; tip_slug?: string; sent?: string }>; sent: number; failed: number; skipped: number; finished: number; waiting: number }> {
+): Promise<{ plan: PlanEntry[]; sent: number; failed: number; skipped: number; finished: number; waiting: number }> {
   const now = opts.now ?? new Date();
   const steps = await getSequenceSteps(env);
   const campaignsById = await loadCampaignsForSteps(env, steps);
@@ -1460,10 +1468,22 @@ async function runDripPass(
   const subscribers =
     opts.onlySubscribers ?? ((await env.DB.prepare(`SELECT * FROM subscribers`).all<SubscriberRow>()).results || []);
 
-  const plan: Array<{ email: string; status: 'next' | 'waiting' | 'finished'; campaign_id?: string; tip_slug?: string; sent?: string }> = [];
+  const plan: PlanEntry[] = [];
   let sent = 0, failed = 0, skipped = 0, finished = 0, waiting = 0;
 
+  // The evaluation day's UTC calendar date — a subscriber who signed up AFTER this day did
+  // not exist yet and must be skipped (they can't receive anything before they joined). This
+  // matters for the time-travel simulation: stepping from an early start date, each tester
+  // only enters the sequence on/after their own signup day.
+  const nowDay = now.toISOString().slice(0, 10);
+
   for (const sub of subscribers) {
+    // Not signed up yet on this simulated day → not in the audience. Emit a 'not_yet' marker
+    // (distinct from 'finished') so the UI shows "not joined" rather than "done".
+    if ((sub.created_at || '').slice(0, 10) > nowDay) {
+      plan.push({ email: sub.email, status: 'not_yet' });
+      continue;
+    }
     const resolved = await resolveNextForSubscriber(env, sub, steps, campaignsById, now);
     if (resolved.kind === 'finished') {
       finished++;
@@ -1689,15 +1709,33 @@ async function handleSimulate(request: Request, env: Env): Promise<Response> {
   try { body = (await request.json()) as Record<string, unknown>; } catch { /* defaults */ }
 
   const mode = body.mode === 'production' ? 'production' : 'dry-run';
-  const days = typeof body.days === 'number' && body.days > 0 ? Math.min(Math.floor(body.days), 400) : 14;
-  const start = typeof body.startDate === 'string' && !Number.isNaN(Date.parse(body.startDate))
-    ? new Date(body.startDate)
-    : new Date();
 
   const testers = await listTestSubscribers(env);
   if (testers.length === 0) {
     return jsonResponse(env, { error: 'No test subscribers. Create a test cohort first (POST /drip/test/create).' }, { status: 400 });
   }
+
+  // Default the start to the EARLIEST test subscriber's signup day, so the simulation runs
+  // "from when the first person joined" — each tester then enters the sequence on their own
+  // signup day (the signup-date guard in runDripPass enforces this). An explicit startDate
+  // overrides. This is what makes the sim realistic: on day 1 only the oldest tester exists,
+  // so only they get welcome; a tester who joined later can't receive anything before then.
+  const earliestSignup = testers
+    .map((t) => t.created_at)
+    .filter(Boolean)
+    .sort()[0];
+  const start = typeof body.startDate === 'string' && !Number.isNaN(Date.parse(body.startDate))
+    ? new Date(body.startDate)
+    : (earliestSignup ? new Date(earliestSignup) : new Date());
+
+  // Default `days` to cover from the start day through today (inclusive) so the whole history
+  // up to now is simulated; an explicit `days` overrides. Clamped to [1, 400].
+  const startDayMs = Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate());
+  const todayMs = Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate());
+  const daysToNow = Math.floor((todayMs - startDayMs) / (24 * 60 * 60 * 1000)) + 1;
+  const days = typeof body.days === 'number' && body.days > 0
+    ? Math.min(Math.floor(body.days), 400)
+    : Math.min(Math.max(daysToNow, 1), 400);
 
   // Step one simulated day at a time, re-reading the (test-only) subscribers each day so
   // their 'sent' history from earlier simulated days carries forward.

@@ -58,6 +58,7 @@ export const ADMIN_HTML = `<!doctype html>
   .grid-cell-next { background:var(--greenbg); color:var(--green); }
   .grid-cell-waiting { background:var(--amberbg); color:var(--amber); }
   .grid-cell-finished { color:var(--muted); }
+  .grid-cell-not_yet { color:#bbb; }
   .mode-dry { color:var(--green); font-weight:600; }
   .mode-prod { color:var(--red); font-weight:600; }
   .scroll { overflow-x:auto; }
@@ -119,8 +120,8 @@ export const ADMIN_HTML = `<!doctype html>
     <div id="test-cohort" class="mut" style="margin-top:8px;"></div>
     <hr style="border:none;border-top:1px solid var(--line);margin:14px 0;" />
     <div class="row">
-      <label>Start <input type="date" id="sim-start" /></label>
-      <label>Days <input type="number" id="sim-days" value="14" min="1" max="400" /></label>
+      <label>Start <input type="date" id="sim-start" placeholder="earliest signup" /></label>
+      <label>Days <input type="number" id="sim-days" min="1" max="400" placeholder="to today" /></label>
       <label>Mode
         <select id="sim-mode">
           <option value="dry-run">dry-run (no emails)</option>
@@ -183,6 +184,7 @@ export const ADMIN_HTML = `<!doctype html>
     // is NOT a send (the tip shown is just what they're waiting for).
     if (cell.status === 'next') return '\\u2709 ' + (cell.tip_slug || 'send');  // envelope + tip
     if (cell.status === 'waiting') return '\\u23F3 waiting';                     // hourglass
+    if (cell.status === 'not_yet') return '\\u2014';                            // em dash: not joined yet
     return '\\u2713 done';                                                       // check
   }
 
@@ -392,15 +394,19 @@ export const ADMIN_HTML = `<!doctype html>
   document.getElementById('btn-simulate').onclick = async function(){
     clearErr('sim-err');
     var mode = document.getElementById('sim-mode').value;
-    var days = Math.max(1, Math.min(400, Math.floor(Number(document.getElementById('sim-days').value) || 14)));
-    var startDate = document.getElementById('sim-start').value || undefined;
+    var daysRaw = document.getElementById('sim-days').value;
+    var startDate = document.getElementById('sim-start').value || undefined; // blank = earliest signup
+    // Only send the days value if the operator typed one; otherwise the worker runs through today.
+    var payload = { mode: mode };
+    if (startDate) payload.startDate = startDate;
+    if (daysRaw) payload.days = Math.max(1, Math.min(400, Math.floor(Number(daysRaw) || 1)));
     if (mode === 'production') {
       if (!confirm('Run in send-to-test mode? This DELIVERS real emails to the test cohort (never real subscribers). Continue?')) return;
     }
     var body = document.getElementById('sim-body');
     body.innerHTML = '<div class="mut">Simulating…</div>';
     try {
-      var data = await api('/drip/simulate', {method:'POST', body:{ startDate: startDate, days: days, mode: mode }});
+      var data = await api('/drip/simulate', {method:'POST', body: payload});
       var perDay = data.perDay || [];
       var grid = buildSimGrid(perDay);
       if (!grid.testers.length) { body.innerHTML = '<div class="empty">No test users. Create a test cohort first.</div>'; return; }
@@ -434,14 +440,15 @@ export const ADMIN_HTML = `<!doctype html>
       }).join('');
       body.innerHTML = '<p class="mut">' + esc(data.mode) + ' · ' + data.days + ' day(s) from ' + esc(data.startDate) + ' · ' + data.testerCount + ' test user(s)' +
         (data.mode === 'dry-run' ? '. Virtual advancement — run "Reset test users" to clear.' : '') + '</p>' +
-        '<p class="mut">Columns are test users (by signup age). <span class="grid-cell-next" style="padding:1px 6px;border-radius:4px;">\\u2709 tip</span> = a real send that day · <span class="grid-cell-waiting" style="padding:1px 6px;border-radius:4px;">\\u23F3 waiting</span> = not yet due · \\u2713 done = finished. The "Sends that day" column lists exactly who gets each campaign.</p>' +
+        '<p class="mut">Columns are test users (by signup age). Each tester only enters the sequence on/after their own signup day. <span class="grid-cell-next" style="padding:1px 6px;border-radius:4px;">\\u2709 tip</span> = a real send that day · <span class="grid-cell-waiting" style="padding:1px 6px;border-radius:4px;">\\u23F3 waiting</span> = not yet due · \\u2014 = not joined yet · \\u2713 done = finished. The "Sends that day" column lists exactly who gets each campaign.</p>' +
         '<table><thead>' + head + '</thead><tbody>' + rows + '</tbody></table>';
     } catch (e) { body.innerHTML=''; showErr('sim-err', e); }
   };
 
   // --- init ---
   (function(){
-    document.getElementById('sim-start').value = new Date().toISOString().slice(0,10);
+    // Leave Start/Days blank by default: the worker then simulates from the EARLIEST test
+    // signup through today, so each tester enters the sequence on their own signup day.
     renderModeNote();
     refreshStatus();
     loadCampaignOptions();
