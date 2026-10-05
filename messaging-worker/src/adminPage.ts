@@ -450,6 +450,7 @@ export const ADMIN_HTML = `<!doctype html>
         await api('/campaigns/' + step.campaign_id, {method:'PATCH', body: payload});
         var m = document.getElementById('seq-msg'); m.textContent = '✓ Updated campaign "' + name + '".'; m.style.display = 'block';
         await refreshSequence();
+        await loadCampaignOptions();  // the rename/edit also changes the "Add a campaign" picker labels
       } catch (e) { showErr('seq-err', e); }
     };
   }
