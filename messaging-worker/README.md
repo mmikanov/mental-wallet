@@ -274,12 +274,34 @@ curl -s -X POST "$B/drip/simulate?secret=$S" -H 'Content-Type: application/json'
 #   mode:"production" actually sends, ONLY to the test cohort.
 ```
 
+### Admin page (operator UI)
+
+A private, operator-only web page drives all of the above without curl:
+
+```
+https://mental-wallet-messaging.<subdomain>.workers.dev/admin?secret=<ADMIN_SECRET>
+```
+
+Secret-gated (same `ADMIN_SECRET`), not linked anywhere public, `noindex`. It is a thin
+presentation layer over the `/drip/*` endpoints (no sending logic of its own). Panels:
+
+- **Status** — paused/running badge, next-run countdown, pause/resume.
+- **Sequence** — view the ordered steps; build from scratch and edit (add from a campaign
+  picker, reorder, enable/disable, remove, inline gap-days). Changes auto-save.
+- **Preview** — dry-run of the next real run (no emails).
+- **Testing** — create (replace) / reset (keep) the test cohort, and run the day-by-day
+  time-travel simulation (dry-run advances state virtually; send-to-test delivers only to
+  test users, behind a confirm).
+
+Real-send actions are gated by a confirmation; safe actions (view/preview/dry-run/edits) are
+not. Built per the `messaging-drip-admin-ui` spec.
+
 ### Build the live sequence
 
 There is **no seed script** — build the sequence by adding steps (the editorial order lives
-in `docs/message-release-plan.md`). This is intended to be done via the admin UI
-(`messaging-drip-admin-ui` spec) once built. An **empty sequence makes the daily run a
-no-op** (sends nothing), so it is safe to deploy before the sequence exists.
+in `docs/message-release-plan.md`), easiest via the **admin page** above. An **empty sequence
+makes the daily run a no-op** (sends nothing), so it is safe to deploy before the sequence
+exists.
 
 ### Safety
 

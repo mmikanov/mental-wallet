@@ -17,6 +17,7 @@
  */
 
 import { resolveNextStep, deriveTestAges, type SequenceStep } from './drip';
+import { ADMIN_HTML } from './adminPage';
 
 export interface Env {
   DB: D1Database;
@@ -1701,6 +1702,25 @@ async function handleSimulate(request: Request, env: Env): Promise<Response> {
   });
 }
 
+// --- GET /admin (operator-only HTML page; secret-gated like other admin routes) ---
+
+async function handleAdminPage(request: Request, env: Env): Promise<Response> {
+  if (!isAuthorized(request, env)) {
+    // Deny without the secret. Plain text (not the JSON helper) since this route serves HTML.
+    return new Response('Unauthorized. Open /admin?secret=<ADMIN_SECRET>.', {
+      status: 401,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8', ...corsHeaders(env) },
+    });
+  }
+  const url = new URL(request.url);
+  const secret = url.searchParams.get('secret') || '';
+  const html = ADMIN_HTML.replace('__ADMIN_SECRET__', secret);
+  return new Response(html, {
+    status: 200,
+    headers: { 'Content-Type': 'text/html; charset=utf-8', ...corsHeaders(env) },
+  });
+}
+
 // --- Main Fetch Handler ---
 
 export default {
@@ -1743,6 +1763,7 @@ export default {
         if (request.method === 'PATCH' || request.method === 'PUT') return await handleUpdateSequenceStep(request, env, stepId);
         if (request.method === 'DELETE') return await handleDeleteSequenceStep(request, env, stepId);
       }
+      if (path === '/admin' && request.method === 'GET') return await handleAdminPage(request, env);
       if (path === '/drip/status' && request.method === 'GET') return await handleDripStatus(request, env);
       if (path === '/drip/pause' && request.method === 'POST') return await handleDripPause(request, env, true);
       if (path === '/drip/resume' && request.method === 'POST') return await handleDripPause(request, env, false);

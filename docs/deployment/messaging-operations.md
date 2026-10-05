@@ -211,6 +211,11 @@ The drip sends a single global, ordered **sequence** of campaigns automatically 
 (Cloudflare Cron Trigger, 14:00 UTC). Subscribers move through it one at a time. Full design:
 `.kiro/specs/messaging-drip-automation/`; worker docs: `messaging-worker/README.md`.
 
+> **Operator admin page (easiest way to do all of this):**
+> `https://mental-wallet-messaging.mentalwallet.workers.dev/admin?secret=YOUR_ADMIN_SECRET`
+> — a private, secret-gated web UI with Status / Sequence (build + edit) / Preview / Testing
+> panels. The curl commands below remain valid alongside it.
+
 - **Dedupe is per campaign** now (changed from per tip, migration `0004`): the same tip can be
   sent by more than one campaign. `tip_sends` is keyed by `(campaign_id, email)`.
 - **Per-campaign `gap_days`** (migration `0005`, min/default 1): the N-day gap guard above.
