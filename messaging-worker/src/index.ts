@@ -119,6 +119,34 @@ interface SubscriberRow {
   updated_at: string;
 }
 
+// --- Subscription event log (audit trail; see migration 0009) ---
+
+/** Record one subscription event (append-only). Best-effort; never throws into the caller. */
+async function logSubscriberEvent(
+  env: Env,
+  email: string,
+  eventType: 'signed_up' | 'scope_changed' | 'unsubscribed',
+  opts: { scope?: 'tips' | 'reminders'; oldValue?: number; newValue?: number; detail?: string; at?: string } = {}
+): Promise<void> {
+  try {
+    await env.DB.prepare(
+      `INSERT INTO subscriber_events (id, email, event_type, scope, old_value, new_value, detail, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(
+      crypto.randomUUID(),
+      email,
+      eventType,
+      opts.scope ?? null,
+      opts.oldValue ?? null,
+      opts.newValue ?? null,
+      opts.detail ?? null,
+      opts.at ?? new Date().toISOString()
+    ).run();
+  } catch {
+    // Event logging is non-critical; don't fail the consent operation if it errors.
+  }
+}
+
 // --- Route: POST /subscribe (public) ---
 
 async function handleSubscribe(request: Request, env: Env): Promise<Response> {
@@ -158,6 +186,14 @@ async function handleSubscribe(request: Request, env: Env): Promise<Response> {
     )
       .bind(nextName, nextReminders, nextTips, remindersTs, tipsTs, now, email)
       .run();
+
+    // Log a scope_changed event for each scope that actually changed.
+    if (nextReminders !== existing.scope_reminders) {
+      await logSubscriberEvent(env, email, 'scope_changed', { scope: 'reminders', oldValue: existing.scope_reminders, newValue: nextReminders, detail: 'reminders ' + (nextReminders ? 'opted in' : 'opted out'), at: now });
+    }
+    if (nextTips !== existing.scope_tips) {
+      await logSubscriberEvent(env, email, 'scope_changed', { scope: 'tips', oldValue: existing.scope_tips, newValue: nextTips, detail: 'tips ' + (nextTips ? 'opted in' : 'opted out'), at: now });
+    }
   } else {
     const nextReminders = scopes.reminders ? 1 : 0;
     const nextTips = scopes.tips ? 1 : 0;
@@ -181,6 +217,9 @@ async function handleSubscribe(request: Request, env: Env): Promise<Response> {
         now
       )
       .run();
+
+    const scopesDesc = nextTips && nextReminders ? 'tips + reminders' : nextTips ? 'tips' : nextReminders ? 'reminders' : 'no scopes';
+    await logSubscriberEvent(env, email, 'signed_up', { detail: 'signed up: ' + scopesDesc, at: now });
   }
 
   // Uniform response — does not reveal whether the email already existed.
@@ -250,6 +289,14 @@ async function handlePreferences(request: Request, env: Env): Promise<Response> 
     .bind(nextReminders, nextTips, remindersTs, tipsTs, now, token)
     .run();
 
+  // Log each scope that changed.
+  if (nextReminders !== existing.scope_reminders) {
+    await logSubscriberEvent(env, existing.email, 'scope_changed', { scope: 'reminders', oldValue: existing.scope_reminders, newValue: nextReminders, detail: 'reminders ' + (nextReminders ? 'opted in' : 'opted out'), at: now });
+  }
+  if (nextTips !== existing.scope_tips) {
+    await logSubscriberEvent(env, existing.email, 'scope_changed', { scope: 'tips', oldValue: existing.scope_tips, newValue: nextTips, detail: 'tips ' + (nextTips ? 'opted in' : 'opted out'), at: now });
+  }
+
   return jsonResponse(env, {
     ok: true,
     scopes: { reminders: nextReminders === 1, tips: nextTips === 1 },
@@ -292,6 +339,11 @@ async function handleUnsubscribe(request: Request, env: Env): Promise<Response> 
   )
     .bind(remindersTs, tipsTs, now, token)
     .run();
+
+  // Log the unsubscribe-all only if something actually changed (idempotent re-clicks don't log).
+  if (existing.scope_reminders !== 0 || existing.scope_tips !== 0) {
+    await logSubscriberEvent(env, existing.email, 'unsubscribed', { detail: 'unsubscribed from all', at: now });
+  }
 
   return new Response(renderUnsubscribeHtml("You've been unsubscribed. You won't receive further emails."), {
     status: 200,
@@ -1603,6 +1655,65 @@ async function handleDripPreview(request: Request, env: Env): Promise<Response> 
   });
 }
 
+// --- GET /drip/tip-slugs (admin): available tip slugs from the content index ---
+// Powers the add-campaign form's tip dropdown so the operator can't pick a slug with no content.
+
+async function handleTipSlugs(request: Request, env: Env): Promise<Response> {
+  if (!isAuthorized(request, env)) return unauthorized(env);
+  const index = await fetchTipIndex(env);
+  const slugs = index ? Array.from(index.keys()).sort() : [];
+  return jsonResponse(env, { slugs });
+}
+
+// --- GET /drip/subscriber-history?email= (admin): one timeline per subscriber ---
+// Merges subscription events (signup / scope changes / unsubscribe) and email sends into a
+// single list ordered by date, so the operator can see sends relative to consent changes.
+
+async function handleSubscriberHistory(request: Request, env: Env): Promise<Response> {
+  if (!isAuthorized(request, env)) return unauthorized(env);
+  const url = new URL(request.url);
+  const email = (url.searchParams.get('email') || '').trim().toLowerCase();
+  if (!email) return jsonResponse(env, { error: 'email query param is required' }, { status: 400 });
+
+  // Subscription events (audit log).
+  const eventsRes = await env.DB.prepare(
+    `SELECT event_type, scope, old_value, new_value, detail, created_at
+     FROM subscriber_events WHERE email = ? ORDER BY created_at ASC`
+  ).bind(email).all<{ event_type: string; scope: string | null; old_value: number | null; new_value: number | null; detail: string | null; created_at: string }>();
+
+  // Email sends (tip_sends), joined to campaign name. Only 'sent' rows are real deliveries;
+  // include failed too (useful to see), label by status.
+  const sendsRes = await env.DB.prepare(
+    `SELECT ts.campaign_id, ts.tip_slug, ts.status, ts.sent_at, ts.created_at, c.name AS campaign_name
+     FROM tip_sends ts LEFT JOIN campaigns c ON c.id = ts.campaign_id
+     WHERE ts.email = ? ORDER BY COALESCE(ts.sent_at, ts.created_at) ASC`
+  ).bind(email).all<{ campaign_id: string; tip_slug: string; status: string; sent_at: string | null; created_at: string; campaign_name: string | null }>();
+
+  type HistItem = { date: string; kind: 'subscription' | 'email'; type: string; summary: string };
+  const items: HistItem[] = [];
+
+  for (const e of eventsRes.results || []) {
+    items.push({
+      date: e.created_at,
+      kind: 'subscription',
+      type: e.event_type,
+      summary: e.detail || e.event_type,
+    });
+  }
+  for (const s of sendsRes.results || []) {
+    const when = s.sent_at || s.created_at;
+    const label = s.campaign_name || s.tip_slug || 'campaign';
+    const summary = s.status === 'sent'
+      ? `Email sent: ${label}`
+      : `Email ${s.status}: ${label}`;
+    items.push({ date: when, kind: 'email', type: s.status, summary });
+  }
+
+  items.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+
+  return jsonResponse(env, { email, count: items.length, items });
+}
+
 // =====================================================================================
 // Drip test harness: isolated test subscribers (relative-age), create (replace) / reset
 // (keep), and the day-by-day time-travel simulation. All operate ONLY on is_test = 1 rows.
@@ -1838,6 +1949,8 @@ export default {
       if (path === '/drip/pause' && request.method === 'POST') return await handleDripPause(request, env, true);
       if (path === '/drip/resume' && request.method === 'POST') return await handleDripPause(request, env, false);
       if (path === '/drip/preview' && request.method === 'POST') return await handleDripPreview(request, env);
+      if (path === '/drip/tip-slugs' && request.method === 'GET') return await handleTipSlugs(request, env);
+      if (path === '/drip/subscriber-history' && request.method === 'GET') return await handleSubscriberHistory(request, env);
       if (path === '/drip/test/list' && request.method === 'GET') return await handleTestList(request, env);
       if (path === '/drip/test/create' && request.method === 'POST') return await handleTestCreate(request, env);
       if (path === '/drip/test/reset' && request.method === 'POST') return await handleTestReset(request, env);

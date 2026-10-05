@@ -61,6 +61,9 @@ export const ADMIN_HTML = `<!doctype html>
   .grid-cell-not_yet { color:#bbb; }
   .ok-msg { background:var(--greenbg); color:var(--green); border:1px solid var(--green);
             border-radius:7px; padding:8px 12px; margin:8px 0; font-size:0.85rem; display:none; }
+  .sub-row:hover { background:#f0f1f3; }
+  .close-x { font:inherit; font-size:0.75rem; border:1px solid var(--line); background:#fff;
+             border-radius:5px; padding:1px 8px; cursor:pointer; margin-left:8px; }
   .mode-dry { color:var(--green); font-weight:600; }
   .mode-prod { color:var(--red); font-weight:600; }
   .scroll { overflow-x:auto; }
@@ -72,7 +75,7 @@ export const ADMIN_HTML = `<!doctype html>
 
   <!-- STATUS -->
   <div class="panel" id="status-panel">
-    <h2>Status</h2>
+    <h2>Drip Status</h2>
     <div class="row">
       <span id="state-badge" class="badge">loading…</span>
       <span id="run-badge"></span>
@@ -83,6 +86,23 @@ export const ADMIN_HTML = `<!doctype html>
       <button id="btn-refresh">Refresh</button>
     </div>
     <div class="err" id="status-err"></div>
+  </div>
+
+  <!-- NEW CAMPAIGN -->
+  <div class="panel" id="new-campaign-panel">
+    <h2>New Campaign</h2>
+    <p class="mut" style="margin-top:0;">Create a campaign (a tip + scope + spacing). It then appears in the "Add a campaign" picker below.</p>
+    <div class="row">
+      <label>Name <input type="text" id="nc-name" placeholder="e.g. Welcome wave" style="width:200px" /></label>
+      <label>Tip <select id="nc-tip"><option value="">loading tips…</option></select></label>
+      <label>Scope
+        <select id="nc-scope"><option value="tips">tips</option><option value="reminders">reminders</option></select>
+      </label>
+      <label>Gap (days) <input type="number" id="nc-gap" value="1" min="1" style="width:60px" /></label>
+      <button id="btn-create-campaign" class="primary">Create campaign</button>
+    </div>
+    <div class="err" id="nc-err"></div>
+    <div class="ok-msg" id="nc-msg"></div>
   </div>
 
   <!-- SEQUENCE -->
@@ -105,12 +125,13 @@ export const ADMIN_HTML = `<!doctype html>
       <span class="mut">Shows what the next daily run would send. <strong>No emails are sent.</strong></span>
     </div>
     <div id="preview-body"></div>
+    <div id="subhist"></div>
     <div class="err" id="preview-err"></div>
   </div>
 
   <!-- TESTING -->
   <div class="panel" id="testing-panel">
-    <h2>Testing (time-travel)</h2>
+    <h2>Drip Testing (time-travel)</h2>
     <div class="row">
       <button id="btn-test-create" class="primary">Create test users</button>
       <span class="mut">Fresh cohort with signup ages derived from the current sequence. <strong>Replaces</strong> any existing test users.</span>
@@ -258,6 +279,33 @@ export const ADMIN_HTML = `<!doctype html>
     } catch (e) { /* non-fatal; picker just stays empty */ }
   }
 
+  // --- NEW CAMPAIGN ---
+  async function loadTipSlugOptions() {
+    try {
+      var data = await api('/drip/tip-slugs');
+      var sel = document.getElementById('nc-tip');
+      sel.innerHTML = '<option value="">Select a tip…</option>';
+      (data.slugs || []).forEach(function(s){
+        var o = document.createElement('option'); o.value = s; o.textContent = s; sel.appendChild(o);
+      });
+    } catch (e) { document.getElementById('nc-tip').innerHTML = '<option value="">(could not load tips)</option>'; }
+  }
+  document.getElementById('btn-create-campaign').onclick = async function(){
+    clearErr('nc-err'); document.getElementById('nc-msg').style.display='none';
+    var name = document.getElementById('nc-name').value.trim();
+    var tip = document.getElementById('nc-tip').value;
+    var scope = document.getElementById('nc-scope').value;
+    var gap = Math.max(1, Math.floor(Number(document.getElementById('nc-gap').value) || 1));
+    if (!name) { showErr('nc-err', 'Name is required.'); return; }
+    if (!tip) { showErr('nc-err', 'Pick a tip.'); return; }
+    try {
+      await api('/campaigns', {method:'POST', body:{ name: name, tip_slug: tip, scope: scope, gap_days: gap }});
+      document.getElementById('nc-name').value = '';
+      var m = document.getElementById('nc-msg'); m.textContent = '✓ Created campaign "' + name + '". It\\u2019s now in the "Add a campaign" picker below.'; m.style.display='block';
+      await loadCampaignOptions();
+    } catch(e){ showErr('nc-err', e); }
+  };
+
   // --- SEQUENCE ---
   async function refreshSequence() {
     clearErr('seq-err');
@@ -347,13 +395,40 @@ export const ADMIN_HTML = `<!doctype html>
       var c = data.counts || {};
       var list = (data.plan || []).map(function(p){
         var camp = p.campaign_name ? esc(p.campaign_name) + (p.tip_slug ? ' <span class="mut">(' + esc(p.tip_slug) + ')</span>' : '') : esc(p.tip_slug || '');
-        return '<tr><td>' + esc(p.email) + '</td><td>' + esc(p.status) + '</td><td>' + camp + '</td></tr>';
+        return '<tr class="sub-row" data-email="' + esc(p.email) + '" style="cursor:pointer"><td>' + esc(p.email) + '</td><td>' + esc(p.status) + '</td><td>' + camp + '</td></tr>';
       }).join('');
       body.innerHTML = '<p class="mut">Dry run — no emails sent. Next: ' + (c.next||0) + ' · waiting: ' + (c.waiting||0) + ' · finished: ' + (c.finished||0) +
         (data.planTruncated ? ' (list truncated)' : '') + '</p>' +
+        '<p class="mut">Click a subscriber to see their email + subscription history.</p>' +
         (list ? '<table><thead><tr><th>Subscriber</th><th>Status</th><th>Next campaign</th></tr></thead><tbody>' + list + '</tbody></table>' : '<div class="empty">No subscribers.</div>');
+      body.querySelectorAll('.sub-row').forEach(function(tr){
+        tr.onclick = function(){ showHistory(tr.getAttribute('data-email')); };
+      });
+      document.getElementById('subhist').innerHTML = '';
     } catch (e) { body.innerHTML=''; showErr('preview-err', e); }
   };
+
+  // --- SUBSCRIBER HISTORY (click a preview row) ---
+  async function showHistory(email) {
+    clearErr('preview-err');
+    var el = document.getElementById('subhist');
+    el.innerHTML = '<div class="mut">Loading history for ' + esc(email) + '…</div>';
+    try {
+      var data = await api('/drip/subscriber-history?email=' + encodeURIComponent(email));
+      if (!data.items || !data.items.length) {
+        el.innerHTML = '<div class="empty">No history for ' + esc(email) + '.</div>';
+        return;
+      }
+      var rows = data.items.map(function(it){
+        var kind = it.kind === 'email' ? '✉ email' : '👤 subscription';
+        return '<tr><td>' + esc(new Date(it.date).toLocaleString()) + '</td><td>' + esc(kind) + '</td><td>' + esc(it.summary) + '</td></tr>';
+      }).join('');
+      el.innerHTML = '<div class="panel" style="margin:12px 0 0;background:#fafbfc;">' +
+        '<h3 style="margin:0 0 8px;font-size:0.95rem;">History — ' + esc(email) + ' <button class="close-x" id="hist-close">close</button></h3>' +
+        '<table><thead><tr><th>When</th><th>Type</th><th>What</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+      document.getElementById('hist-close').onclick = function(){ el.innerHTML=''; };
+    } catch (e) { el.innerHTML=''; showErr('preview-err', e); }
+  }
 
   // --- TESTING: cohort ---
   function renderCohort(testers) {
@@ -470,6 +545,7 @@ export const ADMIN_HTML = `<!doctype html>
     // signup through today, so each tester enters the sequence on their own signup day.
     renderModeNote();
     refreshStatus();
+    loadTipSlugOptions();   // populate the New Campaign tip dropdown
     loadCampaignOptions();
     refreshSequence();
     refreshCohort();   // show the existing test cohort on load, not just after create/reset
