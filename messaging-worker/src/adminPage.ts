@@ -302,13 +302,27 @@ export const ADMIN_HTML = `<!doctype html>
   document.getElementById('btn-refresh').onclick = refreshStatus;
 
   // --- CAMPAIGNS (for the add-to-sequence picker) ---
-  async function loadCampaignOptions() {
+  // Pass the current sequence steps to avoid an extra fetch when the caller already has them
+  // (refreshSequence does). If omitted, we fetch the sequence to build the exclusion set.
+  async function loadCampaignOptions(seqSteps) {
     try {
+      // A campaign can only be in the sequence once, so the picker should only offer campaigns
+      // NOT already in the sequence. Build an exclusion set from the current sequence; adding a
+      // step removes it from the picker, removing a step adds it back (refreshSequence re-runs
+      // this after every sequence change).
       var data = await api('/campaigns');
+      var inSeq = {};
+      var steps = seqSteps;
+      if (!steps) {
+        try { var seq = await api('/drip/sequence'); steps = seq.steps || []; }
+        catch (e) { steps = []; /* if the sequence can't be read, fall back to showing all campaigns */ }
+      }
+      steps.forEach(function(st){ inSeq[st.campaign_id] = true; });
       var sel = document.getElementById('add-campaign');
       // Keep the placeholder, replace the rest.
       sel.length = 1;
       (data.campaigns || []).forEach(function(c){
+        if (inSeq[c.id]) return;  // already in the sequence — don't offer it again
         var o = document.createElement('option');
         o.value = c.id;
         o.textContent = c.name + '  (' + c.tip_slug + ', ' + c.scope + ', gap ' + c.gap_days + ')';
@@ -355,6 +369,7 @@ export const ADMIN_HTML = `<!doctype html>
       var body = document.getElementById('seq-body');
       if (!data.steps.length) {
         body.innerHTML = '<div class="empty">The sequence is empty. Add the first step below to build it.</div>';
+        loadCampaignOptions([]);  // empty sequence: offer every campaign in the picker
         return;
       }
       var rows = data.steps.map(function(s, i){
@@ -376,6 +391,7 @@ export const ADMIN_HTML = `<!doctype html>
       }).join('');
       body.innerHTML = '<table><thead><tr><th>#</th><th>Campaign</th><th>Scope</th><th>Gap (days)</th><th>State</th><th>Actions</th></tr></thead><tbody>' + rows + '</tbody></table>';
       wireSequenceActions(data.steps);
+      loadCampaignOptions(data.steps);  // keep the add-step picker in sync (exclude in-sequence campaigns)
     } catch (e) { showErr('seq-err', e); }
   }
   function wireSequenceActions(steps) {
@@ -484,8 +500,7 @@ export const ADMIN_HTML = `<!doctype html>
       try {
         await api('/campaigns/' + step.campaign_id, {method:'PATCH', body: payload});
         var m = document.getElementById('seq-msg'); m.textContent = '✓ Updated campaign "' + name + '".'; m.style.display = 'block';
-        await refreshSequence();
-        await loadCampaignOptions();  // the rename/edit also changes the "Add a campaign" picker labels
+        await refreshSequence();  // also re-syncs the add-step picker (new label, membership unchanged)
       } catch (e) { showErr('seq-err', e); }
     };
   }
@@ -666,8 +681,7 @@ export const ADMIN_HTML = `<!doctype html>
     renderModeNote();
     refreshStatus();
     loadTipSlugOptions();   // populate the New Campaign tip dropdown
-    loadCampaignOptions();
-    refreshSequence();
+    refreshSequence();      // renders the sequence AND syncs the add-step picker (excludes in-sequence campaigns)
     refreshCohort();   // show the existing test cohort on load, not just after create/reset
     setInterval(refreshStatus, 20000); // keep next-run / running indicator fresh
   })();
