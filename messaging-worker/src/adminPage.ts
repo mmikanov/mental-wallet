@@ -179,8 +179,11 @@ export const ADMIN_HTML = `<!doctype html>
     return { testers: testers, rows: rows };
   }
   function cellText(cell) {
-    if (cell.status === 'next') return cell.tip_slug ? cell.tip_slug : 'next';
-    return cell.status;
+    // Make SEND vs WAIT unmistakable: a 'next' cell is an actual send that day; 'waiting'
+    // is NOT a send (the tip shown is just what they're waiting for).
+    if (cell.status === 'next') return '\\u2709 ' + (cell.tip_slug || 'send');  // envelope + tip
+    if (cell.status === 'waiting') return '\\u23F3 waiting';                     // hourglass
+    return '\\u2713 done';                                                       // check
   }
 
   // --- fetch helper: adds the secret, parses JSON, surfaces errors ---
@@ -398,17 +401,40 @@ export const ADMIN_HTML = `<!doctype html>
     body.innerHTML = '<div class="mut">Simulating…</div>';
     try {
       var data = await api('/drip/simulate', {method:'POST', body:{ startDate: startDate, days: days, mode: mode }});
-      var grid = buildSimGrid(data.perDay || []);
+      var perDay = data.perDay || [];
+      var grid = buildSimGrid(perDay);
       if (!grid.testers.length) { body.innerHTML = '<div class="empty">No test users. Create a test cohort first.</div>'; return; }
-      var head = '<tr><th>Day</th>' + grid.testers.map(function(t){ return '<th>' + esc(t) + '</th>'; }).join('') + '</tr>';
-      var rows = grid.rows.map(function(r){
-        return '<tr><td>' + esc(r.day) + '</td>' + grid.testers.map(function(t){
-          var cell = r.cells[t];
-          return '<td class="grid-cell-' + cell.status + '">' + esc(cellText(cell)) + '</td>';
-        }).join('') + '</tr>';
+
+      // Per-day "who actually receives an email" summary (status === 'next' = a real send).
+      // Group the sends on each day by campaign, listing the recipient tester labels.
+      function sendsLine(day) {
+        var byTip = {};
+        day.plan.forEach(function(p){
+          if (p.status === 'next') {
+            var tip = p.tip_slug || 'send';
+            (byTip[tip] = byTip[tip] || []).push(testerLabel(p.email));
+          }
+        });
+        var tips = Object.keys(byTip);
+        if (!tips.length) return '<span class="mut">no sends</span>';
+        return tips.map(function(tip){
+          return '<strong>' + esc(tip) + '</strong> \\u2192 ' + byTip[tip].map(esc).join(', ');
+        }).join(' &nbsp;·&nbsp; ');
+      }
+
+      var head = '<tr><th>Day</th><th>Sends that day (campaign \\u2192 which test users)</th>' +
+        grid.testers.map(function(t){ return '<th>' + esc(t) + '</th>'; }).join('') + '</tr>';
+      var rows = grid.rows.map(function(r, i){
+        return '<tr><td>' + esc(r.day) + '</td>' +
+          '<td>' + sendsLine(perDay[i]) + '</td>' +
+          grid.testers.map(function(t){
+            var cell = r.cells[t];
+            return '<td class="grid-cell-' + cell.status + '">' + esc(cellText(cell)) + '</td>';
+          }).join('') + '</tr>';
       }).join('');
       body.innerHTML = '<p class="mut">' + esc(data.mode) + ' · ' + data.days + ' day(s) from ' + esc(data.startDate) + ' · ' + data.testerCount + ' test user(s)' +
         (data.mode === 'dry-run' ? '. Virtual advancement — run "Reset test users" to clear.' : '') + '</p>' +
+        '<p class="mut">Columns are test users (by signup age). <span class="grid-cell-next" style="padding:1px 6px;border-radius:4px;">\\u2709 tip</span> = a real send that day · <span class="grid-cell-waiting" style="padding:1px 6px;border-radius:4px;">\\u23F3 waiting</span> = not yet due · \\u2713 done = finished. The "Sends that day" column lists exactly who gets each campaign.</p>' +
         '<table><thead>' + head + '</thead><tbody>' + rows + '</tbody></table>';
     } catch (e) { body.innerHTML=''; showErr('sim-err', e); }
   };
