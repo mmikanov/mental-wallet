@@ -112,6 +112,7 @@ export const ADMIN_HTML = `<!doctype html>
     <div id="run-hint" class="hint" style="display:none;">A run is in progress — you may want to hold off editing until it finishes.</div>
     <div id="seq-body"></div>
     <div class="err" id="seq-err"></div>
+    <div class="ok-msg" id="seq-msg"></div>
     <div class="row" style="margin-top:12px;">
       <select id="add-campaign"><option value="">Add a campaign to the sequence…</option></select>
       <button id="btn-add-step">Add step</button>
@@ -162,6 +163,7 @@ export const ADMIN_HTML = `<!doctype html>
 
 <script>
   var SECRET = '__ADMIN_SECRET__';
+  var tipSlugsCache = [];  // populated by loadTipSlugOptions(); reused by the inline Sequence edit form
 
   // --- pure helpers (logic mirrored from src/adminHelpers.ts, unit-tested there) ---
   function formatCountdown(iso, now) {
@@ -284,6 +286,7 @@ export const ADMIN_HTML = `<!doctype html>
   async function loadTipSlugOptions() {
     try {
       var data = await api('/drip/tip-slugs');
+      tipSlugsCache = data.slugs || [];
       var sel = document.getElementById('nc-tip');
       sel.innerHTML = '<option value="">Select a tip…</option>';
       (data.slugs || []).forEach(function(s){
@@ -323,7 +326,7 @@ export const ADMIN_HTML = `<!doctype html>
         var last = i === data.steps.length - 1;
         return '<tr>' +
           '<td>' + s.position + '</td>' +
-          '<td>' + esc(s.campaign_name) + '<div class="mut">' + esc(s.tip_slug) + '</div></td>' +
+          '<td>' + esc(s.campaign_name) + ' <span class="mut">' + esc(String(s.campaign_id).slice(0, 8)) + '</span><div class="mut">' + esc(s.tip_slug) + '</div></td>' +
           '<td>' + esc(s.scope) + '</td>' +
           '<td><input type="number" min="1" value="' + s.gap_days + '" data-gap-campaign="' + s.campaign_id + '" style="width:60px" /></td>' +
           '<td>' + (s.enabled ? 'enabled' : '<span class="mut">disabled</span>') + '</td>' +
@@ -331,6 +334,7 @@ export const ADMIN_HTML = `<!doctype html>
             '<button data-up="' + s.id + '" ' + (i === 0 ? 'disabled' : '') + '>↑</button>' +
             '<button data-down="' + s.id + '" ' + (last ? 'disabled' : '') + '>↓</button>' +
             '<button data-toggle="' + s.id + '" data-enabled="' + (s.enabled ? '1' : '0') + '">' + (s.enabled ? 'Disable' : 'Enable') + '</button>' +
+            '<button data-edit="' + s.id + '">Edit</button>' +
             '<button class="danger" data-del="' + s.id + '" data-pos="' + s.position + '">Remove</button>' +
           '</td>' +
         '</tr>';
@@ -370,6 +374,67 @@ export const ADMIN_HTML = `<!doctype html>
         catch(e){ showErr('seq-err', e); await refreshSequence(); }
       };
     });
+    // Edit campaign (inline editor row): toggle a pre-filled editor under the clicked row.
+    body.querySelectorAll('[data-edit]').forEach(function(b){
+      b.onclick = function(){ openSequenceEditor(b.getAttribute('data-edit'), steps); };
+    });
+  }
+  // Build the tip-slug <option> markup for the inline editor, pre-selecting the current slug.
+  function tipSlugOptionsHtml(current) {
+    var opts = '<option value="">Select a tip…</option>';
+    (tipSlugsCache || []).forEach(function(s){
+      opts += '<option value="' + esc(s) + '"' + (s === current ? ' selected' : '') + '>' + esc(s) + '</option>';
+    });
+    return opts;
+  }
+  async function openSequenceEditor(stepId, steps) {
+    var body = document.getElementById('seq-body');
+    // Only one editor open at a time: remove any existing editor row first.
+    var existing = body.querySelector('tr.seq-edit-row');
+    var reopenSame = existing && existing.getAttribute('data-edit-for') === stepId;
+    if (existing) existing.parentNode.removeChild(existing);
+    if (reopenSame) return;  // clicking Edit again on the same row closes it (toggle)
+    var step = steps.find(function(s){ return s.id === stepId; });
+    if (!step) return;
+    // Fallback: fetch slugs once if the cache never loaded.
+    if (!tipSlugsCache || !tipSlugsCache.length) {
+      try { var d = await api('/drip/tip-slugs'); tipSlugsCache = d.slugs || []; } catch (e) { /* leave cache empty; dropdown still shows current */ }
+    }
+    var anchor = body.querySelector('[data-edit="' + stepId + '"]');
+    var rowEl = anchor ? anchor.closest('tr') : null;
+    if (!rowEl) return;
+    var editor = document.createElement('tr');
+    editor.className = 'seq-edit-row';
+    editor.setAttribute('data-edit-for', stepId);
+    var scopeOpts =
+      '<option value="tips"' + (step.scope === 'tips' ? ' selected' : '') + '>tips</option>' +
+      '<option value="reminders"' + (step.scope === 'reminders' ? ' selected' : '') + '>reminders</option>';
+    editor.innerHTML =
+      '<td colspan="6">' +
+        '<div class="row">' +
+          '<label>Name <input type="text" class="se-name" value="' + esc(step.campaign_name) + '" style="width:200px" /></label>' +
+          '<label>Tip <select class="se-tip">' + tipSlugOptionsHtml(step.tip_slug) + '</select></label>' +
+          '<label>Scope <select class="se-scope">' + scopeOpts + '</select></label>' +
+          '<button class="se-save primary">Save</button>' +
+          '<button class="se-cancel">Cancel</button>' +
+        '</div>' +
+      '</td>';
+    if (rowEl.nextSibling) rowEl.parentNode.insertBefore(editor, rowEl.nextSibling);
+    else rowEl.parentNode.appendChild(editor);
+    editor.querySelector('.se-cancel').onclick = function(){ editor.parentNode.removeChild(editor); };
+    editor.querySelector('.se-save').onclick = async function(){
+      clearErr('seq-err'); document.getElementById('seq-msg').style.display = 'none';
+      var name = editor.querySelector('.se-name').value.trim();
+      var tip = editor.querySelector('.se-tip').value;
+      var scope = editor.querySelector('.se-scope').value;
+      if (!name) { showErr('seq-err', 'Name is required.'); return; }
+      if (!tip) { showErr('seq-err', 'Pick a tip.'); return; }
+      try {
+        await api('/campaigns/' + step.campaign_id, {method:'PATCH', body:{ name: name, tip_slug: tip, scope: scope }});
+        var m = document.getElementById('seq-msg'); m.textContent = '✓ Updated campaign "' + name + '".'; m.style.display = 'block';
+        await refreshSequence();
+      } catch (e) { showErr('seq-err', e); }
+    };
   }
   async function moveStep(stepId, delta, steps) {
     var idx = steps.findIndex(function(s){ return s.id === stepId; });
