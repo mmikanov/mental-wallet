@@ -409,15 +409,24 @@ export const ADMIN_HTML = `<!doctype html>
     var scopeOpts =
       '<option value="tips"' + (step.scope === 'tips' ? ' selected' : '') + '>tips</option>' +
       '<option value="reminders"' + (step.scope === 'reminders' ? ' selected' : '') + '>reminders</option>';
+    // Once a campaign has sent/sending, its content (tip/scope) is locked server-side because it
+    // already went out. The NAME is just an internal label and stays editable on any status, so we
+    // keep the name field live and only disable the tip/scope dropdowns, with a note explaining why.
+    var contentLocked = step.campaign_status === 'sent' || step.campaign_status === 'sending';
+    var lockedAttr = contentLocked ? ' disabled' : '';
+    var lockNote = contentLocked
+      ? '<div class="mut" style="margin-top:6px;">Tip and scope are locked because this campaign has already sent — that content went out to recipients. You can still rename it (the name is only an internal label).</div>'
+      : '';
     editor.innerHTML =
       '<td colspan="6">' +
         '<div class="row">' +
           '<label>Name <input type="text" class="se-name" value="' + esc(step.campaign_name) + '" style="width:200px" /></label>' +
-          '<label>Tip <select class="se-tip">' + tipSlugOptionsHtml(step.tip_slug) + '</select></label>' +
-          '<label>Scope <select class="se-scope">' + scopeOpts + '</select></label>' +
+          '<label>Tip <select class="se-tip"' + lockedAttr + '>' + tipSlugOptionsHtml(step.tip_slug) + '</select></label>' +
+          '<label>Scope <select class="se-scope"' + lockedAttr + '>' + scopeOpts + '</select></label>' +
           '<button class="se-save primary">Save</button>' +
           '<button class="se-cancel">Cancel</button>' +
         '</div>' +
+        lockNote +
       '</td>';
     if (rowEl.nextSibling) rowEl.parentNode.insertBefore(editor, rowEl.nextSibling);
     else rowEl.parentNode.appendChild(editor);
@@ -428,9 +437,17 @@ export const ADMIN_HTML = `<!doctype html>
       var tip = editor.querySelector('.se-tip').value;
       var scope = editor.querySelector('.se-scope').value;
       if (!name) { showErr('seq-err', 'Name is required.'); return; }
-      if (!tip) { showErr('seq-err', 'Pick a tip.'); return; }
+      // For a sent/sending campaign, tip/scope are locked — send only the name so the rename
+      // succeeds. Otherwise send all three (and require a tip).
+      var payload;
+      if (contentLocked) {
+        payload = { name: name };
+      } else {
+        if (!tip) { showErr('seq-err', 'Pick a tip.'); return; }
+        payload = { name: name, tip_slug: tip, scope: scope };
+      }
       try {
-        await api('/campaigns/' + step.campaign_id, {method:'PATCH', body:{ name: name, tip_slug: tip, scope: scope }});
+        await api('/campaigns/' + step.campaign_id, {method:'PATCH', body: payload});
         var m = document.getElementById('seq-msg'); m.textContent = '✓ Updated campaign "' + name + '".'; m.style.display = 'block';
         await refreshSequence();
       } catch (e) { showErr('seq-err', e); }

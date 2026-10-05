@@ -854,7 +854,8 @@ async function handleGetCampaign(request: Request, env: Env, id: string): Promis
   return jsonResponse(env, { campaign: { ...campaign, counts } });
 }
 
-// --- PUT/PATCH /campaigns/:id (update a not-yet-sent campaign) ---
+// --- PUT/PATCH /campaigns/:id (update a campaign; name/gap_days editable on any status,
+//     tip/scope/mode locked once it has sent or is sending) ---
 
 async function handleUpdateCampaign(request: Request, env: Env, id: string): Promise<Response> {
   if (!isAuthorized(request, env)) return unauthorized(env);
@@ -880,20 +881,22 @@ async function handleUpdateCampaign(request: Request, env: Env, id: string): Pro
   if (!isScope(scope)) return jsonResponse(env, { error: "scope must be 'tips' or 'reminders'" }, { status: 400 });
   if (!isMode(mode)) return jsonResponse(env, { error: "mode must be 'new_only' or 'resend_all'" }, { status: 400 });
 
-  // Block CONTENT edits once a campaign has sent or is sending (Requirement 1.5): the content
-  // already went out, so changing it would misrepresent what recipients got. But `gap_days`
-  // is a drip SEQUENCING knob (spacing), not content, so it stays editable on any status —
-  // the operator legitimately re-tunes spacing for campaigns that have already sent. We detect
-  // whether any content field actually changes and only guard that.
-  const contentChanged =
-    name !== campaign.name ||
+  // Block CONTENT edits once a campaign has sent or is sending (Requirement 1.5): the tip/scope/mode
+  // already went out, so changing them would misrepresent what recipients got. Two fields are NOT
+  // content and stay editable on any status:
+  //  - `gap_days` is a drip SEQUENCING knob (spacing), not content — the operator legitimately
+  //    re-tunes spacing for campaigns that have already sent.
+  //  - `name` is just the operator's internal label for the campaign; it is never shown to recipients,
+  //    so renaming a sent campaign misrepresents nothing. The operator must be able to relabel after a send.
+  // So the lock guards tip_slug/scope/mode only, and only when one of them actually changes.
+  const lockedContentChanged =
     tipSlug !== campaign.tip_slug ||
     scope !== campaign.scope ||
     mode !== campaign.mode;
-  if (contentChanged && (campaign.status === 'sent' || campaign.status === 'sending')) {
+  if (lockedContentChanged && (campaign.status === 'sent' || campaign.status === 'sending')) {
     return jsonResponse(
       env,
-      { error: `Cannot change the content of a campaign with status '${campaign.status}'. Only its gap_days (spacing) is editable once it has sent; name/tip/scope/mode are locked.` },
+      { error: `Cannot change the tip, scope, or mode of a campaign with status '${campaign.status}' — that content already went out. Only its name and gap_days (spacing) are editable once it has sent.` },
       { status: 409 }
     );
   }
@@ -1292,6 +1295,7 @@ async function handleGetSequence(request: Request, env: Env): Promise<Response> 
       enabled: s.enabled === 1,
       campaign_id: s.campaign_id,
       campaign_name: c?.name ?? null,
+      campaign_status: c?.status ?? null,
       tip_slug: c?.tip_slug ?? null,
       scope: c?.scope ?? null,
       gap_days: c?.gap_days ?? null,
