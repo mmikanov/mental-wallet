@@ -256,8 +256,20 @@ export const ADMIN_HTML = `<!doctype html>
       badge.textContent = s.paused ? 'PAUSED' : 'Running (scheduled)';
       var rb = document.getElementById('run-badge');
       rb.innerHTML = s.running ? '<span class="badge running">RUNNING NOW</span>' : '';
-      document.getElementById('next-run').textContent = 'Next run: ' + formatCountdown(s.nextRunAt) +
-        (s.lastRunAt ? '  ·  last run ' + new Date(s.lastRunAt).toLocaleString() : '  ·  never run yet');
+      // Make "when does it actually run" unambiguous for the operator:
+      //  - paused: there is NO next run until resumed. Don't show a live countdown that implies
+      //    one is coming; show the clock time it WOULD next fire once resumed.
+      //  - running (scheduled): show the countdown AND the absolute local date/time, not just "in Xh".
+      var whenAbs = s.nextRunAt ? new Date(s.nextRunAt).toLocaleString() : 'unknown';
+      var lastRunPart = s.lastRunAt ? '  ·  last run ' + new Date(s.lastRunAt).toLocaleString() : '  ·  never run yet';
+      var nextLine;
+      if (s.paused) {
+        nextLine = 'Paused — no sends will go out. When resumed, the next daily run would be ' +
+          whenAbs + ' (' + formatCountdown(s.nextRunAt) + ').' + lastRunPart;
+      } else {
+        nextLine = 'Next run: ' + whenAbs + ' (' + formatCountdown(s.nextRunAt) + ')' + lastRunPart;
+      }
+      document.getElementById('next-run').textContent = nextLine;
       document.getElementById('run-hint').style.display = s.running ? 'block' : 'none';
       lastRunning = !!s.running;
     } catch (e) { showErr('status-err', e); }
