@@ -59,6 +59,8 @@ export const ADMIN_HTML = `<!doctype html>
   .grid-cell-waiting { background:var(--amberbg); color:var(--amber); }
   .grid-cell-finished { color:var(--muted); }
   .grid-cell-not_yet { color:#bbb; }
+  .ok-msg { background:var(--greenbg); color:var(--green); border:1px solid var(--green);
+            border-radius:7px; padding:8px 12px; margin:8px 0; font-size:0.85rem; display:none; }
   .mode-dry { color:var(--green); font-weight:600; }
   .mode-prod { color:var(--red); font-weight:600; }
   .scroll { overflow-x:auto; }
@@ -117,6 +119,7 @@ export const ADMIN_HTML = `<!doctype html>
       <button id="btn-test-reset">Reset test users</button>
       <span class="mut"><strong>Keeps</strong> the same test users; clears their send history so you can re-run.</span>
     </div>
+    <div id="test-msg" class="ok-msg"></div>
     <div id="test-cohort" class="mut" style="margin-top:8px;"></div>
     <hr style="border:none;border-top:1px solid var(--line);margin:14px 0;" />
     <div class="row">
@@ -352,35 +355,50 @@ export const ADMIN_HTML = `<!doctype html>
   };
 
   // --- TESTING: cohort ---
-  function renderCohort(testers, note) {
+  function renderCohort(testers) {
     var el = document.getElementById('test-cohort');
-    var head = note ? '<div class="mut" style="margin-bottom:4px;">' + esc(note) + '</div>' : '';
     if (!testers || !testers.length) {
-      el.innerHTML = head + '<div class="mut">No test users yet. Click "Create test users" to build a cohort.</div>';
+      el.innerHTML = '<div class="mut">No test users yet. Click "Create test users" to build a cohort.</div>';
       return;
     }
     var rows = testers.map(function(t){
       var age = (t.ageDays == null) ? '?' : t.ageDays;
       return '<tr><td>' + esc(t.email) + '</td><td>joined ' + age + 'd ago</td></tr>';
     }).join('');
-    el.innerHTML = head +
+    el.innerHTML =
       '<div class="mut" style="margin-bottom:4px;">Current test cohort (' + testers.length + ') — test-only, never real subscribers:</div>' +
       '<table><thead><tr><th>Test user</th><th>Signup age</th></tr></thead><tbody>' + rows + '</tbody></table>';
   }
-  async function refreshCohort(note) {
-    try { var d = await api('/drip/test/list'); renderCohort(d.testers, note); }
+  async function refreshCohort() {
+    try { var d = await api('/drip/test/list'); renderCohort(d.testers); }
     catch(e){ /* non-fatal; leave whatever is shown */ }
   }
+  function showTestMsg(text) {
+    var el = document.getElementById('test-msg');
+    el.textContent = text;
+    el.style.display = 'block';
+  }
+  function clearTestMsg() { var el = document.getElementById('test-msg'); el.style.display = 'none'; el.textContent = ''; }
+  // Clear any simulation table on screen — a cohort create/reset invalidates it (state changed).
+  function clearSim() { document.getElementById('sim-body').innerHTML = ''; }
   document.getElementById('btn-test-create').onclick = async function(){
-    clearErr('sim-err');
+    clearErr('sim-err'); clearTestMsg();
     if (!confirm('Create a fresh test cohort? This REPLACES any existing test users and clears their history. (Test users only — never real subscribers.)')) return;
-    try { await api('/drip/test/create', {method:'POST'}); await refreshCohort('Created a fresh test cohort.'); }
-    catch(e){ showErr('sim-err', e); }
+    try {
+      await api('/drip/test/create', {method:'POST'});
+      await refreshCohort();
+      clearSim();
+      showTestMsg('✓ Created a fresh test cohort. Any previous simulation was cleared — run a new one below.');
+    } catch(e){ showErr('sim-err', e); }
   };
   document.getElementById('btn-test-reset').onclick = async function(){
-    clearErr('sim-err');
-    try { var d = await api('/drip/test/reset', {method:'POST'}); await refreshCohort('Reset ' + d.kept + ' test user(s): send history cleared, ages kept.'); }
-    catch(e){ showErr('sim-err', e); }
+    clearErr('sim-err'); clearTestMsg();
+    try {
+      var d = await api('/drip/test/reset', {method:'POST'});
+      await refreshCohort();
+      clearSim();
+      showTestMsg('✓ Reset ' + d.kept + ' test user(s): send history cleared, signup ages kept. Previous simulation cleared — run a new one below.');
+    } catch(e){ showErr('sim-err', e); }
   };
 
   // --- TESTING: simulate ---
