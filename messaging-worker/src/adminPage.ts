@@ -91,14 +91,13 @@ export const ADMIN_HTML = `<!doctype html>
   <!-- NEW CAMPAIGN -->
   <div class="panel" id="new-campaign-panel">
     <h2>New Campaign</h2>
-    <p class="mut" style="margin-top:0;">Create a campaign (a tip + scope + spacing). It then appears in the "Add a campaign" picker below.</p>
+    <p class="mut" style="margin-top:0;">Create a campaign (a tip + scope). It then appears in the "Add a campaign" picker below. Spacing between campaigns (the gap) is set per step in the Sequence, since it only has meaning within a sequence.</p>
     <div class="row">
       <label>Name <input type="text" id="nc-name" placeholder="e.g. Welcome wave" style="width:200px" /></label>
       <label>Tip <select id="nc-tip"><option value="">loading tips…</option></select></label>
       <label>Scope
         <select id="nc-scope"><option value="tips">tips</option><option value="reminders">reminders</option></select>
       </label>
-      <label>Gap (days) <input type="number" id="nc-gap" value="1" min="1" style="width:60px" /></label>
       <button id="btn-create-campaign" class="primary">Create campaign</button>
     </div>
     <div class="err" id="nc-err"></div>
@@ -295,11 +294,12 @@ export const ADMIN_HTML = `<!doctype html>
     var name = document.getElementById('nc-name').value.trim();
     var tip = document.getElementById('nc-tip').value;
     var scope = document.getElementById('nc-scope').value;
-    var gap = Math.max(1, Math.floor(Number(document.getElementById('nc-gap').value) || 1));
     if (!name) { showErr('nc-err', 'Name is required.'); return; }
     if (!tip) { showErr('nc-err', 'Pick a tip.'); return; }
     try {
-      await api('/campaigns', {method:'POST', body:{ name: name, tip_slug: tip, scope: scope, gap_days: gap }});
+      // gap_days is omitted -> the worker defaults it to 1; the real spacing is set per-step
+      // in the Sequence panel, since a gap only has meaning within a sequence.
+      await api('/campaigns', {method:'POST', body:{ name: name, tip_slug: tip, scope: scope }});
       document.getElementById('nc-name').value = '';
       var m = document.getElementById('nc-msg'); m.textContent = '✓ Created campaign "' + name + '". It\\u2019s now in the "Add a campaign" picker below.'; m.style.display='block';
       await loadCampaignOptions();
