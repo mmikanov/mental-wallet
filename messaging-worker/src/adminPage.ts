@@ -326,7 +326,7 @@ export const ADMIN_HTML = `<!doctype html>
         var last = i === data.steps.length - 1;
         return '<tr>' +
           '<td>' + s.position + '</td>' +
-          '<td>' + esc(s.campaign_name) + ' <span class="mut">' + esc(String(s.campaign_id).slice(0, 8)) + '</span><div class="mut">' + esc(s.tip_slug) + '</div></td>' +
+          '<td>' + esc(s.campaign_name) + ' <span class="mut">(' + esc(String(s.campaign_id).slice(0, 8)) + ')</span><div class="mut">' + esc(s.tip_slug) + '</div></td>' +
           '<td>' + esc(s.scope) + '</td>' +
           '<td><input type="number" min="1" value="' + s.gap_days + '" data-gap-campaign="' + s.campaign_id + '" style="width:60px" /></td>' +
           '<td>' + (s.enabled ? 'enabled' : '<span class="mut">disabled</span>') + '</td>' +
