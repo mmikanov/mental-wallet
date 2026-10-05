@@ -64,6 +64,8 @@ export const ADMIN_HTML = `<!doctype html>
   .sub-row:hover { background:#f0f1f3; }
   .close-x { font:inherit; font-size:0.75rem; border:1px solid var(--line); background:#fff;
              border-radius:5px; padding:1px 8px; cursor:pointer; margin-left:8px; }
+  .actions-cell { white-space:nowrap; }
+  .actions-cell button { margin-right:4px; vertical-align:middle; }
   .mode-dry { color:var(--green); font-weight:600; }
   .mode-prod { color:var(--red); font-weight:600; }
   .scroll { overflow-x:auto; }
@@ -325,7 +327,7 @@ export const ADMIN_HTML = `<!doctype html>
           '<td>' + esc(s.scope) + '</td>' +
           '<td><input type="number" min="1" value="' + s.gap_days + '" data-gap-campaign="' + s.campaign_id + '" style="width:60px" /></td>' +
           '<td>' + (s.enabled ? 'enabled' : '<span class="mut">disabled</span>') + '</td>' +
-          '<td class="row">' +
+          '<td class="actions-cell">' +
             '<button data-up="' + s.id + '" ' + (i === 0 ? 'disabled' : '') + '>↑</button>' +
             '<button data-down="' + s.id + '" ' + (last ? 'disabled' : '') + '>↓</button>' +
             '<button data-toggle="' + s.id + '" data-enabled="' + (s.enabled ? '1' : '0') + '">' + (s.enabled ? 'Disable' : 'Enable') + '</button>' +

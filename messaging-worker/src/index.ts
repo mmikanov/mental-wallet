@@ -1327,13 +1327,27 @@ async function handleAddSequenceStep(request: Request, env: Env): Promise<Respon
 
   const now = new Date().toISOString();
   const id = crypto.randomUUID();
-  // If inserting at an occupied position, shift later steps down to keep positions unique.
-  await env.DB.prepare('UPDATE sequence_steps SET position = position + 1, updated_at = ? WHERE position >= ?')
-    .bind(now, position).run();
+  // Insert at `position` by rebuilding the ordering deterministically (park at temporary
+  // high positions, then renumber 1..N) so an insert into an occupied slot can't transiently
+  // violate UNIQUE(position). Insert the new step at the clamped target index.
+  const existingRes = await env.DB.prepare('SELECT id FROM sequence_steps ORDER BY position ASC').all<{ id: string }>();
+  const ordered = (existingRes.results || []).map((r) => r.id);
+  const toIdx = Math.max(0, Math.min(ordered.length, position - 1)); // position is 1-based
+  // Create the row first (at a temporary non-colliding position), then renumber all.
   await env.DB.prepare(
     `INSERT INTO sequence_steps (id, campaign_id, position, enabled, created_at, updated_at)
      VALUES (?, ?, ?, 1, ?, ?)`
-  ).bind(id, campaignId, position, now, now).run();
+  ).bind(id, campaignId, 100000 + ordered.length, now, now).run();
+  ordered.splice(toIdx, 0, id);
+  const PARK = 100000;
+  for (let i = 0; i < ordered.length; i++) {
+    await env.DB.prepare('UPDATE sequence_steps SET position = ?, updated_at = ? WHERE id = ?')
+      .bind(PARK + i, now, ordered[i]).run();
+  }
+  for (let i = 0; i < ordered.length; i++) {
+    await env.DB.prepare('UPDATE sequence_steps SET position = ?, updated_at = ? WHERE id = ?')
+      .bind(i + 1, now, ordered[i]).run();
+  }
 
   return jsonResponse(env, { ok: true }, { status: 201 });
 }
@@ -1360,14 +1374,33 @@ async function handleUpdateSequenceStep(request: Request, env: Env, stepId: stri
 
   if ('position' in body && typeof body.position === 'number') {
     const target = Math.max(1, Math.floor(body.position));
-    // Simple reorder: pull this step out, shift the gap closed, then open a slot at target
-    // and insert. Done with a normalize pass to keep positions contiguous and unique.
-    await env.DB.prepare('UPDATE sequence_steps SET position = position - 1, updated_at = ? WHERE position > ?')
-      .bind(now, step.position).run();
-    await env.DB.prepare('UPDATE sequence_steps SET position = position + 1, updated_at = ? WHERE position >= ?')
-      .bind(now, target).run();
-    await env.DB.prepare('UPDATE sequence_steps SET position = ?, updated_at = ? WHERE id = ?')
-      .bind(target, now, stepId).run();
+    // Reorder to an absolute target position. The old in-place shuffle was fragile: the
+    // UNIQUE(position) constraint could collide mid-shift (and silently 500), so moves
+    // appeared to do nothing. Instead, rebuild the whole ordering deterministically:
+    //  1) read all enabled+disabled steps in current order,
+    //  2) remove the moving step, re-insert it at the clamped target index,
+    //  3) renumber everyone 1..N, parking each at a temporary high position first to avoid
+    //     any transient UNIQUE(position) collision, then setting final positions.
+    const allRes = await env.DB.prepare('SELECT id, position FROM sequence_steps ORDER BY position ASC').all<{ id: string; position: number }>();
+    const ordered = (allRes.results || []).map((r) => r.id);
+    const fromIdx = ordered.indexOf(stepId);
+    if (fromIdx >= 0) {
+      ordered.splice(fromIdx, 1); // remove the moving step
+      const toIdx = Math.max(0, Math.min(ordered.length, target - 1)); // target is 1-based
+      ordered.splice(toIdx, 0, stepId); // insert at the new index
+
+      // Park everything at temporary non-colliding positions (offset well above N), then set
+      // final 1..N positions. Two passes keep every intermediate state unique.
+      const PARK = 100000;
+      for (let i = 0; i < ordered.length; i++) {
+        await env.DB.prepare('UPDATE sequence_steps SET position = ?, updated_at = ? WHERE id = ?')
+          .bind(PARK + i, now, ordered[i]).run();
+      }
+      for (let i = 0; i < ordered.length; i++) {
+        await env.DB.prepare('UPDATE sequence_steps SET position = ?, updated_at = ? WHERE id = ?')
+          .bind(i + 1, now, ordered[i]).run();
+      }
+    }
   }
 
   return jsonResponse(env, { ok: true });
