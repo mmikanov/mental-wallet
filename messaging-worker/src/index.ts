@@ -810,15 +810,6 @@ async function handleUpdateCampaign(request: Request, env: Env, id: string): Pro
   const campaign = await getCampaign(env, id);
   if (!campaign) return jsonResponse(env, { error: 'Campaign not found' }, { status: 404 });
 
-  // Block destructive edits once it has sent or is sending (Requirement 1.5).
-  if (campaign.status === 'sent' || campaign.status === 'sending') {
-    return jsonResponse(
-      env,
-      { error: `Cannot edit a campaign with status '${campaign.status}'. Only draft/paused campaigns are editable.` },
-      { status: 409 }
-    );
-  }
-
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
@@ -836,6 +827,24 @@ async function handleUpdateCampaign(request: Request, env: Env, id: string): Pro
   if (!tipSlug) return jsonResponse(env, { error: 'tip_slug cannot be empty' }, { status: 400 });
   if (!isScope(scope)) return jsonResponse(env, { error: "scope must be 'tips' or 'reminders'" }, { status: 400 });
   if (!isMode(mode)) return jsonResponse(env, { error: "mode must be 'new_only' or 'resend_all'" }, { status: 400 });
+
+  // Block CONTENT edits once a campaign has sent or is sending (Requirement 1.5): the content
+  // already went out, so changing it would misrepresent what recipients got. But `gap_days`
+  // is a drip SEQUENCING knob (spacing), not content, so it stays editable on any status —
+  // the operator legitimately re-tunes spacing for campaigns that have already sent. We detect
+  // whether any content field actually changes and only guard that.
+  const contentChanged =
+    name !== campaign.name ||
+    tipSlug !== campaign.tip_slug ||
+    scope !== campaign.scope ||
+    mode !== campaign.mode;
+  if (contentChanged && (campaign.status === 'sent' || campaign.status === 'sending')) {
+    return jsonResponse(
+      env,
+      { error: `Cannot change the content of a campaign with status '${campaign.status}'. Only its gap_days (spacing) is editable once it has sent; name/tip/scope/mode are locked.` },
+      { status: 409 }
+    );
+  }
 
   // Name uniqueness (excluding this campaign).
   if (name !== campaign.name) {
