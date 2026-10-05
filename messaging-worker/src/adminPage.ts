@@ -347,20 +347,34 @@ export const ADMIN_HTML = `<!doctype html>
   };
 
   // --- TESTING: cohort ---
-  function renderCohort(testers) {
+  function renderCohort(testers, note) {
     var el = document.getElementById('test-cohort');
-    if (!testers || !testers.length) { el.textContent = 'No test users yet.'; return; }
-    el.innerHTML = 'Test cohort: ' + testers.map(function(t){ return 'joined ' + t.ageDays + 'd ago'; }).join(' · ') + ' (test-only; never real subscribers)';
+    var head = note ? '<div class="mut" style="margin-bottom:4px;">' + esc(note) + '</div>' : '';
+    if (!testers || !testers.length) {
+      el.innerHTML = head + '<div class="mut">No test users yet. Click "Create test users" to build a cohort.</div>';
+      return;
+    }
+    var rows = testers.map(function(t){
+      var age = (t.ageDays == null) ? '?' : t.ageDays;
+      return '<tr><td>' + esc(t.email) + '</td><td>joined ' + age + 'd ago</td></tr>';
+    }).join('');
+    el.innerHTML = head +
+      '<div class="mut" style="margin-bottom:4px;">Current test cohort (' + testers.length + ') — test-only, never real subscribers:</div>' +
+      '<table><thead><tr><th>Test user</th><th>Signup age</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+  async function refreshCohort(note) {
+    try { var d = await api('/drip/test/list'); renderCohort(d.testers, note); }
+    catch(e){ /* non-fatal; leave whatever is shown */ }
   }
   document.getElementById('btn-test-create').onclick = async function(){
     clearErr('sim-err');
     if (!confirm('Create a fresh test cohort? This REPLACES any existing test users and clears their history. (Test users only — never real subscribers.)')) return;
-    try { var d = await api('/drip/test/create', {method:'POST'}); renderCohort(d.testers); }
+    try { await api('/drip/test/create', {method:'POST'}); await refreshCohort('Created a fresh test cohort.'); }
     catch(e){ showErr('sim-err', e); }
   };
   document.getElementById('btn-test-reset').onclick = async function(){
     clearErr('sim-err');
-    try { var d = await api('/drip/test/reset', {method:'POST'}); document.getElementById('test-cohort').textContent = 'Reset ' + d.kept + ' test user(s): send history cleared, ages kept.'; }
+    try { var d = await api('/drip/test/reset', {method:'POST'}); await refreshCohort('Reset ' + d.kept + ' test user(s): send history cleared, ages kept.'); }
     catch(e){ showErr('sim-err', e); }
   };
 
@@ -406,6 +420,7 @@ export const ADMIN_HTML = `<!doctype html>
     refreshStatus();
     loadCampaignOptions();
     refreshSequence();
+    refreshCohort();   // show the existing test cohort on load, not just after create/reset
     setInterval(refreshStatus, 20000); // keep next-run / running indicator fresh
   })();
 </script>

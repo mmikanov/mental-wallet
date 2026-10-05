@@ -1600,6 +1600,24 @@ async function wipeTestCohort(env: Env): Promise<void> {
   await env.DB.prepare(`DELETE FROM subscribers WHERE is_test = 1`).run();
 }
 
+// --- GET /drip/test/list (admin): the current test cohort, always available ---
+// Lets the admin page show who the test users are on load, not just right after create/reset.
+
+async function handleTestList(request: Request, env: Env): Promise<Response> {
+  if (!isAuthorized(request, env)) return unauthorized(env);
+  const testers = await listTestSubscribers(env);
+  const nowMs = Date.now();
+  const list = testers.map((t) => {
+    // Derive "joined N days ago" from created_at (how the cohort was built).
+    const created = Date.parse(t.created_at);
+    const ageDays = Number.isNaN(created)
+      ? null
+      : Math.max(0, Math.round((nowMs - created) / (24 * 60 * 60 * 1000)));
+    return { email: t.email, ageDays };
+  });
+  return jsonResponse(env, { count: list.length, testers: list });
+}
+
 // --- POST /drip/test/create (admin): REPLACE the test cohort with a fresh, sequence-derived set ---
 // Derives relative signup ages from the current enabled sequence (cumulative gap_days), so
 // each tester sits at a meaningful point in the flow. Replaces any prior test cohort entirely.
@@ -1777,6 +1795,7 @@ export default {
       if (path === '/drip/pause' && request.method === 'POST') return await handleDripPause(request, env, true);
       if (path === '/drip/resume' && request.method === 'POST') return await handleDripPause(request, env, false);
       if (path === '/drip/preview' && request.method === 'POST') return await handleDripPreview(request, env);
+      if (path === '/drip/test/list' && request.method === 'GET') return await handleTestList(request, env);
       if (path === '/drip/test/create' && request.method === 'POST') return await handleTestCreate(request, env);
       if (path === '/drip/test/reset' && request.method === 'POST') return await handleTestReset(request, env);
       if (path === '/drip/simulate' && request.method === 'POST') return await handleSimulate(request, env);
