@@ -87,6 +87,7 @@ export const ADMIN_HTML = `<!doctype html>
       <button id="btn-resume">Resume</button>
       <button id="btn-refresh">Refresh</button>
     </div>
+    <div class="hint" id="empty-seq-hint" style="display:none;margin-top:8px;">Your sequence is empty, so resuming won't send anything yet. Add at least one campaign to the sequence below.</div>
     <div class="err" id="status-err"></div>
   </div>
 
@@ -181,6 +182,22 @@ export const ADMIN_HTML = `<!doctype html>
     if (hours > 0) return 'in ' + hours + 'h ' + m + 'm';
     return 'in ' + m + 'm';
   }
+  // Format an ISO timestamp in US Eastern time, labeled with the current EST/EDT abbreviation
+  // (daylight saving is handled by the America/New_York zone), e.g. "Oct 4, 2026, 10:00 AM EDT".
+  function fmtEastern(iso) {
+    if (!iso) return 'unknown';
+    var t = Date.parse(iso);
+    if (isNaN(t)) return 'unknown';
+    try {
+      return new Date(t).toLocaleString('en-US', {
+        timeZone: 'America/New_York',
+        month: 'short', day: 'numeric', year: 'numeric',
+        hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
+      });
+    } catch (e) {
+      return new Date(t).toLocaleString();  // fallback if the runtime lacks tz data
+    }
+  }
   function testerLabel(email) {
     var m = email.match(/\\+(\\d+)d@/);
     return m ? m[1] + 'd' : email.split('@')[0];
@@ -259,9 +276,10 @@ export const ADMIN_HTML = `<!doctype html>
       // Make "when does it actually run" unambiguous for the operator:
       //  - paused: there is NO next run until resumed. Don't show a live countdown that implies
       //    one is coming; show the clock time it WOULD next fire once resumed.
-      //  - running (scheduled): show the countdown AND the absolute local date/time, not just "in Xh".
-      var whenAbs = s.nextRunAt ? new Date(s.nextRunAt).toLocaleString() : 'unknown';
-      var lastRunPart = s.lastRunAt ? '  ·  last run ' + new Date(s.lastRunAt).toLocaleString() : '  ·  never run yet';
+      //  - running (scheduled): show the countdown AND the absolute time, not just "in Xh".
+      // Times are shown in US Eastern (America/New_York, so EST/EDT follows daylight saving).
+      var whenAbs = s.nextRunAt ? fmtEastern(s.nextRunAt) : 'unknown';
+      var lastRunPart = s.lastRunAt ? '  ·  last run ' + fmtEastern(s.lastRunAt) : '  ·  never run yet';
       var nextLine;
       if (s.paused) {
         nextLine = 'Paused — no sends will go out. When resumed, the next daily run would be ' +
@@ -270,6 +288,11 @@ export const ADMIN_HTML = `<!doctype html>
         nextLine = 'Next run: ' + whenAbs + ' (' + formatCountdown(s.nextRunAt) + ')' + lastRunPart;
       }
       document.getElementById('next-run').textContent = nextLine;
+      // Empty-sequence hint: even once resumed, nothing sends until the sequence has a step.
+      try {
+        var seq = await api('/drip/sequence');
+        document.getElementById('empty-seq-hint').style.display = (seq && seq.count === 0) ? 'block' : 'none';
+      } catch (e) { /* leave the hint hidden if the count can't be read */ }
       document.getElementById('run-hint').style.display = s.running ? 'block' : 'none';
       lastRunning = !!s.running;
     } catch (e) { showErr('status-err', e); }
