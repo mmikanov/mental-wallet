@@ -1443,6 +1443,7 @@ interface PlanEntry {
   email: string;
   status: PlanStatus;
   campaign_id?: string;
+  campaign_name?: string;
   tip_slug?: string;
   sent?: string;
 }
@@ -1496,7 +1497,7 @@ async function runDripPass(
     }
     if (resolved.kind === 'waiting' || !resolved.campaign) {
       waiting++;
-      plan.push({ email: sub.email, status: 'waiting', campaign_id: resolved.campaign?.id, tip_slug: resolved.campaign?.tip_slug });
+      plan.push({ email: sub.email, status: 'waiting', campaign_id: resolved.campaign?.id, campaign_name: resolved.campaign?.name, tip_slug: resolved.campaign?.tip_slug });
       continue;
     }
     // kind === 'next'
@@ -1512,9 +1513,9 @@ async function runDripPass(
            ON CONFLICT (campaign_id, email) DO UPDATE SET status = 'sent', sent_at = excluded.sent_at, updated_at = excluded.updated_at`
         ).bind(crypto.randomUUID(), campaign.id, campaign.tip_slug, sub.email, ts, ts, ts).run();
         sent++;
-        plan.push({ email: sub.email, status: 'next', campaign_id: campaign.id, tip_slug: campaign.tip_slug, sent: 'simulated' });
+        plan.push({ email: sub.email, status: 'next', campaign_id: campaign.id, campaign_name: campaign.name, tip_slug: campaign.tip_slug, sent: 'simulated' });
       } else {
-        plan.push({ email: sub.email, status: 'next', campaign_id: campaign.id, tip_slug: campaign.tip_slug });
+        plan.push({ email: sub.email, status: 'next', campaign_id: campaign.id, campaign_name: campaign.name, tip_slug: campaign.tip_slug });
       }
       continue;
     }
@@ -1523,13 +1524,13 @@ async function runDripPass(
     if (!tip) {
       // Content unavailable (index fetch failed or slug missing) — skip, retry next run.
       skipped++;
-      plan.push({ email: sub.email, status: 'waiting', campaign_id: campaign.id, tip_slug: campaign.tip_slug });
+      plan.push({ email: sub.email, status: 'waiting', campaign_id: campaign.id, campaign_name: campaign.name, tip_slug: campaign.tip_slug });
       continue;
     }
     const outcome = await sendOneDrip(env, sub, campaign, tip, now);
-    if (outcome === 'sent') { sent++; plan.push({ email: sub.email, status: 'next', campaign_id: campaign.id, tip_slug: campaign.tip_slug, sent: 'sent' }); }
-    else if (outcome === 'failed') { failed++; plan.push({ email: sub.email, status: 'next', campaign_id: campaign.id, tip_slug: campaign.tip_slug, sent: 'failed' }); }
-    else { skipped++; plan.push({ email: sub.email, status: 'waiting', campaign_id: campaign.id, tip_slug: campaign.tip_slug }); }
+    if (outcome === 'sent') { sent++; plan.push({ email: sub.email, status: 'next', campaign_id: campaign.id, campaign_name: campaign.name, tip_slug: campaign.tip_slug, sent: 'sent' }); }
+    else if (outcome === 'failed') { failed++; plan.push({ email: sub.email, status: 'next', campaign_id: campaign.id, campaign_name: campaign.name, tip_slug: campaign.tip_slug, sent: 'failed' }); }
+    else { skipped++; plan.push({ email: sub.email, status: 'waiting', campaign_id: campaign.id, campaign_name: campaign.name, tip_slug: campaign.tip_slug }); }
   }
 
   return { plan, sent, failed, skipped, finished, waiting };

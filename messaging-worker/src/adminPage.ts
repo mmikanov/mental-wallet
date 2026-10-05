@@ -176,7 +176,7 @@ export const ADMIN_HTML = `<!doctype html>
       var cells = {};
       testers.forEach(function(t){
         var e = emailByLabel[t]; var entry = e ? byEmail[e] : null;
-        cells[t] = entry ? { status: entry.status, tip_slug: entry.tip_slug, sent: entry.sent } : { status: 'finished' };
+        cells[t] = entry ? { status: entry.status, campaign_name: entry.campaign_name, tip_slug: entry.tip_slug, sent: entry.sent } : { status: 'finished' };
       });
       return { day: d.day, cells: cells };
     });
@@ -184,8 +184,8 @@ export const ADMIN_HTML = `<!doctype html>
   }
   function cellText(cell) {
     // Make SEND vs WAIT unmistakable: a 'next' cell is an actual send that day; 'waiting'
-    // is NOT a send (the tip shown is just what they're waiting for).
-    if (cell.status === 'next') return '\\u2709 ' + (cell.tip_slug || 'send');  // envelope + tip
+    // is NOT a send. Show the campaign NAME (fall back to tip slug).
+    if (cell.status === 'next') return '\\u2709 ' + (cell.campaign_name || cell.tip_slug || 'send');  // envelope + campaign
     if (cell.status === 'waiting') return '\\u23F3 waiting';                     // hourglass
     if (cell.status === 'not_yet') return '\\u2014';                            // em dash: not joined yet
     return '\\u2713 done';                                                       // check
@@ -346,7 +346,8 @@ export const ADMIN_HTML = `<!doctype html>
       var data = await api('/drip/preview', {method:'POST', body:{}});
       var c = data.counts || {};
       var list = (data.plan || []).map(function(p){
-        return '<tr><td>' + esc(p.email) + '</td><td>' + esc(p.status) + '</td><td>' + esc(p.tip_slug || '') + '</td></tr>';
+        var camp = p.campaign_name ? esc(p.campaign_name) + (p.tip_slug ? ' <span class="mut">(' + esc(p.tip_slug) + ')</span>' : '') : esc(p.tip_slug || '');
+        return '<tr><td>' + esc(p.email) + '</td><td>' + esc(p.status) + '</td><td>' + camp + '</td></tr>';
       }).join('');
       body.innerHTML = '<p class="mut">Dry run — no emails sent. Next: ' + (c.next||0) + ' · waiting: ' + (c.waiting||0) + ' · finished: ' + (c.finished||0) +
         (data.planTruncated ? ' (list truncated)' : '') + '</p>' +
@@ -432,17 +433,17 @@ export const ADMIN_HTML = `<!doctype html>
       // Per-day "who actually receives an email" summary (status === 'next' = a real send).
       // Group the sends on each day by campaign, listing the recipient tester labels.
       function sendsLine(day) {
-        var byTip = {};
+        var byCampaign = {};
         day.plan.forEach(function(p){
           if (p.status === 'next') {
-            var tip = p.tip_slug || 'send';
-            (byTip[tip] = byTip[tip] || []).push(testerLabel(p.email));
+            var label = p.campaign_name || p.tip_slug || 'send';
+            (byCampaign[label] = byCampaign[label] || []).push(testerLabel(p.email));
           }
         });
-        var tips = Object.keys(byTip);
-        if (!tips.length) return '<span class="mut">no sends</span>';
-        return tips.map(function(tip){
-          return '<strong>' + esc(tip) + '</strong> \\u2192 ' + byTip[tip].map(esc).join(', ');
+        var names = Object.keys(byCampaign);
+        if (!names.length) return '<span class="mut">no sends</span>';
+        return names.map(function(name){
+          return '<strong>' + esc(name) + '</strong> \\u2192 ' + byCampaign[name].map(esc).join(', ');
         }).join(' &nbsp;·&nbsp; ');
       }
 

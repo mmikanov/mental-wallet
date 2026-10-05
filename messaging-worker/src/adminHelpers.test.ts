@@ -31,12 +31,12 @@ test('formatCountdown: null / invalid = unknown', () => {
 test('buildSimGrid: columns sorted by tester age, rows per day', () => {
   const perDay = [
     { day: '2026-02-10', plan: [
-      { email: 'tester+1d@drip-test.local', status: 'next' as const, tip_slug: 'welcome' },
-      { email: 'tester+0d@drip-test.local', status: 'next' as const, tip_slug: 'welcome' },
+      { email: 'tester+1d@drip-test.local', status: 'next' as const, campaign_name: 'Welcome wave', tip_slug: 'welcome' },
+      { email: 'tester+0d@drip-test.local', status: 'next' as const, campaign_name: 'Welcome wave', tip_slug: 'welcome' },
     ]},
     { day: '2026-02-11', plan: [
-      { email: 'tester+1d@drip-test.local', status: 'waiting' as const, tip_slug: 'emotion' },
-      { email: 'tester+0d@drip-test.local', status: 'waiting' as const, tip_slug: 'emotion' },
+      { email: 'tester+1d@drip-test.local', status: 'waiting' as const, campaign_name: 'Emotion tip', tip_slug: 'emotion' },
+      { email: 'tester+0d@drip-test.local', status: 'waiting' as const, campaign_name: 'Emotion tip', tip_slug: 'emotion' },
     ]},
   ];
   const grid = buildSimGrid(perDay);
@@ -44,6 +44,7 @@ test('buildSimGrid: columns sorted by tester age, rows per day', () => {
   assert.equal(grid.rows.length, 2);
   assert.equal(grid.rows[0].day, '2026-02-10');
   assert.equal(grid.rows[0].cells['0d'].status, 'next');
+  assert.equal(grid.rows[0].cells['0d'].campaign_name, 'Welcome wave');
   assert.equal(grid.rows[0].cells['0d'].tip_slug, 'welcome');
   assert.equal(grid.rows[1].cells['1d'].status, 'waiting');
 });
@@ -64,9 +65,11 @@ test('buildSimGrid: a tester missing from a day defaults to finished', () => {
   assert.equal(grid.rows[1].cells['5d'].status, 'finished');
 });
 
-test('cellText: next shows tip slug; waiting/finished show the word', () => {
-  assert.equal(cellText({ status: 'next', tip_slug: 'welcome' }), 'welcome');
+test('cellText: next shows campaign name (falls back to tip slug); others show the word', () => {
+  assert.equal(cellText({ status: 'next', campaign_name: 'Welcome wave', tip_slug: 'welcome' }), 'Welcome wave');
+  assert.equal(cellText({ status: 'next', tip_slug: 'welcome' }), 'welcome'); // fallback
   assert.equal(cellText({ status: 'next' }), 'next');
   assert.equal(cellText({ status: 'waiting' }), 'waiting');
   assert.equal(cellText({ status: 'finished' }), 'finished');
+  assert.equal(cellText({ status: 'not_yet' }), 'not joined');
 });

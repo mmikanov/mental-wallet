@@ -26,6 +26,7 @@ export function formatCountdown(nextRunAtISO: string | null | undefined, now: Da
 /** One cell in the simulation grid: a tester's state on a simulated day. */
 export interface SimCell {
   status: 'next' | 'waiting' | 'finished' | 'not_yet';
+  campaign_name?: string;
   tip_slug?: string;
   sent?: string;
 }
@@ -36,7 +37,7 @@ export interface SimGrid {
   rows: Array<{ day: string; cells: Record<string, SimCell> }>;
 }
 
-type SimPlanEntry = { email: string; status: 'next' | 'waiting' | 'finished' | 'not_yet'; tip_slug?: string; sent?: string };
+type SimPlanEntry = { email: string; status: 'next' | 'waiting' | 'finished' | 'not_yet'; campaign_name?: string; tip_slug?: string; sent?: string };
 type SimDay = { day: string; plan: SimPlanEntry[] };
 
 /**
@@ -73,7 +74,7 @@ export function buildSimGrid(perDay: SimDay[]): SimGrid {
       const e = emailByLabel.get(t);
       const entry = e ? byEmail.get(e) : undefined;
       cells[t] = entry
-        ? { status: entry.status, tip_slug: entry.tip_slug, sent: entry.sent }
+        ? { status: entry.status, campaign_name: entry.campaign_name, tip_slug: entry.tip_slug, sent: entry.sent }
         : { status: 'finished' };
     }
     return { day: d.day, cells };
@@ -84,7 +85,7 @@ export function buildSimGrid(perDay: SimDay[]): SimGrid {
 
 /** Short cell text for the grid: the tip slug when sending/next, else the state word. */
 export function cellText(cell: SimCell): string {
-  if (cell.status === 'next') return cell.tip_slug ? cell.tip_slug : 'next';
+  if (cell.status === 'next') return cell.campaign_name || cell.tip_slug || 'next';
   if (cell.status === 'not_yet') return 'not joined';
   return cell.status; // 'waiting' | 'finished'
 }
