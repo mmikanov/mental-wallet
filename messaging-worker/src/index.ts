@@ -321,7 +321,7 @@ async function handleSubscribers(request: Request, env: Env): Promise<Response> 
   const column = scope === 'reminders' ? 'scope_reminders' : 'scope_tips';
   const result = await env.DB.prepare(
     `SELECT email, first_name, unsubscribe_token, source
-     FROM subscribers WHERE ${column} = 1 ORDER BY created_at ASC`
+     FROM subscribers WHERE ${column} = 1 AND is_test = 0 ORDER BY created_at ASC`
   ).all<Pick<SubscriberRow, 'email' | 'first_name' | 'unsubscribe_token' | 'source'>>();
 
   return jsonResponse(env, { scope, count: result.results.length, recipients: result.results });
@@ -930,9 +930,10 @@ async function selectAudience(
   // N-day gap cutoff for this campaign (gap_days defaults/clamps to >= 1).
   const gapCutoff = gapCutoffISO(campaign.gap_days, now);
 
-  // Full opted-in count for this scope.
+  // Full opted-in count for this scope. Excludes test subscribers (is_test = 1): real
+  // campaign sends must never reach the drip test cohort.
   const fullRow = await env.DB.prepare(
-    `SELECT COUNT(*) as c FROM subscribers WHERE ${scopeCol} = 1`
+    `SELECT COUNT(*) as c FROM subscribers WHERE ${scopeCol} = 1 AND is_test = 0`
   ).first<{ c: number }>();
   const fullCount = fullRow?.c || 0;
 
@@ -948,12 +949,12 @@ async function selectAudience(
   // Both counts and the recipient list also honor the N-day gap, so dry-run reflects the true
   // post-gap audience. Bind order: campaign_id, then the gap cutoff.
   const newRow = await env.DB.prepare(
-    `SELECT COUNT(*) as c FROM subscribers s WHERE s.${scopeCol} = 1 ${notYetClause} ${GAP_CLAUSE}`
+    `SELECT COUNT(*) as c FROM subscribers s WHERE s.${scopeCol} = 1 AND s.is_test = 0 ${notYetClause} ${GAP_CLAUSE}`
   ).bind(campaign.id, gapCutoff).first<{ c: number }>();
   const newCount = newRow?.c || 0;
 
   const result = await env.DB.prepare(
-    `SELECT * FROM subscribers s WHERE s.${scopeCol} = 1 ${notYetClause} ${GAP_CLAUSE} ORDER BY s.created_at ASC LIMIT ?`
+    `SELECT * FROM subscribers s WHERE s.${scopeCol} = 1 AND s.is_test = 0 ${notYetClause} ${GAP_CLAUSE} ORDER BY s.created_at ASC LIMIT ?`
   ).bind(campaign.id, gapCutoff, limit).all<SubscriberRow>();
 
   return { recipients: result.results, newCount, fullCount };
@@ -1001,13 +1002,13 @@ async function handleExecuteCampaign(request: Request, env: Env, id: string): Pr
     const previewRows = await (
       campaign.mode === 'new_only'
         ? env.DB.prepare(
-            `SELECT s.email FROM subscribers s WHERE s.${scopeCol} = 1
+            `SELECT s.email FROM subscribers s WHERE s.${scopeCol} = 1 AND s.is_test = 0
              AND s.email NOT IN (SELECT email FROM tip_sends WHERE campaign_id = ? AND status IN ('sent','pending'))
              ${GAP_CLAUSE}
              ORDER BY s.created_at ASC LIMIT ?`
           ).bind(campaign.id, gapCutoff, PREVIEW_CAP)
         : env.DB.prepare(
-            `SELECT s.email FROM subscribers s WHERE s.${scopeCol} = 1
+            `SELECT s.email FROM subscribers s WHERE s.${scopeCol} = 1 AND s.is_test = 0
              ${GAP_CLAUSE}
              ORDER BY s.created_at ASC LIMIT ?`
           ).bind(gapCutoff, PREVIEW_CAP)
@@ -1017,7 +1018,7 @@ async function handleExecuteCampaign(request: Request, env: Env, id: string): Pr
     let resendAllWouldSend = fullCount;
     if (campaign.mode === 'resend_all') {
       const guardedRow = await env.DB.prepare(
-        `SELECT COUNT(*) as c FROM subscribers s WHERE s.${scopeCol} = 1 ${GAP_CLAUSE}`
+        `SELECT COUNT(*) as c FROM subscribers s WHERE s.${scopeCol} = 1 AND s.is_test = 0 ${GAP_CLAUSE}`
       ).bind(gapCutoff).first<{ c: number }>();
       resendAllWouldSend = guardedRow?.c ?? fullCount;
     }
@@ -1465,8 +1466,11 @@ async function runDripPass(
   const campaignsById = await loadCampaignsForSteps(env, steps);
   const tipIndex = opts.send ? await fetchTipIndex(env) : null;
 
+  // Real runs/previews (no explicit cohort) operate on REAL subscribers only — test
+  // subscribers (is_test = 1) are isolated and must never be in the real audience. The
+  // simulate path passes the test cohort explicitly via onlySubscribers, which is unaffected.
   const subscribers =
-    opts.onlySubscribers ?? ((await env.DB.prepare(`SELECT * FROM subscribers`).all<SubscriberRow>()).results || []);
+    opts.onlySubscribers ?? ((await env.DB.prepare(`SELECT * FROM subscribers WHERE is_test = 0`).all<SubscriberRow>()).results || []);
 
   const plan: PlanEntry[] = [];
   let sent = 0, failed = 0, skipped = 0, finished = 0, waiting = 0;
