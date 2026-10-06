@@ -10,6 +10,14 @@
 
 import { DASHBOARD_HTML } from './dashboard';
 import { computeCohortRetention, type CohortUserRow } from './retention';
+import {
+  extractChannel,
+  buildChannelClause,
+  summarizeChannelBreakdown,
+  type ChannelInstallRow,
+  type ChannelActivationRow,
+  type ChannelCohortUserRow,
+} from './channel';
 
 export interface Env {
   DB: D1Database;
@@ -125,7 +133,7 @@ async function handlePostEvents(request: Request, env: Env): Promise<Response> {
   // Insert events into D1
   const receivedAt = new Date().toISOString();
   const stmt = env.DB.prepare(
-    'INSERT INTO events (id, anonymous_user_id, session_id, event_type, timestamp, properties, platform, os_version, app_version, country, received_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    'INSERT INTO events (id, anonymous_user_id, session_id, event_type, timestamp, properties, platform, os_version, app_version, channel, country, received_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
   );
 
   // D1 batch supports up to 100 statements per batch call
@@ -140,7 +148,8 @@ async function handlePostEvents(request: Request, env: Env): Promise<Response> {
       const platform = event.platform || null;
       const osVersion = event.os_version || null;
       const appVersion = event.app_version || null;
-      return stmt.bind(id, event.anonymous_user_id, event.session_id, event.event_type, event.timestamp, properties, platform, osVersion, appVersion, country, receivedAt);
+      const channel = extractChannel(event);
+      return stmt.bind(id, event.anonymous_user_id, event.session_id, event.event_type, event.timestamp, properties, platform, osVersion, appVersion, channel, country, receivedAt);
     });
     await env.DB.batch(statements);
   }
@@ -223,6 +232,9 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
   // window; 'new' restricts to the acquisition cohort — users whose FIRST-EVER
   // event falls inside the phase window.
   const cohort = url.searchParams.get('cohort') === 'new' ? 'new' : 'active';
+  // Channel filtering: optional third global filter. absent/''/'all' => all channels;
+  // 'organic' => channel IS NULL; any label => channel = label.
+  const channelParam = url.searchParams.get('channel');
 
   // Internal user exclusion
   const excludedIds = env.EXCLUDED_USER_IDS
@@ -270,6 +282,11 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
   const cohortMain = buildCohortClause('anonymous_user_id');
   dateFilter += cohortMain.sql;
   dateParams.push(...cohortMain.params);
+  // Append the channel predicate (unqualified column) so it rides through every
+  // withFilter query exactly like the date/exclusion/cohort filters above.
+  const channelMain = buildChannelClause(channelParam);
+  dateFilter += channelMain.sql;
+  dateParams.push(...channelMain.params);
 
   // Helper to build filtered queries
   const withFilter = (baseWhere: string) => {
@@ -399,6 +416,13 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
       innerParams.push(...innerCohort.params);
       outerFilter += outerCohort.sql;
       outerParams.push(...outerCohort.params);
+      // Channel predicate with table-qualified columns to match each side of the JOIN.
+      const innerChannel = buildChannelClause(channelParam, 'events.channel');
+      const outerChannel = buildChannelClause(channelParam, 'tc.channel');
+      innerFilter += innerChannel.sql;
+      innerParams.push(...innerChannel.params);
+      outerFilter += outerChannel.sql;
+      outerParams.push(...outerChannel.params);
       return query(`
         SELECT tc.anonymous_user_id, tc.timestamp as completed_at, fo.first_open
         FROM events tc
@@ -605,6 +629,7 @@ function buildDetailFilter(request: Request, env: Env) {
   const fromDate = url.searchParams.get('from') || null;
   const toDate = url.searchParams.get('to') || null;
   const cohort = url.searchParams.get('cohort') === 'new' ? 'new' : 'active';
+  const channelParam = url.searchParams.get('channel');
 
   const excludedIds = env.EXCLUDED_USER_IDS
     ? env.EXCLUDED_USER_IDS.split(',').map(id => id.trim()).filter(id => id.length > 0)
@@ -640,6 +665,12 @@ function buildDetailFilter(request: Request, env: Env) {
     if (toDate) { sub += ' AND MIN(timestamp) < ?'; params.push(toDate); }
     clause += ` AND anonymous_user_id IN (${sub})`;
   }
+
+  // Channel predicate (unqualified column). Rides inside `clause`, so any handler
+  // that repeats `clause` N times naturally repeats this `?` N times too.
+  const ch = buildChannelClause(channelParam);
+  clause += ch.sql;
+  params.push(...ch.params);
 
   // Bind helper that tolerates empty params (local D1 compatibility).
   const query = (sql: string) => {
@@ -936,6 +967,136 @@ async function handleDetailPlatforms(request: Request, env: Env): Promise<Respon
   });
 }
 
+// Per-channel breakdown drill-down. Unlike the other detail endpoints, this one shows
+// ALL channels (it IS the channel dimension), so it deliberately uses the phase + cohort
+// + exclusion filter WITHOUT the ?channel= scoping — the channel is a GROUP BY, not a
+// predicate here. We strip any incoming channel param before building buildDetailFilter.
+async function handleDetailChannels(request: Request, env: Env): Promise<Response> {
+  if (!isAuthorized(request, env)) return unauthorizedResponse();
+
+  // Build a request URL with the channel param removed so buildDetailFilter produces a
+  // phase/cohort/exclusion-only clause (the breakdown must span every channel).
+  const strippedUrl = new URL(request.url);
+  strippedUrl.searchParams.delete('channel');
+  const strippedRequest = new Request(strippedUrl.toString(), request);
+  const { clause, query } = buildDetailFilter(strippedRequest, env);
+
+  const nowISO = new Date().toISOString();
+
+  // Installs by channel: distinct users whose activity falls in-window, grouped by their
+  // event's channel. (All events share the same channel per the ingest promotion; this
+  // mirrors handleDetailPlatforms' per-event dimension approach.)
+  // Activation by channel: for the same scoped events, users who completed a tool within
+  // 48h of first app_opened. The 48h test needs raw rows, computed in JS (like handleKpis).
+  // Wallet growth by channel: distinct users who added/created a tool.
+  const [installResult, firstOpenResult, completionResult, walletResult, cohortResult] =
+    await Promise.all([
+      query(`
+        SELECT channel, COUNT(DISTINCT anonymous_user_id) as installs
+        FROM events
+        WHERE event_type = 'app_opened'${clause}
+        GROUP BY channel
+      `).all<{ channel: string | null; installs: number }>(),
+      query(`
+        SELECT anonymous_user_id, channel, MIN(timestamp) as first_open
+        FROM events
+        WHERE event_type = 'app_opened'${clause}
+        GROUP BY anonymous_user_id, channel
+      `).all<{ anonymous_user_id: string; channel: string | null; first_open: string }>(),
+      query(`
+        SELECT anonymous_user_id, channel, timestamp as completed_at
+        FROM events
+        WHERE event_type = 'tool_completed'${clause}
+      `).all<{ anonymous_user_id: string; channel: string | null; completed_at: string }>(),
+      query(`
+        SELECT channel, COUNT(DISTINCT anonymous_user_id) as wallet_added
+        FROM events
+        WHERE event_type IN ('tool_added', 'tool_created')${clause}
+        GROUP BY channel
+      `).all<{ channel: string | null; wallet_added: number }>(),
+      query(`
+        SELECT
+          anonymous_user_id,
+          channel,
+          MIN(timestamp) AS first_open_ts,
+          MAX(CAST(json_extract(properties, '$.days_since_install') AS INTEGER)) AS max_dsi,
+          COUNT(*) AS opens
+        FROM events
+        WHERE event_type = 'app_opened'
+          AND json_extract(properties, '$.days_since_install') IS NOT NULL${clause}
+        GROUP BY anonymous_user_id, channel
+      `).all<{ anonymous_user_id: string; channel: string | null; first_open_ts: string; max_dsi: number; opens: number }>(),
+    ]);
+
+  // Activation: a user is activated if ANY tool_completed is within 48h of their first
+  // app_opened. Attribute each user to their channel from the first-open rows.
+  const firstOpenByUser = new Map<string, { channel: string | null; firstOpen: string }>();
+  for (const r of (firstOpenResult.results || [])) {
+    firstOpenByUser.set(r.anonymous_user_id, { channel: r.channel, firstOpen: r.first_open });
+  }
+  const activatedByUser = new Map<string, boolean>();
+  for (const r of (completionResult.results || [])) {
+    const fo = firstOpenByUser.get(r.anonymous_user_id);
+    if (!fo) continue;
+    const diff = new Date(r.completed_at).getTime() - new Date(fo.firstOpen).getTime();
+    if (diff >= 0 && diff <= 172800000) activatedByUser.set(r.anonymous_user_id, true);
+  }
+  // Build activation num/den per channel from the install cohort (first-open users).
+  const actAgg = new Map<string, { num: number; den: number; channel: string | null }>();
+  for (const [userId, fo] of firstOpenByUser) {
+    const key = fo.channel == null ? '\u0000organic' : fo.channel;
+    const prev = actAgg.get(key) || { num: 0, den: 0, channel: fo.channel };
+    prev.den += 1;
+    if (activatedByUser.get(userId)) prev.num += 1;
+    actAgg.set(key, prev);
+  }
+
+  const installRows: ChannelInstallRow[] = [];
+  const walletByChannelKey = new Map<string, number>();
+  for (const r of (walletResult.results || [])) {
+    const key = r.channel == null ? '\u0000organic' : r.channel;
+    walletByChannelKey.set(key, (walletByChannelKey.get(key) || 0) + Number(r.wallet_added));
+  }
+  for (const r of (installResult.results || [])) {
+    const key = r.channel == null ? '\u0000organic' : r.channel;
+    installRows.push({
+      channel: r.channel,
+      installs: Number(r.installs),
+      walletAdded: walletByChannelKey.get(key) || 0,
+    });
+  }
+  // Include wallet-only channels that had no app_opened rows (edge case) so counts survive.
+  const seenInstallKeys = new Set(installRows.map((r) => (r.channel == null ? '\u0000organic' : r.channel)));
+  for (const r of (walletResult.results || [])) {
+    const key = r.channel == null ? '\u0000organic' : r.channel;
+    if (!seenInstallKeys.has(key)) {
+      installRows.push({ channel: r.channel, installs: 0, walletAdded: Number(r.wallet_added) });
+      seenInstallKeys.add(key);
+    }
+  }
+
+  const activationRows: ChannelActivationRow[] = Array.from(actAgg.values()).map((a) => ({
+    channel: a.channel,
+    num: a.num,
+    den: a.den,
+  }));
+
+  const cohortRows: ChannelCohortUserRow[] = (cohortResult.results || []).map((r) => ({
+    anonymous_user_id: r.anonymous_user_id,
+    channel: r.channel,
+    first_open_ts: r.first_open_ts,
+    max_dsi: Number(r.max_dsi),
+    opens: Number(r.opens),
+  }));
+
+  const breakdown = summarizeChannelBreakdown(installRows, activationRows, cohortRows, nowISO);
+
+  return corsResponse(JSON.stringify({ channels: breakdown }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
 // --- Main Fetch Handler ---
 
 export default {
@@ -987,6 +1148,9 @@ export default {
     }
     if (path === '/details/platforms' && request.method === 'GET') {
       return handleDetailPlatforms(request, env);
+    }
+    if (path === '/details/channels' && request.method === 'GET') {
+      return handleDetailChannels(request, env);
     }
 
     // Health check
