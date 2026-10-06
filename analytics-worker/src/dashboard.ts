@@ -179,6 +179,17 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     .phase-filter .phase-btn.active { background: #4285f4; color: #fff; border-color: #4285f4; }
     .phase-filter .phase-btn.disabled { opacity: 0.4; cursor: not-allowed; }
     .phase-filter .phase-dates { font-size: 0.75rem; color: #999; margin-left: 8px; }
+    .phase-filter select {
+      padding: 6px 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: #f8f9fa;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: #444;
+      cursor: pointer;
+    }
+    .phase-filter select:hover { border-color: #4285f4; }
     .phase-filter .phase-range {
       flex-basis: 100%;
       font-size: 0.85rem;
@@ -218,6 +229,15 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     <span class="phase-dates" id="cohort-hint">Active = anyone with activity in the phase. New = first joined in the phase.</span>
   </div>
 
+  <div class="phase-filter" id="channel-filter">
+    <label>Channel:</label>
+    <select id="channel-select" onchange="setChannel(this.value)">
+      <option value="">All channels</option>
+      <option value="organic">Organic / untagged</option>
+    </select>
+    <span class="phase-dates" id="channel-hint">Scopes every metric to one acquisition channel. Composes with phase + Users. Organic = untagged traffic (includes iOS link installs — see breakdown note).</span>
+  </div>
+
   <div id="dashboard-content">
     <div class="empty-state"><p>Loading...</p></div>
   </div>
@@ -246,6 +266,11 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     let milestones = { release: null, warmEnd: null, coldStart: null };
     let currentPhase = 'all';
     let currentCohort = 'active';
+    // Channel filter: '' = All channels (no predicate), 'organic' = untagged (channel IS
+    // NULL), any other value = a specific channel label. Serialized in getPhaseParams() so
+    // it re-scopes /kpis and every /details/* fetch. The <select> options beyond the two
+    // static ones are populated at each refresh from the channels present in the data.
+    let currentChannel = '';
 
     // Refresh scheduling state
     let lastRefreshAt = null;   // Date of the last successful refresh
@@ -320,6 +345,15 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
       refresh();
     }
 
+    // Channel filter. Re-scopes every metric card (via getPhaseParams) and composes with
+    // phase + Users. '' = All channels. Like setCohort, an explicit global change clears
+    // any open drill-down's per-panel cohort override so the panel follows the globals.
+    function setChannel(value) {
+      currentChannel = value || '';
+      activeDetailCohort = null;
+      refresh();
+    }
+
     // Returns the actual {from, to} timestamps for the current phase (null = unbounded).
     // Single source of truth for both the query params and the range shown on the bar.
     function getActiveRange() {
@@ -348,6 +382,10 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
       if (r.from) params += '&from=' + encodeURIComponent(r.from);
       if (r.to) params += '&to=' + encodeURIComponent(r.to);
       if (cohort === 'new') params += '&cohort=new';
+      // Single source of truth for the channel scope: a non-empty currentChannel flows to
+      // /kpis and every /details/* fetch. ('organic' and specific labels are both just the
+      // value; the backend maps 'organic' => channel IS NULL.)
+      if (currentChannel) params += '&channel=' + encodeURIComponent(currentChannel);
       return params;
     }
 
@@ -569,12 +607,112 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
             <tr><td><strong>D30</strong></td><td>Within first 30 days</td><td>\${kpis.retention.D30}</td></tr>
           </tbody>
         </table>
+
+        <div class="section-title">Channel Breakdown</div>
+        <div class="detail" style="margin-bottom:8px;color:#6c757d;font-size:0.8rem;">
+          Installs, activation, wallet growth, and D7/D30 retention per acquisition channel, within the selected phase + Users window.
+          Each rate shows the raw count it is based on; small samples are shown as <strong>n/a</strong> (with the count) rather than a fragile percentage.
+          This table always spans every channel — the Channel filter above does not narrow it.
+        </div>
+        <div class="detail" style="margin-bottom:12px;color:#b26a00;font-size:0.78rem;">
+          Note: iOS link installs appear here under <strong>Organic / untagged</strong> — Apple does not pass our tag through the App Store, so real iOS per-channel data lives in App Store Connect. Attribution here is directional, not exact.
+        </div>
+        <div id="channel-breakdown"><div class="loading-detail">Loading channel breakdown…</div></div>
       \`;
 
       // Re-open detail panel if one was active (preserving its cohort override)
       if (activeDetail) {
         showDetail(activeDetail, activeDetailCohort);
       }
+
+      // Load the per-channel breakdown (own fetch — composes with phase + cohort via
+      // getPhaseParams; the endpoint ignores &channel so it always spans every channel)
+      // and repopulate the channel <select> from the channels present in the data.
+      loadChannelBreakdown();
+    }
+
+    // Fetch /details/channels and render one row per channel + a clearly-labeled organic
+    // row. Also keeps the channel <select> options in sync with the channels seen in data.
+    async function loadChannelBreakdown() {
+      var container = document.getElementById('channel-breakdown');
+      var data = await fetchDetail('channels');
+      var channels = (data && Array.isArray(data.channels)) ? data.channels : [];
+      populateChannelSelect(channels);
+      if (!container) return;
+      if (channels.length === 0) {
+        container.innerHTML = '<div class="detail" style="color:#6c757d;">No channel data in this window.</div>';
+        return;
+      }
+      container.innerHTML =
+        '<table><thead><tr>' +
+          '<th>Channel</th><th>Installs</th><th>Activation</th><th>Wallet Growth</th><th>D7 Retention</th><th>D30 Retention</th>' +
+        '</tr></thead><tbody>' +
+        channels.map(renderChannelRow).join('') +
+        '</tbody></table>';
+    }
+
+    // Human label for a channel bucket; the organic bucket is spelled out clearly.
+    function channelLabel(ch) {
+      return ch === 'organic' ? 'Organic / untagged' : ch;
+    }
+
+    // A rate cell: raw count always shown; percentage suppressed to "n/a" for small
+    // samples (server sent rate:null), reusing the retention n/a convention.
+    function rateCell(rate, numerator, denominator) {
+      var countHtml = ' <span style="color:#6c757d;font-size:0.8rem;">(' + num(numerator) + '/' + num(denominator) + ')</span>';
+      if (rate === null || rate === undefined) {
+        return '<span style="color:#999;">n/a</span>' + countHtml;
+      }
+      return pct(rate) + countHtml;
+    }
+
+    // A retention horizon cell: n/a when the server returns null pct (cohort too recent
+    // or empty), always showing the cohort denominator it was computed from.
+    function retentionCell(horizon) {
+      var h = horizon || { pct: null, cohort: 0 };
+      var valueHtml = retentionValue(h.pct);
+      return valueHtml + ' <span style="color:#6c757d;font-size:0.8rem;">(cohort ' + num(h.cohort) + ')</span>';
+    }
+
+    function renderChannelRow(c) {
+      var isOrganic = c.channel === 'organic';
+      var retention = c.retention || {};
+      var labelHtml = isOrganic
+        ? '<strong>' + channelLabel(c.channel) + '</strong>'
+        : channelLabel(c.channel);
+      return '<tr' + (isOrganic ? ' style="background:#fafafa;"' : '') + '>' +
+        '<td>' + labelHtml + '</td>' +
+        '<td>' + num(c.installs) + '</td>' +
+        '<td>' + rateCell(c.activation.rate, c.activation.num, c.activation.den) + '</td>' +
+        '<td>' + num(c.walletGrowth.count) + '</td>' +
+        '<td>' + retentionCell(retention['7']) + '</td>' +
+        '<td>' + retentionCell(retention['30']) + '</td>' +
+        '</tr>';
+    }
+
+    // Keep the channel <select> populated with the channels present in the data, preserving
+    // the two static entries (All channels, Organic / untagged) and the current selection.
+    function populateChannelSelect(channels) {
+      var sel = document.getElementById('channel-select');
+      if (!sel) return;
+      var labels = [];
+      channels.forEach(function(c) {
+        if (c.channel && c.channel !== 'organic' && labels.indexOf(c.channel) === -1) {
+          labels.push(c.channel);
+        }
+      });
+      labels.sort();
+      var opts = '<option value="">All channels</option><option value="organic">Organic / untagged</option>';
+      labels.forEach(function(l) {
+        opts += '<option value="' + l + '">' + l + '</option>';
+      });
+      sel.innerHTML = opts;
+      // Restore the current selection (may be a label no longer present — keep it anyway so
+      // the user's scope is not silently reset).
+      if (currentChannel && labels.indexOf(currentChannel) === -1 && currentChannel !== 'organic') {
+        sel.innerHTML += '<option value="' + currentChannel + '">' + currentChannel + '</option>';
+      }
+      sel.value = currentChannel;
     }
 
     // Clicking the New Unique Users card opens the users table scoped to the
