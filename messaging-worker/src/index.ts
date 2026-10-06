@@ -18,6 +18,7 @@
 
 import { resolveNextStep, deriveTestAges, type SequenceStep } from './drip';
 import { ADMIN_HTML } from './adminPage';
+import { buildDripSummary } from './dripSummary';
 
 export interface Env {
   DB: D1Database;
@@ -26,6 +27,11 @@ export interface Env {
   SITE_ORIGIN: string;
   EMAIL_FROM: string;
   EMAIL_REPLY_TO: string;
+  /**
+   * Operator address for the daily drip summary email (optional). When unset/empty at
+   * runtime, the post-run summary is skipped. Defaulted in wrangler.toml [vars].
+   */
+  OPERATOR_EMAIL?: string;
 }
 
 type Scope = 'reminders' | 'tips';
@@ -1642,11 +1648,75 @@ async function executeDailyDrip(env: Env, now: Date = new Date()): Promise<{ ran
     const doneAt = new Date().toISOString();
     await env.DB.prepare(`UPDATE drip_state SET last_run_at = ?, updated_at = ? WHERE id = 'singleton'`)
       .bind(doneAt, doneAt).run();
+    // Best-effort operator summary email. Wrapped so a summary failure NEVER breaks or re-runs
+    // the drip — the run above already recorded last_run_at and the finally clears
+    // running_since regardless. Goes ONLY to the operator address, never to subscribers.
+    await sendDripSummaryEmail(env, result, doneAt);
     return { ran: true, sent: result.sent, failed: result.failed, skipped: result.skipped };
   } finally {
     const clearedAt = new Date().toISOString();
     await env.DB.prepare(`UPDATE drip_state SET running_since = NULL, updated_at = ? WHERE id = 'singleton'`)
       .bind(clearedAt).run();
+  }
+}
+
+/**
+ * Compose and send the daily operator summary email after a production run. Best-effort: all
+ * errors are logged and swallowed so a summary failure never affects the drip. Skips sending
+ * when OPERATOR_EMAIL is unset/empty. Only called from executeDailyDrip after an actual run
+ * (never from preview/simulate/paused paths).
+ */
+async function sendDripSummaryEmail(
+  env: Env,
+  result: { plan: PlanEntry[]; sent: number; failed: number; skipped: number; finished: number; waiting: number },
+  dateIso: string
+): Promise<void> {
+  try {
+    const operator = (env.OPERATOR_EMAIL || '').trim();
+    if (!operator) {
+      console.log('Drip summary skipped: OPERATOR_EMAIL is not set.');
+      return;
+    }
+
+    // Determine the LAST campaign a subscriber can actually reach — the highest-position
+    // ENABLED step. Disabled steps are skipped by resolveNextStep when advancing subscribers,
+    // so the drip "frontier" (and thus the final campaign anyone can land on) is the last
+    // enabled step, not merely the last row. Keying the callout off a disabled trailing step
+    // would reference a campaign no subscriber ever reaches.
+    const steps = await getSequenceSteps(env); // ordered by position ascending
+    const enabledSteps = steps.filter((s) => s.enabled === 1);
+    const lastStep = enabledSteps.length > 0 ? enabledSteps[enabledSteps.length - 1] : undefined;
+    const lastCampaignId = lastStep?.campaign_id ?? null;
+
+    const summary = buildDripSummary(
+      result.plan,
+      lastCampaignId,
+      {
+        sent: result.sent,
+        failed: result.failed,
+        waiting: result.waiting,
+        finished: result.finished,
+        total: result.plan.length,
+      },
+      dateIso
+    );
+
+    // Operator/transactional email — the helper still wants an unsubscribe URL; use the
+    // site's generic preferences page (same base other sends derive from SITE_ORIGIN).
+    const unsubscribeUrl = `${(env.SITE_ORIGIN || '').replace(/\/$/, '')}/preferences`;
+
+    const sendResult = await sendViaResend(env, {
+      to: operator,
+      subject: summary.subject,
+      html: summary.html,
+      text: summary.text,
+      unsubscribeUrl,
+    });
+    if (!sendResult.ok) {
+      console.log(`Drip summary send failed: ${sendResult.detail}`);
+    }
+  } catch (err) {
+    console.log(`Drip summary error (swallowed): ${err instanceof Error ? err.message : String(err)}`);
   }
 }
 

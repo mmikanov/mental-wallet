@@ -22,6 +22,9 @@ SITE_ORIGIN = "https://mentalhealthwallet.productsforgood.co"
 # Sender identity for Resend.
 EMAIL_FROM = "Mental Health Wallet <moshe@productsforgood.co>"
 EMAIL_REPLY_TO = "moshe@productsforgood.co"
+# Operator recipient for the daily post-run drip summary email. If unset/empty, the summary
+# is skipped (the drip still runs normally).
+OPERATOR_EMAIL = "mmikanovsky@gmail.com"
 
 # Secrets (set via `wrangler secret put`, never committed):
 #   ADMIN_SECRET    — protects /subscribers and /send-test
