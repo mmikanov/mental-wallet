@@ -124,6 +124,52 @@
     (function () {
       var fb = window.__appFallback || {};
 
+      // 0) Channel tag forwarding (same logic as website/script.js — this page has no
+      //    script.js include). Read utm_source (+ optional utm_campaign) from the URL,
+      //    persist to localStorage, fall back to a stored tag on a multi-page visit, and
+      //    rewrite each store badge href so the channel reaches the store. Run BEFORE the
+      //    platform-hide step below so a hidden badge still carries the tag if later shown.
+      //    No visual/copy change; untagged (organic) leaves hrefs untouched.
+      try {
+        var CHANNEL_KEY = 'mhw_channel';
+        var CAMPAIGN_KEY = 'mhw_campaign';
+        var params = new URLSearchParams(window.location.search || '');
+        var channel = params.get('utm_source');
+        var campaign = params.get('utm_campaign');
+        if (channel) {
+          try {
+            localStorage.setItem(CHANNEL_KEY, channel);
+            if (campaign) { localStorage.setItem(CAMPAIGN_KEY, campaign); }
+            else { localStorage.removeItem(CAMPAIGN_KEY); }
+          } catch (e) { /* storage unavailable; still rewrite this page */ }
+        } else {
+          try {
+            channel = localStorage.getItem(CHANNEL_KEY);
+            campaign = localStorage.getItem(CAMPAIGN_KEY);
+          } catch (e) { /* ignore */ }
+        }
+        if (channel) {
+          var referrerValue = 'utm_source=' + channel;
+          if (campaign) { referrerValue += '&utm_campaign=' + campaign; }
+          var encodedReferrer = encodeURIComponent(referrerValue);
+          var tagBadges = document.querySelectorAll('.store-badge');
+          for (var b = 0; b < tagBadges.length; b++) {
+            var tHref = tagBadges[b].getAttribute('href');
+            if (!tHref) continue;
+            var tSep = tHref.indexOf('?') === -1 ? '?' : '&';
+            if (tHref.indexOf('play.google.com') !== -1) {
+              if (tHref.indexOf('referrer=') === -1) {
+                tagBadges[b].setAttribute('href', tHref + tSep + 'referrer=' + encodedReferrer);
+              }
+            } else if (tHref.indexOf('apps.apple.com') !== -1) {
+              if (tHref.indexOf('ct=') === -1) {
+                tagBadges[b].setAttribute('href', tHref + tSep + 'ct=' + encodeURIComponent(channel));
+              }
+            }
+          }
+        }
+      } catch (e) { /* never block the page on tag forwarding */ }
+
       // 1) Personalize copy from the route.
       try {
         var copy = fb.pickCopy ? fb.pickCopy() : null;

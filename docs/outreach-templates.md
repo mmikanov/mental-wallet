@@ -271,6 +271,64 @@ Send to 5-10 local therapists or therapists you find through professional direct
 
 ---
 
+## Channel tags & links
+
+When you share a link from a specific channel, add a channel tag so the analytics dashboard can
+attribute installs and activity back to where they came from. The landing page reads the tag,
+remembers it for the visit, and quietly forwards it to the App Store / Play Store — nothing on
+the page looks different.
+
+### Canonical channel labels
+
+Use these exact, lowercase labels. Keep them **stable across experiments** — once a channel has
+a label, don't rename it, or you'll split its history into two buckets.
+
+| Channel | Label |
+|---------|-------|
+| Reddit posts | `reddit` |
+| LinkedIn posts / DMs | `linkedin` |
+| Therapist outreach | `therapist` |
+| Organic (no campaign) | *(no tag — see below)* |
+
+**Organic = no tag.** Don't add `?utm_source=organic`. Leave the link plain (or let people reach
+the site directly); untagged traffic is counted as organic automatically.
+
+### Primary link form (landing page)
+
+Prefer this for most outreach — it works on any device and the page forwards the tag to whichever
+store the visitor picks:
+
+```
+https://mentalhealthwallet.productsforgood.co/?utm_source=<channel>
+```
+
+Example (Reddit): `https://mentalhealthwallet.productsforgood.co/?utm_source=reddit`
+
+Optional: add `&utm_campaign=<campaign>` to distinguish specific posts or experiments within a
+channel (e.g. `?utm_source=reddit&utm_campaign=grounding-post`). The campaign is forwarded to the
+Play Store referrer; keep it short and lowercase.
+
+### Store-direct link forms
+
+Use these only when you need to point straight at one store (e.g. you already know the person's
+device). They carry the same tag the landing page would have forwarded:
+
+- **Android (Google Play):**
+  ```
+  https://play.google.com/store/apps/details?id=com.mentalwallet.app&referrer=utm_source%3D<channel>
+  ```
+  Example: `...&referrer=utm_source%3Dreddit`
+- **iOS (App Store):**
+  ```
+  https://apps.apple.com/app/mental-health-wallet/id6800036822?ct=<channel>
+  ```
+  Example: `...?ct=reddit`
+
+> Note: the `%3D` in the Android link is a URL-encoded `=` — the `referrer` value must be encoded.
+> If you forget, the landing-page link above does the encoding for you.
+
+---
+
 ## ASO Notes
 
 Your store listing is already solid. A few refinements to consider:
