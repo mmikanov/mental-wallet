@@ -1,16 +1,15 @@
-.wrangler
-node_modules
+# Files in this directory that should NOT be uploaded as public static assets.
+# NOTE: providing this file disables wrangler's built-in default ignores, so we must
+# re-list the things that should never ship (node_modules, config, tooling) alongside
+# the dev-only test files.
+node_modules/
+tests/
+tools/
+.wrangler/
+wrangler.toml
 package.json
 package-lock.json
-wrangler.toml
+build-content.js
 .assetsignore
 .DS_Store
-build-content.js
-tools
-# Tip-media source/POC HTML (animation sources + email previews) are dev-only — never
-# deployed. Only the generated GIF/PNG assets in this folder are served publicly.
-assets/tip-media/*.html
-# Regen-only source images (screenshot slices + composited backgrounds used to build the
-# GIFs). Kept in the repo so animations can be rebuilt, but not served publicly.
-assets/tip-media/oc-slice*.png
-assets/tip-media/lme-*-bg.png
+**/.DS_Store
