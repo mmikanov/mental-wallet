@@ -89,6 +89,34 @@ accidental omission. (The default is: show the same content.)
 1.7 THE change SHALL preserve the existing email compliance and consent behavior (unsubscribe
 header/footer, opt-in enforcement) and SHALL NOT alter who receives a tip.
 
+1.8 WHEN the reader is already in the app and taps a tip's call-to-action, the app SHALL take
+them to the right in-app destination **directly**, without depending on a web link that has to
+"escape" an in-app browser back into the app. (See the constraint below — this is why the in-app
+CTA must behave differently from the website/email CTA even though it points at the same
+destination.)
+
+#### Constraint: the in-app tip CTA must navigate natively, not via a web link
+
+Today the app shows a tip by opening its **website article in an in-app browser**
+(the system in-app browser / custom tab). A call-to-action on that web page is a link back into
+the app. When the reader is **already inside the app**, a link that tries to re-enter the app
+from the in-app browser is unreliable: the in-app browser typically does **not** hand the link
+back to the app, so it falls through to the app's not-installed fallback web page — a dead end —
+instead of opening the intended screen. (This is the same class of problem as Bug 3, but it
+happens *from inside the app*.)
+
+Therefore, for the **in-app** surface specifically:
+
+1.9 THE in-app tip's call-to-action SHALL open the intended screen by **navigating within the
+app directly** (the app already knows it is the app), NOT by opening the tip's web link and
+hoping it routes back in.
+
+1.10 Consequently, for the content and a working CTA to coexist in the app, the in-app tip view
+SHALL present the tip's content **within the app** (so the CTA can be a native action), rather
+than delegating the whole tip to a web page in an in-app browser where the CTA cannot reliably
+act. The website and email surfaces are unaffected by this constraint — their CTAs are ordinary
+links as today.
+
 ### Bug 2: The "Create your own tool" Deep Link Opens the Wrong Screen
 
 **User Story:** As a reader who taps "Create your own tool," I want to land on the screen that
@@ -161,6 +189,18 @@ SHALL be covered by automated tests.
   authored body directly. The design must decide how the full body (and the CTA for the app)
   reaches all three surfaces from the single authored source — e.g. by including the body in the
   shared index, or another mechanism — without re-authoring per surface (Req 1.5).
+- **In-app rendering is the big design decision (Req 1.8-1.10):** today the app opens each tip's
+  **website article in an in-app browser** (`expo-web-browser` `openBrowserAsync` in
+  `TipsFeedScreen`), and the app "never renders tip bodies." A CTA inside that in-app browser is
+  a web link that cannot reliably route back into the app (iOS `SFSafariViewController` / Android
+  Custom Tabs do not hand a Universal/App Link back to the presenting app — it hits the
+  not-installed fallback instead). So "add a CTA to the in-app tip" is NOT a small change: for
+  the CTA to work, the app must render the tip **natively** (title, hero, body, and a native CTA
+  button that calls the app's own navigation to the Create Tool / target screen) rather than
+  delegating to the web page. The design must choose how the app renders the body natively
+  (it needs the body in the shared index per the point above, plus a markdown renderer or
+  equivalent), and wire the CTA to in-app navigation keyed off the tip's CTA route — not off
+  opening the URL. The website and email CTAs stay ordinary links.
 - **Deep-link root cause (for `design.md`):** there is currently no "Create Tool" deep-link
   route; only an "Add Tool" → library route exists, and the tip's CTA points at it. The design
   must add a Create-Tool route to the app's deep-link table, point the tip's CTA at it, and add
