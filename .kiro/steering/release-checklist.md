@@ -51,3 +51,35 @@ When the user is about to build, submit, or release a new app version (any menti
 - Full deployment steps: `docs/deployment/app-deployment.md`.
 - Store copy + per-version history: `docs/store-listing-copy.md`.
 - Future workflow cleanup that removes the 4-file version sync: `.kiro/specs/prebuild-migration/` (migrate to Expo prebuild so `app.json` is the single source of truth).
+
+## Release Plans (where they live and how to write them)
+
+Every app release gets a **release plan** — a short planning document (NOT a spec) that scopes
+what goes into that version, in operator/product language. Release plans live in:
+
+```
+docs/release-plans/
+```
+
+Conventions:
+
+- **One file per release**, named `<version>.md` (e.g. `docs/release-plans/1.0.6.md`).
+- A release plan is a **plan, not a spec**: it names what ships in the version, why, what still
+  needs doing to ship it, the deploy/verification steps, and the risks — it does NOT re-derive
+  requirements or design (link to the relevant `.kiro/specs/*` for that).
+- Write it in product/operator language. It should read like a go/no-go checklist a release
+  manager follows.
+- A release plan should cover, at minimum: the version number and target platforms; a summary
+  of what's included (grouped by user-visible vs. behind-the-scenes/infra); what is already
+  done vs. still outstanding to ship; the ordered deploy/build/submit steps (reusing the
+  checklist above); the store release notes (or a pointer to `docs/store-listing-copy.md`); and
+  the known risks / rollout notes.
+- Keep finished release plans in place as a historical record (don't delete them); the newest
+  release's plan is the active one.
+- **Backend/worker/website work vs. app work:** the analytics worker, messaging worker, and
+  marketing website deploy independently of app store builds. A release plan should clearly
+  separate "already live via a worker/website deploy" from "needs an app build to reach users,"
+  so an app release is only cut when there is actual app-code to ship.
+
+Relationship to the version-bump rule above: when a new release cycle starts, create its
+release plan in `docs/release-plans/` and do the 4-place version bump at that point.
