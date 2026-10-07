@@ -265,6 +265,31 @@ describe('analyticsEventLogger', () => {
       // Opt-out strips all properties — no properties object at all, so no channel.
       expect(insertedEvent).not.toHaveProperty('properties');
     });
+
+    it('does not attach the channel on an opted-out session_ended, even though session_duration_ms re-populates properties', async () => {
+      // Regression: session_ended is in OPT_OUT_ALLOWED_EVENTS and its
+      // session_duration_ms block reassigns properties AFTER the opt-out strip.
+      // The channel stamp must stay gated on optIn, not merely on properties
+      // being defined, or the channel leaks onto an opted-out session_ended (Req 8).
+      setLoggerChannel('reddit');
+
+      // Register a session start while opted in, then opt out before session_ended.
+      jest.setSystemTime(new Date('2025-01-15T10:00:00.000Z'));
+      await logEvent('app_opened', { days_since_install: 0 });
+      mockInsertEvent.mockClear();
+
+      setLoggerOptIn(false);
+      jest.advanceTimersByTime(60_000);
+
+      await logEvent('session_ended');
+
+      expect(mockInsertEvent).toHaveBeenCalledTimes(1);
+      const insertedEvent = mockInsertEvent.mock.calls[0][0];
+      // session_duration_ms is still computed (required derived field), but the
+      // channel must NOT be present.
+      expect((insertedEvent as any).properties.session_duration_ms).toBe(60_000);
+      expect((insertedEvent as any).properties).not.toHaveProperty('channel');
+    });
   });
 
   // ─── Serialization round-trip ─────────────────────────────────────────────────

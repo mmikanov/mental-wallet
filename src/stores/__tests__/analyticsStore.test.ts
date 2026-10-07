@@ -145,6 +145,37 @@ describe('AnalyticsStore', () => {
       const state = useAnalyticsStore.getState();
       expect(state.optIn).toBe(true);
     });
+
+    it('logs app_opened without awaiting the channel resolution (non-blocking startup)', async () => {
+      // Make channel resolution hang forever: if initialize awaited it, the
+      // app_opened log would never happen within this test.
+      mockResolveInstallChannelOnce.mockReturnValueOnce(
+        new Promise<string | null>(() => {
+          /* never resolves */
+        })
+      );
+
+      await useAnalyticsStore.getState().initialize();
+
+      // app_opened was logged even though channel resolution has not settled,
+      // proving the resolution is fire-and-forget and does not gate the first event.
+      expect(mockLogEvent).toHaveBeenCalledWith('app_opened', {
+        days_since_install: expect.any(Number),
+      });
+      // The channel was not pushed to the logger yet (resolution still pending).
+      expect(mockSetLoggerChannel).not.toHaveBeenCalled();
+    });
+
+    it('pushes the resolved channel to the logger once resolution completes', async () => {
+      mockResolveInstallChannelOnce.mockResolvedValueOnce('reddit');
+
+      await useAnalyticsStore.getState().initialize();
+      // Let the fire-and-forget .then() microtask run.
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(mockSetLoggerChannel).toHaveBeenCalledWith('reddit');
+    });
   });
 
   describe('setOptIn', () => {

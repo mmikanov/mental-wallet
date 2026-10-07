@@ -235,10 +235,12 @@ export async function logEvent(
     }
 
     // Stamp the install channel (passive attribution) onto every event once known.
-    // Only attach when properties exist: the opt-out path sets properties =
-    // undefined for OPT_OUT_ALLOWED_EVENTS, and the channel must not be attached
-    // when opted out (Requirement 8).
-    if (cachedChannel && properties !== undefined) {
+    // Gate on optIn directly (not merely on properties being defined): the opt-out
+    // path strips properties, but derived-field blocks above (e.g.
+    // session_duration_ms for session_ended) re-populate properties afterward, so
+    // checking properties alone would leak the channel onto opted-out events. The
+    // channel must never be attached when opted out (Requirement 8).
+    if (optIn && cachedChannel && properties !== undefined) {
       properties = { ...properties, channel: cachedChannel };
     }
 
