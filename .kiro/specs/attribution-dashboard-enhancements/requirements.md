@@ -1,30 +1,34 @@
 # Requirements Document
 
+# Requirements Document — Attribution Dashboard Enhancements
+
 ## Introduction
 
-This spec covers improvements to the **operator analytics dashboard** — the private,
-secret-protected web page the operator opens to read how the app is performing (installs,
-activation, wallet growth, retention, and now per-channel breakdowns). It is **not** the
-in-app analytics screen that end users see (that is a separate spec); it is the operator's
-own cockpit for reading the measurement foundation.
+This spec covers enhancements to the **operator analytics dashboard** that make the
+**install-source attribution** (where users installed from) genuinely readable and useful. It
+is scoped to the attribution view: comparing channels, trusting the per-channel retention
+number, and being honest about thin data and platform caveats. It is **not** the in-app
+analytics screen that end users see (that is the separate `analytics-dashboard` spec), and it
+is **not** the channel-attribution data pipeline itself (that is the `channel-attribution`
+spec) — this spec only improves how the resulting install-source data is **presented** to the
+operator.
 
-Over the last cycle the operator gained three new measurement capabilities: trustworthy
-cohort-based retention, passive channel attribution, and the drip email automation. The data
-to make real go-to-market decisions now exists, but the dashboard that presents it hasn't
-caught up — the channel breakdown is new, the retention story is split between an old number
-and a new one, and the operator still has to eyeball separate sections to answer the one
-question that matters: **which kind of user, from which channel, actually sticks?** This spec
-makes the operator dashboard answer that question clearly, honestly, and at a glance.
+Passive channel attribution now records which marketing channel each install came from, and
+cohort-based retention gives a trustworthy stickiness measure. The data to answer the core
+go-to-market question exists — but the dashboard that presents it hasn't caught up. The
+operator still has to eyeball separate sections to answer the one question the attribution
+work was built for: **which install source produces users who actually stick?** This spec
+makes the dashboard answer that question clearly, honestly, and at a glance.
 
 ### Background
 
-The measurement foundation (`docs/gtm-icp-discovery-plan.md`) has three pieces, all now built
-on the data side: the retention-metric fix, the channel attribution, and the email drip. The
-operator dashboard is where their value is actually read. Today it shows the core KPIs and a
-new per-channel breakdown, but the presentation has gaps: small samples can still read as if
-solid, the legacy retention figure and the trustworthy cohort figure can both appear without
-a clear "use this one" signal, and comparing channels side by side (the whole point of
-attribution) is harder than it should be. This spec is about **reading** the data well — it
+Install-source attribution and cohort retention are built on the data side
+(`.kiro/specs/channel-attribution/`, `.kiro/specs/retention-cohorts/`), and the dashboard
+already shows a first-pass per-channel breakdown. But the presentation has gaps that blunt its
+usefulness for deciding which audience to pursue: small channels can read as if solid, the
+legacy retention figure and the trustworthy cohort figure can both appear without a clear
+"use this one" signal, and comparing channels side by side (the whole point of attribution) is
+harder than it should be. This spec is about **reading the install-source data well** — it
 adds no new data collection and changes nothing about how the app, workers, or privacy model
 behave.
 
