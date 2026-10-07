@@ -13,53 +13,42 @@
  */
 
 import { Platform } from 'react-native';
+import { PlayInstallReferrer } from 'react-native-play-install-referrer';
 
 /**
  * Reads the Play Install Referrer string on Android, or null elsewhere / on failure.
  *
- * ───────────────────────────────────────────────────────────────────────────
- * NATIVE WIRING REQUIRED (operator follow-up — Task 14, NOT done here):
+ * The native read is provided by `react-native-play-install-referrer` (a wrapper
+ * around Google's `com.android.installreferrer`). It is Android-only; iOS and all
+ * other platforms are a no-op (Requirement 5) because there is no device-side
+ * install referrer there.
  *
- * This is a STUB. In this environment no native Play Install Referrer module is
- * installed or verifiable, and this is a bare workflow (committed `android/`),
- * so a config plugin alone does nothing without a native rebuild. The parse /
- * store / stamp layers (Tasks 11, 13 and the parse half of 12) are fully
- * unit-tested; the native install-time read below is the ONLY piece that needs
- * the native build + on-device verification.
- *
- * To wire the real read, the operator must:
- *   1. Add an exact-pinned dependency wrapping `com.android.installreferrer`,
- *      e.g.  react-native-play-install-referrer@1.1.8
- *      (confirm Expo SDK 54 / RN 0.81 / New Architecture compatibility at
- *      install time, then pin the exact resolved version in package.json).
- *   2. Because this is a bare workflow, ensure the module autolinks into the
- *      committed `android/` project and run a native rebuild. If the package
- *      ships an Expo config plugin, add it to `plugins` in `app.json` AND run
- *      prebuild / native rebuild (a plugin alone is inert without the build).
- *   3. Replace ONLY the stub body below with the real call, keeping the
- *      `Platform.OS !== 'android'` guard and the try/catch returning null, e.g.:
- *
- *        import { PlayInstallReferrer } from 'react-native-play-install-referrer';
- *        return await new Promise<string | null>((resolve) => {
- *          PlayInstallReferrer.getInstallReferrerInfo((info, error) => {
- *            if (error || !info) return resolve(null);
- *            resolve(info.installReferrer ?? null);
- *          });
- *        });
- *
- *   4. Then follow the release checklist (version bump, eas build, submit) —
- *      Task 14, outside this phase.
- * ───────────────────────────────────────────────────────────────────────────
+ * NOTE (verification): the parse/store/stamp layers around this are unit-tested
+ * (via a mock of this function), but the native install-time read itself is an
+ * Android install-time signal that can only be confirmed on a real Play install —
+ * see Task 15 (on-device check). It requires a native build; it will not work in
+ * Expo Go or a plain emulator without Google Play services.
  */
 export async function readInstallReferrer(): Promise<string | null> {
   if (Platform.OS !== 'android') {
     return null;
   }
   try {
-    // STUB: no native module wired in this environment. Returns null until the
-    // operator swaps in the real read (see block comment above). The parse/store
-    // layers are exercised in tests via a mock of this function.
-    return null;
+    return await new Promise<string | null>((resolve) => {
+      try {
+        PlayInstallReferrer.getInstallReferrerInfo((info, error) => {
+          if (error || !info) {
+            resolve(null);
+            return;
+          }
+          resolve(info.installReferrer ?? null);
+        });
+      } catch {
+        // Synchronous throw from the native bridge (e.g. module not linked) —
+        // resolve null so analytics never crashes the app.
+        resolve(null);
+      }
+    });
   } catch {
     // The native read must never throw out — analytics must never crash the app.
     return null;
