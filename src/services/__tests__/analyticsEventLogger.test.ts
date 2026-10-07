@@ -2,6 +2,7 @@ import {
   logEvent,
   setLoggerIdentity,
   setLoggerOptIn,
+  setLoggerChannel,
   clearLoggerState,
 } from '../analyticsEventLogger';
 
@@ -216,6 +217,53 @@ describe('analyticsEventLogger', () => {
 
       const sessionEndedEvent = mockInsertEvent.mock.calls[0][0];
       expect((sessionEndedEvent as any).properties.session_duration_ms).toBe(0);
+    });
+  });
+
+  // ─── Channel stamping (passive attribution) ───────────────────────────────────
+
+  describe('Channel stamping', () => {
+    it('stamps properties.channel on an emitted event once a channel is set', async () => {
+      setLoggerChannel('reddit');
+
+      await logEvent('app_opened', { days_since_install: 1 });
+
+      expect(mockInsertEvent).toHaveBeenCalledTimes(1);
+      const insertedEvent = mockInsertEvent.mock.calls[0][0];
+      expect((insertedEvent as any).properties.channel).toBe('reddit');
+    });
+
+    it('stamps channel on behavioral events too', async () => {
+      setLoggerChannel('linkedin');
+
+      await logEvent('tool_opened', {
+        card_id: 'card1',
+        card_category: 'grounding',
+        origin_badge: 'library',
+      });
+
+      const insertedEvent = mockInsertEvent.mock.calls[0][0];
+      expect((insertedEvent as any).properties.channel).toBe('linkedin');
+    });
+
+    it('does not add a channel key when no channel is set', async () => {
+      // clearLoggerState in beforeEach already resets channel to null.
+      await logEvent('app_opened', { days_since_install: 1 });
+
+      const insertedEvent = mockInsertEvent.mock.calls[0][0];
+      expect((insertedEvent as any).properties).not.toHaveProperty('channel');
+    });
+
+    it('does not attach the channel when opted out, even if a channel is set', async () => {
+      setLoggerChannel('reddit');
+      setLoggerOptIn(false);
+
+      await logEvent('app_opened', { days_since_install: 5 });
+
+      expect(mockInsertEvent).toHaveBeenCalledTimes(1);
+      const insertedEvent = mockInsertEvent.mock.calls[0][0];
+      // Opt-out strips all properties — no properties object at all, so no channel.
+      expect(insertedEvent).not.toHaveProperty('properties');
     });
   });
 

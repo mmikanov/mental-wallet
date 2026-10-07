@@ -72,6 +72,13 @@ let anonymousUserId: string | null = null;
 /** Opt-in status set by the analytics store. */
 let optIn = true;
 
+/**
+ * Install channel (passive attribution label), cached in module state so
+ * logEvent does not hit the DB on every event. Pushed in by the startup
+ * resolution via setLoggerChannel once resolved; null until known.
+ */
+let cachedChannel: string | null = null;
+
 /** Maps card_id to timestamp (ms) for duration_ms computation on tool_completed. */
 const toolOpenedTimestamps: Map<string, number> = new Map();
 
@@ -115,6 +122,15 @@ export function setLoggerOptIn(value: boolean): void {
 }
 
 /**
+ * Sets the install channel used to stamp events (passive attribution).
+ * Called by the analytics store once the one-time resolution completes.
+ * Pass null to clear.
+ */
+export function setLoggerChannel(channel: string | null): void {
+  cachedChannel = channel;
+}
+
+/**
  * Clears all logger state (tool timestamps, identity).
  * Called during data reset.
  */
@@ -122,6 +138,7 @@ export function clearLoggerState(): void {
   toolOpenedTimestamps.clear();
   sessionStartTimestamps.clear();
   anonymousUserId = null;
+  cachedChannel = null;
 }
 
 /**
@@ -215,6 +232,14 @@ export async function logEvent(
       } else {
         properties = { ...properties, session_duration_ms: 0 };
       }
+    }
+
+    // Stamp the install channel (passive attribution) onto every event once known.
+    // Only attach when properties exist: the opt-out path sets properties =
+    // undefined for OPT_OUT_ALLOWED_EVENTS, and the channel must not be attached
+    // when opted out (Requirement 8).
+    if (cachedChannel && properties !== undefined) {
+      properties = { ...properties, channel: cachedChannel };
     }
 
     // Assemble the event

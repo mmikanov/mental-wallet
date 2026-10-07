@@ -18,9 +18,11 @@ import {
 import {
   setLoggerIdentity,
   setLoggerOptIn,
+  setLoggerChannel,
   clearLoggerState,
   logEvent,
 } from '@/services/analyticsEventLogger';
+import { resolveInstallChannelOnce } from '@/services/analyticsChannel';
 import { startNewSession, clearSession } from '@/services/analyticsSession';
 import {
   resetSendingToPending,
@@ -81,7 +83,16 @@ export const useAnalyticsStore = create<AnalyticsStoreState>((set, get) => ({
       startTransmitter(getTransmitterConfig());
     });
 
-    // 8. Log app_opened with days_since_install (retention metric)
+    // 9. Resolve the install channel once (Android passive attribution), fired
+    //    non-blocking so it never delays the first app_opened event. The channel
+    //    attaches from the next event onward if it resolves after the first one.
+    resolveInstallChannelOnce()
+      .then((channel) => {
+        setLoggerChannel(channel);
+      })
+      .catch(() => {});
+
+    // 10. Log app_opened with days_since_install (retention metric)
     const daysSinceInstall = await getDaysSinceInstall();
     await logEvent('app_opened', { days_since_install: daysSinceInstall });
   },

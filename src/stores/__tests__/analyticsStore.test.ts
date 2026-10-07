@@ -31,11 +31,21 @@ const mockSetLoggerOptIn = jest.fn();
 const mockClearLoggerState = jest.fn();
 const mockLogEvent = jest.fn().mockResolvedValue(undefined);
 
+const mockSetLoggerChannel = jest.fn();
+
 jest.mock('../../services/analyticsEventLogger', () => ({
   setLoggerIdentity: (...args: unknown[]) => mockSetLoggerIdentity(...args),
   setLoggerOptIn: (...args: unknown[]) => mockSetLoggerOptIn(...args),
+  setLoggerChannel: (...args: unknown[]) => mockSetLoggerChannel(...args),
   clearLoggerState: (...args: unknown[]) => mockClearLoggerState(...args),
   logEvent: (...args: unknown[]) => mockLogEvent(...args),
+}));
+
+const mockResolveInstallChannelOnce = jest.fn().mockResolvedValue(null);
+
+jest.mock('../../services/analyticsChannel', () => ({
+  resolveInstallChannelOnce: (...args: unknown[]) =>
+    mockResolveInstallChannelOnce(...args),
 }));
 
 const mockStartNewSession = jest.fn().mockReturnValue({
