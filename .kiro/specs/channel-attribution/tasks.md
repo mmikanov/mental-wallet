@@ -90,21 +90,23 @@ project's existing runners (Jest for the app; the worker's test setup for `analy
 
 ## Phase 4 — App: read the tag on Android and stamp it on events
 
-- [ ] **11. Add the write-once channel storage helper (app).**
+- [x] **11. Add the write-once channel storage helper (app).** _(DONE 2026-10-07, commit `c52e01f`)_
   - Add a service (e.g. `src/services/analyticsChannel.ts`) that stores/reads the resolved `channel` write-once, mirroring `getDaysSinceInstall()` in `src/services/analyticsRetention.ts` (local `settings` table via `INSERT OR IGNORE`, or SecureStore alongside `anonymous_user_id`). Never overwrite once set.
+  - **As built:** `src/services/analyticsChannel.ts` — `getStoredChannel()` / `setChannelOnce()`, write-once in the SQLite `settings` table (key `install_channel`) via `INSERT OR IGNORE`, mirroring `analyticsRetention.ts`. Blank input ignored, never overwrites, never throws. Unit test `src/services/__tests__/analyticsChannel.test.ts` covers all cases — passing.
   - _Verify:_ unit test — first write sets the value; a second write with a different value does NOT overwrite; reading when unset returns null/none.
   - _Requirements: 4 (persistence), 7 (no overwrite surprises)_
 
-- [ ] **12. Read the Play Install Referrer on Android and resolve the channel.**
+- [x] **12. Read the Play Install Referrer on Android and resolve the channel.** _(DONE at the logic level 2026-10-07, commit `c52e01f` — native read STUBBED, see note)_
   - Add the install-referrer native module + Expo config plugin (a `react-native-play-install-referrer`-style wrapper around `com.android.installreferrer`). On first launch (Android only), read the referrer once, parse `utm_source`, and pass it to the write-once helper. iOS: no-op (no reliable device-side signal — by design).
-  - Guard with `if (__DEV__)` logging at the resolution point during development; remove temporary diagnostics before committing (per the debugging steering rule).
+  - **As built:** `src/services/installReferrer.ts` — Android-guarded `readInstallReferrer()` (iOS/other = no-op) + a pure `parseChannelFromReferrer()` for `utm_source` (handles URL-encoding, extra params, and a missing `utm_source`). `resolveInstallChannelOnce()` is wired into `analyticsStore.initialize()`, Android-guarded and NON-BLOCKING (fire-and-forget) so it never delays the first `app_opened`. Parse/store logic is unit-tested.
+  - **⚠️ Native read is a documented STUB.** The actual native call into `com.android.installreferrer` is a stub body in `installReferrer.ts` (marked with a comment) — it returns null until the operator adds the real native module. The parse/store/stamp logic around it is real and tested. Making the native read real is **Task 14** (operator: add `react-native-play-install-referrer` + its Expo config plugin, swap only the stub body, native rebuild). Install-time delivery is NOT unit-provable; it is verified on-device in **Task 15**.
   - _Verify:_ unit test with a mocked referrer string asserts `utm_source` is parsed and stored once; empty/absent referrer stores nothing (stays organic). NOTE: real install-time delivery is NOT provable by unit tests — see Task 15.
   - _Requirements: 4.1, 5 (iOS no-op)_
 
-- [ ] **13. Stamp the stored channel onto every analytics event.**
+- [x] **13. Stamp the stored channel onto every analytics event.** _(DONE 2026-10-07, commits `c52e01f` + `61d9e19`)_
   - Attach the stored `channel` in the common event-property construction used by `logEvent` (`src/services/analyticsEventLogger`) / `src/stores/analyticsStore.ts`, so it rides in `properties` on every event once known. Do not change individual call sites.
-  - Sequencing: if the referrer read hasn't resolved before the first `app_opened`, the channel attaches from the next event onward — acceptable; do not block the first event.
-  - _Verify:_ unit test — once a channel is stored, emitted events include `properties.channel`; when none is stored, events carry no channel. Full app test suite + `npm run typecheck` pass.
+  - **As built:** `analyticsEventLogger.ts` caches the channel in module state (`setLoggerChannel`) and stamps `properties.channel` in the common assembly. **Opt-out fix (`61d9e19`):** the stamp is gated on **opt-in directly** (`if (optIn && cachedChannel && properties !== undefined)`), not just `properties !== undefined` — review caught that `session_ended` re-populates `properties` (with `session_duration_ms`) AFTER the opt-out strip, which would have leaked the channel on an opted-out session (Req 8). Regression test added. Non-blocking startup also proven by a test that hangs the resolution promise and confirms `app_opened` still logs.
+  - _Verify:_ unit test — once a channel is stored, emitted events include `properties.channel`; when none is stored, events carry no channel. Full app test suite + `npm run typecheck` pass. **Verified:** `analyticsChannel` + `analyticsEventLogger` suites pass; typecheck adds zero new errors; the one failing `analyticsStore` test is a pre-existing, unrelated transmitter-config assertion.
   - _Requirements: 4.2, 7.1, 7.2, 8.1_
 
 - [ ] **14. Build and release the app (per the release checklist).**
@@ -129,25 +131,27 @@ project's existing runners (Jest for the app; the worker's test setup for `analy
 
 ## What is NOT yet done (as of 2026-10-06)
 
-The data pipeline, dashboard, and landing page are live, but **no install carries a channel yet**
-because the app does not read the tag. Remaining work, all operator/app-release-driven:
+The data pipeline, dashboard, and landing page are live, and the app-side logic (Tasks 11-13)
+is **done, merged, and tested** — BUT **no install carries a channel yet** because (a) the
+native install-referrer read is still a stub and (b) no build with this code has shipped.
+Remaining work, all operator/app-release-driven:
 
-- **Task 11 — write-once channel storage in the app** (`src/services/analyticsChannel.ts`).
-- **Task 12 — read the Play Install Referrer on Android** (native module + Expo config plugin),
-  parse `utm_source`, store it write-once. iOS is a no-op by design.
-- **Task 13 — stamp the stored channel onto every analytics event** in the app's common
-  event-property construction.
-- **Task 14 — build and release the app** (Android gains device-side attribution). Needs the
-  release checklist: version bump, build, submit. **This requires a native EAS build and is the
-  only part that puts attribution end-to-end into users' hands.**
-- **Task 15 — on-device Android attribution check** (real device/emulator; the native
+- ✅ **Task 11 — write-once channel storage** — DONE (`src/services/analyticsChannel.ts`).
+- ✅ **Task 12 — parse + store the referrer** — DONE at the logic level; the **native read is a
+  documented stub** that returns null until the real module is wired (part of Task 14).
+- ✅ **Task 13 — stamp the channel onto events** — DONE (opt-in-gated, non-blocking).
+- ⬜ **Task 14 — wire the real native module + build and release the app.** Add
+  `react-native-play-install-referrer` + its Expo config plugin, swap the stub body in
+  `installReferrer.ts`, then version-bump + `eas build` + submit. **This requires a native EAS
+  build and is the only part that puts attribution end-to-end into users' hands.** See the
+  step-by-step operator guide in the 1.0.6 release plan (`docs/release-plans/1.0.6.md`).
+- ⬜ **Task 15 — on-device Android attribution check** (real device/emulator; the native
   install-time signal cannot be proven by unit tests).
-- **Task 16 — time-window separation check** on both platforms, incl. confirming the iOS
+- ⬜ **Task 16 — time-window separation check** on both platforms, incl. confirming the iOS
   campaign token in App Store Connect.
 
-Because Tasks 11-14 are a native app change, they are tracked as a release item (see the
-release plan under `docs/release-plans/`), not something deployable from this environment.
-Until the app ships, the dashboard correctly shows every install as organic/untagged.
+Until a build with the real native module ships, the dashboard correctly shows every install as
+organic/untagged.
 
 **Non-blocking fast-follow (reviewer note):** the per-channel D7/D30 retention in
 `handleDetailChannels` applies the phase window to the aggregation rather than filtering on
