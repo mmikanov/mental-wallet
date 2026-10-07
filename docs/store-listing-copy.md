@@ -124,6 +124,36 @@ A card-based toolkit to build coping habits and discover what works for you.
 
 Track the release notes submitted for each Apple version here. Newest first.
 
+### 1.0.6
+
+**Status:** 🚧 Draft — not yet built/submitted. Marketing version bumped to 1.0.6 across all five files (commit `e23bb59`); build/versionCode assigned by EAS at build time.
+
+**What's New in This Version:**
+```
+This update is mostly behind the scenes:
+
+• Reliability and performance improvements under the hood.
+• Small fixes and polish.
+
+Have feedback? We'd love to hear it, reach us from Settings.
+```
+
+**Notes:** The headline work in this release is intentionally **invisible to users** — passive
+channel attribution (the app reads which marketing link an install came from and attaches an
+anonymous channel label to the already-anonymous analytics). There is **no new UI, no
+onboarding change, and no prompt**, so there is nothing user-facing to announce; the "What's
+New" is an honest behind-the-scenes note. Android gains device-side attribution via the Play
+Install Referrer; iOS ships the no-op and relies on App Store Connect source analytics + time
+windows (coarser by design). Spec: `.kiro/specs/channel-attribution/` (Phases 1-3 live;
+Phase 4 app code is in this build). Keep attribution mechanics OUT of the public copy.
+
+**Reviewer note (App Review Information):** this version reads the install referrer on first
+launch (Android) and attaches an anonymous marketing-channel label to the app's existing
+anonymous analytics events. It adds **no new deep-link or WebView surface** beyond prior
+releases, adds **no user-facing UI or prompt**, collects **no personal data**, and does not
+transmit user data beyond the existing anonymous analytics. There is nothing new for the
+reviewer to interact with — the change is a background analytics label.
+
 ### 1.0.5
 
 **Status:** ✅ Released 2026-10-03 — live on both stores. iOS 1.0.5 (build 23) + Android 1.0.5 (versionCode 11), both built from commit `8440392`, tagged `v1.0.5`.
@@ -201,6 +231,21 @@ Initial App Store release. (No "What's New" — first version.)
 ## Version History — Release Notes (Google Play)
 
 Google Play release notes use `<en-US>...</en-US>` language tags and have a **500-character limit per language**. Set them per release in Play Console → Production → (release) → Release notes. Newest first.
+
+### 1.0.6 (versionCode TBD — EAS auto-increments)
+
+```
+<en-US>
+This update is mostly behind the scenes:
+
+• Reliability and performance improvements under the hood.
+• Small fixes and polish.
+
+Feedback? Reach us from Settings.
+</en-US>
+```
+
+_(Note: ~190 characters inside the `<en-US>` tags including the tags — well under the 500-char limit. The headline change this release is passive channel attribution, which is invisible to users, so there is nothing user-facing to announce; keep attribution mechanics out of the public copy. Confirm the auto-incremented versionCode in Play Console at submit.)_
 
 ### 1.0.5 (versionCode TBD — EAS auto-increments)
 
