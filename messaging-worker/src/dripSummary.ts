@@ -12,7 +12,7 @@
 /** A plan entry as produced by runDripPass, narrowed to the fields the summary needs. */
 export interface SummaryPlanEntry {
   email: string;
-  status: 'next' | 'waiting' | 'finished' | 'not_yet';
+  status: 'next' | 'waiting' | 'unsubscribed' | 'finished' | 'not_yet';
   campaign_id?: string;
   campaign_name?: string;
   tip_slug?: string;
@@ -23,7 +23,10 @@ export interface SummaryPlanEntry {
 export interface SummaryCounts {
   sent: number;
   failed: number;
+  /** Genuinely awaiting their next campaign (opted in, within a gap, or a missing campaign). */
   waiting: number;
+  /** Opted out of the frontier campaign's scope — not awaiting anything (Bug 4). */
+  unsubscribed: number;
   finished: number;
   /** Total subscribers considered this run (plan length). */
   total: number;
@@ -153,6 +156,7 @@ export function buildDripSummary(
   textLines.push(`  Delivered (sent): ${counts.sent}`);
   textLines.push(`  Failed: ${counts.failed}`);
   textLines.push(`  Waiting: ${counts.waiting}`);
+  textLines.push(`  Unsubscribed: ${counts.unsubscribed}`);
   textLines.push(`  Finished: ${counts.finished}`);
   textLines.push(`  Total subscribers considered: ${counts.total}`);
 
@@ -204,6 +208,7 @@ export function buildDripSummary(
   htmlParts.push(`<li>Delivered (sent): <strong>${counts.sent}</strong></li>`);
   htmlParts.push(`<li>Failed: <strong>${counts.failed}</strong></li>`);
   htmlParts.push(`<li>Waiting: <strong>${counts.waiting}</strong></li>`);
+  htmlParts.push(`<li>Unsubscribed: <strong>${counts.unsubscribed}</strong></li>`);
   htmlParts.push(`<li>Finished: <strong>${counts.finished}</strong></li>`);
   htmlParts.push(`<li>Total subscribers considered: <strong>${counts.total}</strong></li>`);
   htmlParts.push(`</ul>`);

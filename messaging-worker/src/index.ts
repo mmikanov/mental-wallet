@@ -1244,7 +1244,7 @@ async function resolveNextForSubscriber(
   steps: SequenceStepRow[],
   campaignsById: Map<string, CampaignRow>,
   now: Date = new Date()
-): Promise<{ kind: 'next' | 'waiting' | 'finished'; campaign?: CampaignRow }> {
+): Promise<{ kind: 'next' | 'waiting' | 'unsubscribed' | 'finished'; campaign?: CampaignRow }> {
   const received = await receivedCampaignIds(env, subscriber.email);
 
   // Resolve synchronously via the pure function; eligibility needs async DB checks, so we
@@ -1265,7 +1265,10 @@ async function resolveNextForSubscriber(
     campaign.scope === 'reminders'
       ? (subscriber as unknown as Record<string, number>).scope_reminders === 1
       : (subscriber as unknown as Record<string, number>).scope_tips === 1;
-  if (!scopeOptedIn) return { kind: 'waiting', campaign };
+  // Opted out of this campaign's scope — NOT genuinely awaiting anything. Report distinctly
+  // (Bug 4) so the operator summary doesn't fold unsubscribed people into "Waiting". The
+  // missing-campaign and within-gap cases below stay 'waiting' (those people really are awaiting).
+  if (!scopeOptedIn) return { kind: 'unsubscribed', campaign };
 
   const gapCutoff = gapCutoffISO(campaign.gap_days, now);
   const withinGap = await env.DB.prepare(
@@ -1533,7 +1536,7 @@ async function sendOneDrip(
  * @param now    evaluation date (injectable for the test harness / simulate).
  * @param onlySubscribers optional explicit subscriber list (e.g. test cohort); default = all.
  */
-type PlanStatus = 'next' | 'waiting' | 'finished' | 'not_yet';
+type PlanStatus = 'next' | 'waiting' | 'unsubscribed' | 'finished' | 'not_yet';
 interface PlanEntry {
   email: string;
   status: PlanStatus;
@@ -1556,7 +1559,7 @@ async function runDripPass(
      */
     simulateAdvance?: boolean;
   }
-): Promise<{ plan: PlanEntry[]; sent: number; failed: number; skipped: number; finished: number; waiting: number }> {
+): Promise<{ plan: PlanEntry[]; sent: number; failed: number; skipped: number; finished: number; waiting: number; unsubscribed: number }> {
   const now = opts.now ?? new Date();
   const steps = await getSequenceSteps(env);
   const campaignsById = await loadCampaignsForSteps(env, steps);
@@ -1569,7 +1572,7 @@ async function runDripPass(
     opts.onlySubscribers ?? ((await env.DB.prepare(`SELECT * FROM subscribers WHERE is_test = 0`).all<SubscriberRow>()).results || []);
 
   const plan: PlanEntry[] = [];
-  let sent = 0, failed = 0, skipped = 0, finished = 0, waiting = 0;
+  let sent = 0, failed = 0, skipped = 0, finished = 0, waiting = 0, unsubscribed = 0;
 
   // The evaluation day's UTC calendar date — a subscriber who signed up AFTER this day did
   // not exist yet and must be skipped (they can't receive anything before they joined). This
@@ -1588,6 +1591,14 @@ async function runDripPass(
     if (resolved.kind === 'finished') {
       finished++;
       plan.push({ email: sub.email, status: 'finished' });
+      continue;
+    }
+    // Bug 4: an opted-out subscriber is NOT awaiting anything — report distinctly. This branch
+    // MUST come before the waiting branch below: an unsubscribed result carries a campaign, so
+    // the `!resolved.campaign` guard would not catch it and it would be swept into 'waiting'.
+    if (resolved.kind === 'unsubscribed') {
+      unsubscribed++;
+      plan.push({ email: sub.email, status: 'unsubscribed', campaign_id: resolved.campaign?.id, campaign_name: resolved.campaign?.name, tip_slug: resolved.campaign?.tip_slug });
       continue;
     }
     if (resolved.kind === 'waiting' || !resolved.campaign) {
@@ -1628,7 +1639,7 @@ async function runDripPass(
     else { skipped++; plan.push({ email: sub.email, status: 'waiting', campaign_id: campaign.id, campaign_name: campaign.name, tip_slug: campaign.tip_slug }); }
   }
 
-  return { plan, sent, failed, skipped, finished, waiting };
+  return { plan, sent, failed, skipped, finished, waiting, unsubscribed };
 }
 
 /**
@@ -1668,7 +1679,7 @@ async function executeDailyDrip(env: Env, now: Date = new Date()): Promise<{ ran
  */
 async function sendDripSummaryEmail(
   env: Env,
-  result: { plan: PlanEntry[]; sent: number; failed: number; skipped: number; finished: number; waiting: number },
+  result: { plan: PlanEntry[]; sent: number; failed: number; skipped: number; finished: number; waiting: number; unsubscribed: number },
   dateIso: string
 ): Promise<void> {
   try {
@@ -1695,6 +1706,7 @@ async function sendDripSummaryEmail(
         sent: result.sent,
         failed: result.failed,
         waiting: result.waiting,
+        unsubscribed: result.unsubscribed,
         finished: result.finished,
         total: result.plan.length,
       },

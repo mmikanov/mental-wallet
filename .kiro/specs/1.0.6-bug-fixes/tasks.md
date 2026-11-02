@@ -65,7 +65,7 @@ Root cause (confirmed): in `messaging-worker/src/index.ts`, `resolveNextForSubsc
 `waiting` in `runDripPass` and in `buildDripSummary` (`dripSummary.ts`). Decision (design §Bug 4):
 add an explicit `unsubscribed` status, worker-local; `drip.ts` `resolveNextStep` stays unchanged.
 
-- [ ] **4.1 Exploration test — an unsubscribed subscriber is classified "waiting" (FAILS on unfixed code).**
+- [x] **4.1 Exploration test — an unsubscribed subscriber is classified "waiting" (FAILS on unfixed code).**
   - In `messaging-worker/src/dripSummary.test.ts`, add a test that builds a plan containing a
     `status: 'unsubscribed'` entry and asserts `buildDripSummary` renders an "Unsubscribed"
     total line and does NOT count that person under "Waiting". On the unfixed code this FAILS to
@@ -75,7 +75,7 @@ add an explicit `unsubscribed` status, worker-local; `drip.ts` `resolveNextStep`
   - _Verify (UNIT-PROVABLE):_ `cd messaging-worker && npm test` — the new test fails to build/
     run against unfixed code (confirms the gap). _Requirements: 4.1, 4.2, V.5_
 
-- [ ] **4.2 Preservation test — subscribed waiting/finished/sent still classify exactly as today (PASSES on unfixed code).**
+- [x] **4.2 Preservation test — subscribed waiting/finished/sent still classify exactly as today (PASSES on unfixed code).**
   - In `messaging-worker/src/dripSummary.test.ts`, add a test over a plan of only
     still-subscribed entries (`sent`/`waiting`/`finished`) asserting the existing Totals
     (Delivered/Failed/Waiting/Finished/Total considered) and the per-campaign grouping are
@@ -84,7 +84,8 @@ add an explicit `unsubscribed` status, worker-local; `drip.ts` `resolveNextStep`
   - _Verify (UNIT-PROVABLE):_ `cd messaging-worker && npm test` — this test passes now.
     _Requirements: 4.4_
 
-- [ ] **4.3 Fix — add the explicit `unsubscribed` status end to end in the worker.**
+- [x] **4.3 Fix — add the explicit `unsubscribed` status end to end in the worker.**
+  - _As-built:_ added worker-local `unsubscribed` status to `resolveNextForSubscriber`/`runDripPass`/`sendDripSummaryEmail` (`index.ts`) and `SummaryPlanEntry`/`SummaryCounts` + an "Unsubscribed" Totals line in text & HTML (`dripSummary.ts`); `drip.ts` and `adminHelpers.ts` left unchanged by design. All 30 worker tests pass; `tsc --noEmit` clean.
   - `messaging-worker/src/index.ts`:
     - `resolveNextForSubscriber` return type: add `'unsubscribed'` to the inline
       `kind` union; when the frontier step exists but `!scopeOptedIn`, return
@@ -118,7 +119,7 @@ add an explicit `unsubscribed` status, worker-local; `drip.ts` `resolveNextStep`
     `drip.test.ts`/`dripSummary.test.ts` all pass) and `npx tsc --noEmit -p tsconfig.json`
     clean. _Requirements: 4.1, 4.2, 4.3, 4.4, V.5_
 
-- [ ] **4.4 Checkpoint — Bug 4 green.**
+- [x] **4.4 Checkpoint — Bug 4 green.**
   - Run the full worker suite and typecheck; confirm no regression in `drip.test.ts`,
     `dripSummary.test.ts`, `adminHelpers.test.ts`.
   - _Verify (UNIT-PROVABLE):_ `cd messaging-worker && npm test && npx tsc --noEmit -p tsconfig.json`

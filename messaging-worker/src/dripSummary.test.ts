@@ -12,7 +12,7 @@ import {
 const RUN_ISO = '2026-10-04T14:05:00Z'; // a cron run; EDT (US Eastern) on this date
 
 function counts(partial: Partial<SummaryCounts>): SummaryCounts {
-  return { sent: 0, failed: 0, waiting: 0, finished: 0, total: 0, ...partial };
+  return { sent: 0, failed: 0, waiting: 0, unsubscribed: 0, finished: 0, total: 0, ...partial };
 }
 
 test('(a) sends across multiple campaigns: grouped by campaign with recipients', () => {
@@ -106,4 +106,44 @@ test('empty sequence (no last campaign) omits the callout as "none"', () => {
   ];
   const s = buildDripSummary(plan, null, counts({ sent: 1, total: 1 }), RUN_ISO);
   assert.match(s.text, /none reached the final campaign today/);
+});
+
+// --- Bug 4: an unsubscribed person must be reported as "Unsubscribed", not "Waiting" ---
+
+test('(4.1 exploration) unsubscribed subscriber renders an Unsubscribed total line and is not counted as Waiting', () => {
+  const plan: SummaryPlanEntry[] = [
+    { email: 'sub@x.com', status: 'waiting', campaign_id: 'c1', campaign_name: 'Welcome', tip_slug: 'welcome' },
+    { email: 'gone@x.com', status: 'unsubscribed', campaign_id: 'c1', campaign_name: 'Welcome', tip_slug: 'welcome' },
+  ];
+  const s = buildDripSummary(plan, 'cLast', counts({ waiting: 1, unsubscribed: 1, total: 2 }), RUN_ISO);
+
+  // The unsubscribed person is reported under "Unsubscribed", not folded into "Waiting".
+  assert.match(s.text, /Unsubscribed: 1/);
+  assert.match(s.text, /Waiting: 1/);
+  assert.match(s.html, /Unsubscribed: <strong>1<\/strong>/);
+  assert.match(s.html, /Waiting: <strong>1<\/strong>/);
+});
+
+test('(4.2 preservation) still-subscribed sent/waiting/finished classify exactly as today', () => {
+  const plan: SummaryPlanEntry[] = [
+    { email: 'a@x.com', status: 'next', campaign_id: 'c1', campaign_name: 'Welcome', tip_slug: 'welcome', sent: 'sent' },
+    { email: 'b@x.com', status: 'next', campaign_id: 'c1', campaign_name: 'Welcome', tip_slug: 'welcome', sent: 'failed' },
+    { email: 'c@x.com', status: 'waiting', campaign_id: 'c2', campaign_name: 'Grounding', tip_slug: 'grounding' },
+    { email: 'd@x.com', status: 'finished' },
+  ];
+  const s = buildDripSummary(plan, 'cLast', counts({ sent: 1, failed: 1, waiting: 1, finished: 1, total: 4 }), RUN_ISO);
+
+  // Existing Totals unchanged.
+  assert.match(s.text, /Delivered \(sent\): 1/);
+  assert.match(s.text, /Failed: 1/);
+  assert.match(s.text, /Waiting: 1/);
+  assert.match(s.text, /Finished: 1/);
+  assert.match(s.text, /Total subscribers considered: 4/);
+  // Per-campaign grouping: only the delivered 'sent' recipient appears under Welcome.
+  assert.match(s.text, /Welcome \(welcome\) — 1 recipient/);
+  assert.match(s.text, /- a@x\.com/);
+  assert.doesNotMatch(s.text, /- c@x\.com/);
+  // Failed send listed, not counted as a delivered recipient.
+  assert.match(s.text, /Failed sends:/);
+  assert.match(s.text, /- b@x\.com — Welcome \(welcome\)/);
 });
