@@ -250,15 +250,62 @@ export function createReminderService(): ReminderService {
         [cardId]
       );
 
-      for (const row of rows) {
-        const reminder = mapRowToReminder(row);
-        await cancelNotificationIds(reminder.notificationId);
+      // [arch] TEMPORARY Bug 3 instrumentation (task 3.1) — remove in task 3.2.
+      // Is there an active reminder, and what ids are stored on it?
+      if (__DEV__) {
+        try {
+          const storedIds = rows.map((r) =>
+            parseNotificationIds((r.notification_id as string) || null)
+          );
+          console.log('[arch] activeReminders n=', rows.length, 'ids=', storedIds);
+        } catch (err) {
+          console.log('[arch] activeReminders log FAILED:', err);
+        }
       }
 
-      await db.runAsync(
+      // [arch] TEMPORARY Bug 3 instrumentation (task 3.1) — remove in task 3.2.
+      // The KEY comparison (cause #2/#3): what the OS actually has scheduled BEFORE
+      // we cancel. Best-effort, fully guarded so it can never throw into archive.
+      if (__DEV__) {
+        try {
+          const before = await Notifications.getAllScheduledNotificationsAsync();
+          console.log(
+            '[arch] OS scheduled before=',
+            before.map((n) => n.identifier)
+          );
+        } catch (err) {
+          console.log('[arch] OS scheduled before log FAILED:', err);
+        }
+      }
+
+      for (const row of rows) {
+        const reminder = mapRowToReminder(row);
+        // Pass logArch (dev-only) so the archive path logs each cancel + failure.
+        await cancelNotificationIds(reminder.notificationId, true);
+      }
+
+      // [arch] TEMPORARY Bug 3 instrumentation (task 3.1) — remove in task 3.2.
+      // AFTER cancel: did the OS-scheduled identifiers actually disappear?
+      if (__DEV__) {
+        try {
+          const after = await Notifications.getAllScheduledNotificationsAsync();
+          console.log(
+            '[arch] OS scheduled after=',
+            after.map((n) => n.identifier)
+          );
+        } catch (err) {
+          console.log('[arch] OS scheduled after log FAILED:', err);
+        }
+      }
+
+      const updateResult = await db.runAsync(
         'UPDATE reminders SET is_active = 0 WHERE card_id = ?',
         [cardId]
       );
+
+      // [arch] TEMPORARY Bug 3 instrumentation (task 3.1) — remove in task 3.2.
+      // Did the inactive write actually commit? (cause #1)
+      if (__DEV__) console.log('[arch] is_active→0 updated rows=', updateResult?.changes);
     },
 
     /**
@@ -393,6 +440,23 @@ export async function reconcileRemindersOnLaunch(): Promise<void> {
       // Check if any stored notification IDs are missing from scheduled
       const hasMissing = storedIds.some((id) => !scheduledIds.has(id));
 
+      // [arch] TEMPORARY Bug 3 instrumentation (task 3.1) — remove in task 3.2.
+      // Is reconcile about to re-arm this reminder on next launch? (cause #3)
+      // Note: this SELECT is `WHERE is_active = 1`, so an archived (inactive)
+      // reminder should never appear here — if it does, the inactive write failed.
+      if (__DEV__) {
+        console.log(
+          '[arch] reconcile reminder id=',
+          reminder.id,
+          'active=',
+          row.is_active,
+          'stored=',
+          storedIds,
+          'missing=',
+          hasMissing || storedIds.length === 0
+        );
+      }
+
       if (hasMissing || storedIds.length === 0) {
         // Cancel any remaining and reschedule
         for (const id of storedIds) {
@@ -426,10 +490,22 @@ function parseNotificationIds(notificationId: string | null): string[] {
 /**
  * Cancels all notification IDs stored in a reminder's notification_id field.
  */
-async function cancelNotificationIds(notificationId: string | null): Promise<void> {
+async function cancelNotificationIds(
+  notificationId: string | null,
+  // [arch] TEMPORARY Bug 3 instrumentation (task 3.1) — remove in task 3.2.
+  // When true, log each cancel and any failure. Only the archive path passes this;
+  // all other callers keep the original silent-cancel behavior unchanged.
+  logArch = false
+): Promise<void> {
   const ids = parseNotificationIds(notificationId);
   const notificationService = createNotificationService();
   for (const id of ids) {
-    await notificationService.cancelScheduled(id).catch(() => {});
+    // [arch] TEMPORARY Bug 3 instrumentation (task 3.1) — remove in task 3.2.
+    if (__DEV__ && logArch) console.log('[arch] cancelling id=', id);
+    await notificationService.cancelScheduled(id).catch((err) => {
+      // [arch] TEMPORARY Bug 3 instrumentation (task 3.1) — remove in task 3.2.
+      // Observe swallowed cancel failures (cause #1/#2); behavior unchanged (still swallowed).
+      if (__DEV__ && logArch) console.log('[arch] cancel FAILED id=', id, err);
+    });
   }
 }

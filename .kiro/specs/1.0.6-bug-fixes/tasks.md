@@ -360,7 +360,7 @@ silently-swallowed `try/catch`; `disableForCard` cancels stored notification ids
 reminder still fires on a real 1.0.5 iPhone. The concrete fix is chosen on-device from the log
 table — so **this bug cannot be fully closed in-repo**; it needs the operator's device log.
 
-- [ ] **3.1 OPERATOR instrumentation — add the `__DEV__` log table and hand over the on-device repro.**
+- [x] **3.1 OPERATOR instrumentation — add the `__DEV__` log table and hand over the on-device repro.** _(Done: all `[arch]`-tagged `__DEV__` logs are in place in `cardService.archive`/`reminderService.disableForCard`/`reconcileRemindersOnLaunch`, plus the operator repro/log-reading guide at `.kiro/specs/1.0.6-bug-fixes/bug3-instrumentation-guide.md`. The fix (3.2) awaits the operator's device logs.)_
   - Add `if (__DEV__) console.log(...)` at the design's decision points (remove ALL of these
     before the final commit per the debugging steering rule):
     - `cardService.archive` (`src/services/cardService.ts`): a `build-marker` log on first run
