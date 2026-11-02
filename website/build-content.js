@@ -369,6 +369,10 @@ function build() {
     topics: t.topics,
     heroImage: t.heroImage,
     cta: t.cta,
+    // Raw-markdown body in the shared index so the drip email and the in-app tip detail
+    // render the SAME full content as the website article (Bug 1 — tip consistency).
+    // Each surface renders this one source string in the way that fits its medium.
+    body: t.body,
     url: `/tips/${t.slug}`,
     publishedAt: t.publishedAt,
   }));

@@ -4,6 +4,7 @@
  */
 
 import type { NavigatorScreenParams } from '@react-navigation/native';
+import type { Tip } from '@/types/tips';
 
 export type MainTabParamList = {
   Wallet:
@@ -29,6 +30,8 @@ export type RootStackParamList = {
   Archive: undefined;
   Settings: undefined;
   Tips: undefined;
+  /** Bug 1 (1.0.6): native tip detail. Receives the whole Tip (the feed already holds it). */
+  TipDetail: { tip: Tip };
   CrisisResources: undefined;
   UsageHistory: { cardId: string };
   ReminderConfig: { cardId: string };

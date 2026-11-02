@@ -16,9 +16,9 @@
  *   GET  /health       — health check (no auth)
  */
 
-import { resolveNextStep, deriveTestAges, type SequenceStep } from './drip';
-import { ADMIN_HTML } from './adminPage';
-import { buildDripSummary } from './dripSummary';
+import { resolveNextStep, deriveTestAges, type SequenceStep } from './drip.ts';
+import { ADMIN_HTML } from './adminPage.ts';
+import { buildDripSummary } from './dripSummary.ts';
 
 export interface Env {
   DB: D1Database;
@@ -431,7 +431,7 @@ async function handleSendTest(request: Request, env: Env): Promise<Response> {
 
 // --- Route: POST /send-tip (admin) ---
 
-interface TipPayload {
+export interface TipPayload {
   title: string;
   summary: string;
   body?: string;
@@ -439,7 +439,7 @@ interface TipPayload {
   cta?: { label?: string; url?: string };
 }
 
-function parseTip(raw: unknown): TipPayload | null {
+export function parseTip(raw: unknown): TipPayload | null {
   if (typeof raw !== 'object' || raw === null) return null;
   const t = raw as Record<string, unknown>;
   const title = typeof t.title === 'string' ? t.title.trim() : '';
@@ -462,15 +462,18 @@ function parseTip(raw: unknown): TipPayload | null {
  * The drip pass fetches this to get tip content server-side (the worker has no filesystem
  * access to content/tips/*.md; local scripts pass content in by request body, but the cron
  * cannot). The index carries exactly the fields the email needs: title, summary, heroImage,
- * cta. Body is intentionally absent (email leads with summary + CTA; the body lives on the
- * web page the CTA links to).
+ * cta, and the full raw-markdown `body`. The body is now included so the drip email renders
+ * the SAME full content as the website article and the in-app tip detail (Bug 1 — tip
+ * consistency). Once the entry carries `body`, parseTip populates TipPayload.body and
+ * sendTipEmail's existing body rendering produces the full email with no further change.
  */
-interface ContentIndexEntry {
+export interface ContentIndexEntry {
   slug: string;
   title: string;
   summary: string;
   heroImage?: string;
   cta?: { label?: string; url?: string };
+  body?: string;
 }
 
 /**

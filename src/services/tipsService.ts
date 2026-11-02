@@ -2,8 +2,8 @@
  * tipsService — fetches the published tips index from the marketing site and
  * caches it locally so the in-app feed still works offline after a first load.
  *
- * The app renders the list only; full articles open on the website (in-app browser).
- * No PII, no auth — a public JSON GET.
+ * The feed lists these; since 1.0.6 (Bug 1) a tapped tip opens the native TipDetailScreen,
+ * which renders the tip's full `body` and CTA in-app. No PII, no auth — a public JSON GET.
  */
 
 import { File, Paths } from 'expo-file-system';
@@ -20,8 +20,11 @@ function cacheFile(): File {
   return new File(Paths.cache, CACHE_FILENAME);
 }
 
-/** Validate + normalize one raw index entry into a Tip (or null if malformed). */
-function parseTip(raw: unknown): Tip | null {
+/**
+ * Validate + normalize one raw index entry into a Tip (or null if malformed).
+ * Exported for unit testing (pure, side-effect-free).
+ */
+export function parseTip(raw: unknown): Tip | null {
   if (typeof raw !== 'object' || raw === null) return null;
   const r = raw as Record<string, unknown>;
   const slug = typeof r.slug === 'string' ? r.slug : '';
@@ -43,7 +46,12 @@ function parseTip(raw: unknown): Tip | null {
     }
   }
 
-  return { slug, title, summary, type, topics, heroImage, cta, url, publishedAt };
+  // Full raw-markdown body (Bug 1 — tip consistency). Optional: older/short tips carry none.
+  const body = typeof r.body === 'string' && r.body.length > 0 ? r.body : undefined;
+
+  const tip: Tip = { slug, title, summary, type, topics, heroImage, cta, url, publishedAt };
+  if (body !== undefined) tip.body = body;
+  return tip;
 }
 
 function parseIndex(text: string): Tip[] {

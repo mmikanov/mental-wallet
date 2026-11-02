@@ -2,10 +2,11 @@
  * TipsFeedScreen — a browsable feed of the app's curated tips.
  *
  * Thin index: fetches the website's published tips index, renders a searchable /
- * filterable / sortable list of tip cards, and opens a tapped tip's full article in an
- * in-app browser. The app never renders tip bodies (the website is the single content home).
+ * filterable / sortable list of tip cards, and opens a tapped tip in the native
+ * TipDetailScreen (Bug 1, 1.0.6) — which renders the tip's full body + CTA in-app, matching
+ * the website article and the drip email.
  *
- * Implements: in-app-tips-feed spec (Requirements 1-6).
+ * Implements: in-app-tips-feed spec (Requirements 1-6); 1.0.6-bug-fixes Bug 1 (Req 1.9).
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -19,14 +20,12 @@ import {
   ActivityIndicator,
   RefreshControl,
   ScrollView,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as WebBrowser from 'expo-web-browser';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import type { Tip, TipType } from '@/types/tips';
-import { getTips, resolveTipUrl } from '@/services/tipsService';
+import { getTips } from '@/services/tipsService';
 import { logEvent } from '@/services/analyticsEventLogger';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Tips'>;
@@ -106,23 +105,15 @@ export default function TipsFeedScreen({ navigation }: Props) {
     return out;
   }, [tips, query, typeFilter, topicFilter, sortKey]);
 
-  const openTip = useCallback(async (tip: Tip) => {
-    const url = resolveTipUrl(tip);
-    try {
+  const openTip = useCallback(
+    (tip: Tip) => {
+      // Bug 1 (1.0.6): open the native TipDetailScreen instead of the in-app browser, so the
+      // tip renders the full body + a native CTA in-app (and the CTA can navigate natively).
       void logEvent('tip_opened', { slug: tip.slug });
-      await WebBrowser.openBrowserAsync(url, {
-        presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
-        controlsColor: '#4A90D9',
-        toolbarColor: '#FFFFFF',
-      });
-    } catch (err) {
-      Alert.alert(
-        "Couldn't open tip",
-        `Something went wrong opening this tip.\n\n${url}`,
-        [{ text: 'OK' }]
-      );
-    }
-  }, []);
+      navigation.navigate('TipDetail', { tip });
+    },
+    [navigation]
+  );
 
   const renderTip = useCallback(
     ({ item }: { item: Tip }) => (

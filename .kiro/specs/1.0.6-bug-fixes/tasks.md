@@ -203,7 +203,8 @@ native `navigation.navigate(...)` via a pure `tipCtaToNavigation` mapper (shared
 
 ### Website — the single source now emits the body
 
-- [ ] **1.1 Exploration + fix — add `body` (and keep `cta`) to the generated `content/index.json`.**
+- [x] **1.1 Exploration + fix — add `body` (and keep `cta`) to the generated `content/index.json`.**
+  - _As-built:_ added `body: t.body` to the `index` mapping in `website/build-content.js` (renderArticle untouched). Rebuilt; `content/index.json` now carries a non-empty `body` on all 12 tips and `cta`. Node assertion for slug `add-your-own-tool`: `body len=1509`, `cta.url=.../app/create-tool`. The regenerated `tips/add-your-own-tool.html` also picked up the committed Wave-2 CTA (`add-tool`→`create-tool`).
   - Exploration/baseline: with a Node assertion over the output of `website/build-content.js`
     (the project has no website test runner — a small throwaway `node -e` script or a check in
     CI), confirm the current `index.json` entry has NO `body` (the bug), then add it.
@@ -218,7 +219,8 @@ native `navigation.navigate(...)` via a pure `tipCtaToNavigation` mapper (shared
 
 ### Worker — carry the body into the email (full body)
 
-- [ ] **1.2 Exploration test — the email omits the body because the index carries none (FAILS on unfixed code).**
+- [x] **1.2 Exploration test — the email omits the body because the index carries none (FAILS on unfixed code).**
+  - _As-built:_ new `messaging-worker/src/sendTip.test.ts` imports `parseTip` + `ContentIndexEntry` from `index.ts` (both now exported) and feeds an index entry typed as `ContentIndexEntry` that includes a `body`. Exploration signal is a typecheck error on unfixed code — `tsc` reported `'body' does not exist in type 'ContentIndexEntry'` at that literal BEFORE the 1.4 fix; after the fix the typecheck is clean and the runtime assertion (`TipPayload.body` populated) passes. To make `index.ts` loadable by `node --test --experimental-strip-types`, its three internal relative imports were given `.ts` extensions (matching the existing `drip.test.ts` convention) and `allowImportingTsExtensions: true` was added to the worker tsconfig; wrangler dry-build + worker `tsc -p` stay clean.
   - In a new `messaging-worker/src/sendTip.test.ts` (or extend an existing worker test), feed a
     `ContentIndexEntry` that INCLUDES a `body` through the `fetchTipIndex`→`parseTip` mapping (call
     `parseTip` directly on an index-shaped object) and assert the resulting `TipPayload.body` is
@@ -228,14 +230,16 @@ native `navigation.navigate(...)` via a pure `tipCtaToNavigation` mapper (shared
   - _Verify (UNIT-PROVABLE):_ `cd messaging-worker && npm test` — fails on unfixed code.
     _Requirements: 1.2, V.1 (assembly layer only)_
 
-- [ ] **1.3 Preservation test — a body-less tip still renders title + summary + CTA (PASSES on unfixed code).**
+- [x] **1.3 Preservation test — a body-less tip still renders title + summary + CTA (PASSES on unfixed code).**
+  - _As-built:_ second test in `sendTip.test.ts` — a body-less `ContentIndexEntry` yields `TipPayload.body === undefined` while title/summary/CTA survive. Green before and after the fix.
   - In the same worker test, assert `parseTip` on an entry with NO `body` yields a `TipPayload`
     with `body === undefined`, and that the email-body rendering logic degrades gracefully (no
     body paragraphs, CTA/summary still present). Passes now and after the fix.
   - Files: `messaging-worker/src/sendTip.test.ts`
   - _Verify (UNIT-PROVABLE):_ `cd messaging-worker && npm test` — passes now. _Requirements: 1.2, 1.7_
 
-- [ ] **1.4 Fix — pass `body` through the worker's content index.**
+- [x] **1.4 Fix — pass `body` through the worker's content index.**
+  - _As-built:_ added `body?: string` to `ContentIndexEntry` and updated its comment (no longer "intentionally absent"). `parseTip` already mapped `body`, so `fetchTipIndex`→`parseTip`→`TipPayload.body`→`sendTipEmail`'s existing body rendering now produces the full email with no change to the send/greeting/signature/compliance path. After the fix: worker `npm test` 32/32 pass; `tsc --noEmit -p tsconfig.json` clean; wrangler dry-build OK. REAL-SEND parity remains an operator check (V.1).
   - `messaging-worker/src/index.ts`: add `body?: string` to the `ContentIndexEntry` interface (and
     update its comment — the body is no longer "intentionally absent"). `parseTip` already maps a
     `body` field, so once `ContentIndexEntry` carries it, `fetchTipIndex`→`parseTip` populates
@@ -251,7 +255,8 @@ native `navigation.navigate(...)` via a pure `tipCtaToNavigation` mapper (shared
 
 ### App — add the dependency and the shared CTA mapper
 
-- [ ] **1.5 Add `react-native-markdown-display` (pinned) and confirm it fits Expo SDK 54 / RN 0.81.**
+- [x] **1.5 Add `react-native-markdown-display` (pinned) and confirm it fits Expo SDK 54 / RN 0.81.**
+  - _As-built:_ pinned `react-native-markdown-display@7.0.2` (exact) in `package.json` dependencies; `npm install` OK. Confirmed pure-JS at task time: its deps are `markdown-it`, `css-to-react-native`, `prop-types`, `react-native-fit-image` — no native module to bridge, so New-Architecture / SDK-54 / RN-0.81 safe (no native rebuild of its own). Baseline after install: app `npm run typecheck` shows only the repo's pre-existing errors (walletStore/kpiStore/sessionStore/workers etc.) — no NEW ones — and the Bug-1 tests are green (import added in 1.8).
   - Add `react-native-markdown-display` to `package.json` `dependencies` with a pinned exact
     version (choose the current stable, e.g. `7.0.2` — confirm the exact latest at task time). It
     is pure-JS (no native module), so it needs no native rebuild of its own and works under the
@@ -262,7 +267,8 @@ native `navigation.navigate(...)` via a pure `tipCtaToNavigation` mapper (shared
     the pinned version and that New-Arch/SDK-54 compatibility was confirmed at task time.
   - _Requirements: 1.1 (enables native body rendering)_
 
-- [ ] **1.6 Exploration + fix — the pure `tipCtaToNavigation` mapper.**
+- [x] **1.6 Exploration + fix — the pure `tipCtaToNavigation` mapper.**
+  - _As-built:_ exploration test created first (`src/services/__tests__/tipCtaNavigation.test.ts`) — failed with "module not found" before the module existed. Added `src/services/tipCtaNavigation.ts`: pure `tipCtaToNavigation(url)` returning `{ screen, params? } | null`. Mirrors linking.ts: strips `mentalwallet://` or `.../app` prefix + leading/trailing slash, then maps `create-tool`→CardCreator, `add-tool`(+`?filter=apps`→`initialFilter`)→LibraryBrowser, `wallet`/`how-i-feel`/`checkin`/`learn-more-tour`→MainTabs/Wallet (nested param shape, matching the app's `navigate('MainTabs', { screen:'Wallet', params:{...} })`); external/unmapped→null. 10/10 tests pass; no new typecheck errors.
   - Exploration test FIRST: create `src/services/__tests__/tipCtaNavigation.test.ts` asserting
     `tipCtaToNavigation('https://.../app/create-tool')` → `{ screen: 'CardCreator' }`,
     `.../app/add-tool` → `{ screen: 'LibraryBrowser' }` (and `?filter=apps` →
@@ -281,7 +287,8 @@ native `navigation.navigate(...)` via a pure `tipCtaToNavigation` mapper (shared
 
 ### App — native tip detail screen + feed rewire
 
-- [ ] **1.7 Add the `body` field to the app's Tip type and carry it through `tipsService`.**
+- [x] **1.7 Add the `body` field to the app's Tip type and carry it through `tipsService`.**
+  - _As-built:_ added `body?: string` to `Tip` (`src/types/tips.ts`) and relaxed the "never renders tip bodies" header comment (now documents native TipDetail rendering + the Req 1.6 figure exception). `tipsService.parseTip` reads a non-empty string `r.body` into the returned `Tip` (empty/non-string → undefined); `parseTip` exported for unit testing. New colocated `src/services/__tests__/tipsService.test.ts` (5 tests): body carried through, missing/empty/non-string body tolerated, malformed entry → null. All green; no new typecheck errors.
   - `src/types/tips.ts`: add `body?: string` to the `Tip` interface (and relax the file-header
     comment that says the app "never renders tip bodies").
   - `src/services/tipsService.ts`: in `parseTip`, read `r.body` (string, optional) into the
@@ -290,7 +297,8 @@ native `navigation.navigate(...)` via a pure `tipCtaToNavigation` mapper (shared
   - Files: `src/types/tips.ts`, `src/services/tipsService.ts`, `src/services/__tests__/tipsService.test.ts`
   - _Verify (UNIT-PROVABLE):_ `npm test -- tipsService && npm run typecheck`. _Requirements: 1.1, 1.5_
 
-- [ ] **1.8 Register the `TipDetail` route and build `TipDetailScreen`.**
+- [x] **1.8 Register the `TipDetail` route and build `TipDetailScreen`.**
+  - _As-built:_ added `TipDetail: { tip: Tip }` to `RootStackParamList` (+`Tip` import) in `src/navigation/types.ts`; registered `<Stack.Screen name="TipDetail" component={TipDetailScreen} />` as a push screen in `RootNavigator.tsx` (matching `Tips`/`UsageHistory`). New `src/screens/TipDetailScreen.tsx` renders title, hero `Image` (when `heroImage` set, `testID="tip-hero-image"`), body via `react-native-markdown-display` (prose/lists/bold; raw-HTML `<figure class="tip-media">` NOT rendered — hero carries that media, Req 1.6; falls back to summary when no body), and a native CTA button labeled from `tip.cta.label`. CTA calls `tipCtaToNavigation`; non-null → `navigation.navigate(screen, params)` (via a loosely-typed navigate for the dynamic dispatch), else `Linking.openURL`. `SafeAreaView` from `react-native-safe-area-context`. Logs `tip_opened` on CTA press (existing event type). Test `src/screens/__tests__/TipDetailScreen.test.tsx` (4 tests, @testing-library/react-native; markdown mocked to Text): asserts title/hero/full-body/CTA present and that pressing the create-tool CTA calls `navigate('CardCreator', undefined)`. All green; no new typecheck errors.
   - `src/navigation/types.ts`: add `TipDetail: { tip: Tip }` to `RootStackParamList` (pass the
     whole `Tip` object as the param — the feed already holds it; avoids a re-fetch/not-found path).
     Import the `Tip` type.
@@ -311,7 +319,8 @@ native `navigation.navigate(...)` via a pure `tipCtaToNavigation` mapper (shared
     with `CardCreator` for a `create-tool` CTA. `npm test -- TipDetailScreen && npm run typecheck`.
     _Requirements: 1.1, 1.3, 1.6, 1.8, 1.9, 1.10_
 
-- [ ] **1.9 Exploration + fix — rewire `TipsFeedScreen` to open the native detail instead of the in-app browser.**
+- [x] **1.9 Exploration + fix — rewire `TipsFeedScreen` to open the native detail instead of the in-app browser.**
+  - _As-built:_ exploration test created first (`src/screens/__tests__/TipsFeedScreen.test.tsx`) — on unfixed code `navigation.navigate` was called 0 times (tap went to `WebBrowser.openBrowserAsync`), so the "navigates to TipDetail" assertion FAILED (recorded). Fix: `openTip` now `navigation.navigate('TipDetail', { tip })` and logs `tip_opened`; removed the `expo-web-browser`, `resolveTipUrl`, and now-unused `Alert` imports from this screen (grep confirmed `resolveTipUrl` has no other callers; left in `tipsService.ts` per task). Feed list UI unchanged; header comment updated. After the fix the test passes; no new typecheck errors.
   - Exploration test FIRST: in a new `src/screens/__tests__/TipsFeedScreen.test.tsx`, render the
     feed with fixture tips, tap a card, and assert it navigates to `TipDetail` (mock the navigation
     prop). On unfixed code the tap calls `WebBrowser.openBrowserAsync` and does NOT navigate, so the
@@ -326,7 +335,8 @@ native `navigation.navigate(...)` via a pure `tipCtaToNavigation` mapper (shared
   - Files: `src/screens/TipsFeedScreen.tsx`, `src/screens/__tests__/TipsFeedScreen.test.tsx` (new)
   - _Verify (UNIT-PROVABLE):_ `npm test -- TipsFeedScreen && npm run typecheck`. _Requirements: 1.9, 1.10_
 
-- [ ] **1.10 Checkpoint — Bug 1 green across all three surfaces (unit layer).**
+- [x] **1.10 Checkpoint — Bug 1 green across all three surfaces (unit layer).**
+  - _As-built:_ App — `jest tipsService tipCtaNavigation TipDetailScreen TipsFeedScreen` → 20/20 pass; `linking`+`tips` suites 61/61 (no regression); `npm run typecheck` introduces NO new app `src/` error-bearing files vs. the pre-existing baseline. Worker — `npm test` 32/32, `tsc -p tsconfig.json` clean, `wrangler deploy --dry-run` OK. Website — `npm run build:content` OK; all 12 index entries carry a `body`; `add-your-own-tool` body len 1509 + `cta.url=.../app/create-tool`. ON-DEVICE / REAL-SEND (V.1) NOT proven here: that the SAME tip matches across website + a sent drip email + a device app build, and that the in-app CTA opens Create Tool on a cold native build, needs a real drip send + a device build + the website — unit tests cover content assembly + route mapping + screen render only.
   - Run the app suite (tips/mapper/screens) + typecheck, the worker suite + typecheck, and the
     website build + index assertion.
   - _Verify (UNIT-PROVABLE):_ `npm test -- tips tipCtaNavigation TipDetailScreen TipsFeedScreen`

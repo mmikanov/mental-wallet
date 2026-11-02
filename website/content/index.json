@@ -14,6 +14,7 @@
       "label": "Create your own tool",
       "url": "https://mentalhealthwallet.productsforgood.co/app/create-tool"
     },
+    "body": "The curated library is a starting point, not a limit. If the tool you want doesn't exist,\nyou can build it yourself, and it lives right inside the app, not off in another app.\n\nOpen the menu (the ⋮ at the top right of your wallet) and choose **Create Tool**. Give it a\nname and an icon, then start adding blocks. Each block is a piece you can use: a **Text\nInput** or **Text Area** for writing, a **Mood Slider** to rate how you feel, **Choice\nButtons** to pick from options, a **Checkbox** for a simple yes, a **Counter** to tally\nsomething, even a bit of **Static Text** to remind yourself what to do. Stack them in any\norder.\n\nSay you want a nightly wind-down: add a Mood Slider (\"How wound up are you?\"), a Text Area\n(\"What's on your mind?\"), and a Checkbox (\"Screens off\"). Save it, and it sits in your\nwallet like any other card. When you open it, you fill it in right there, and every entry is\nlogged, so it feeds your streaks and Insights just like the built-in tools.\n\n<figure class=\"tip-media\">\n  <img src=\"https://mentalhealthwallet.productsforgood.co/assets/tip-media/add-your-own-tool.gif\" width=\"240\" alt=\"Building a custom coping tool from blocks and using it inside the app.\" />\n  <figcaption>Stack the blocks you want into your own tool, then use it right in the app.</figcaption>\n</figure>\n\nThis is different from adding an app you launch elsewhere. This tool is yours, and you use\nit in the moment, inside the app. Start with one block and add from there. Whatever helps\nyou, you can build.",
     "url": "/tips/add-your-own-tool",
     "publishedAt": "2026-09-10"
   },
@@ -31,6 +32,7 @@
       "label": "Reorder your wallet",
       "url": "https://mentalhealthwallet.productsforgood.co/app/wallet"
     },
+    "body": "Your wallet is personal, so the order of your tools should be too. If the one you reach for\nevery day is buried near the bottom, a few seconds fixes that.\n\nPress and hold any card in your wallet. That opens **Reorder Cards**, a simple list of all\nyour tools. Use the up and down arrows next to each one to move it, nudging your favorites\ntoward the top and the ones you rarely touch further down. When it looks right, tap\n**Done** to save the new order.\n\n<figure class=\"tip-media\">\n  <img src=\"https://mentalhealthwallet.productsforgood.co/assets/tip-media/reorder-tools.gif\" width=\"240\" alt=\"Long-pressing a card, moving it with the arrows, and saving the new order.\" />\n  <figcaption>Press and hold a card, reorder with the arrows, then tap Done.</figcaption>\n</figure>\n\nThat's it. The next time you open the app, the tools that matter most are right where you\nwant them, ready the moment you need them.",
     "url": "/tips/reorder-tools",
     "publishedAt": "2026-09-10"
   },
@@ -48,6 +50,7 @@
       "label": "Tidy up your wallet",
       "url": "https://mentalhealthwallet.productsforgood.co/app/wallet"
     },
+    "body": "Your needs change over time, and your wallet can change with them. A tool that helped last\nmonth might just be in the way today. Instead of deleting it, you can archive it.\n\nTap the tool to open it, then tap the **⋮** menu and choose **Archive card**. It leaves your\nwallet right away, so what's left is only what you're actually using now. Nothing is lost:\nyour usage history, streaks, and past entries all stay intact.\n\nWhen you want it back, open the **⋮** menu at the top of your wallet and tap **Archive**.\nThere you'll find everything you've set aside. Tap **Restore to Wallet** on any card and it\nreturns, right where it was.\n\n<figure class=\"tip-media\">\n  <img src=\"https://mentalhealthwallet.productsforgood.co/assets/tip-media/archive-restore-tools.gif\" width=\"240\" alt=\"Archiving a tool from its menu, then restoring it from the Archive screen.\" />\n  <figcaption>Archive a tool to tidy up, then restore it any time — nothing is lost.</figcaption>\n</figure>\n\nArchiving is always reversible, so there's no pressure. Clear the space you need today, and\nbring tools back the moment they're useful again.",
     "url": "/tips/archive-restore-tools",
     "publishedAt": "2026-09-10"
   },
@@ -66,6 +69,7 @@
       "label": "Create your own tool",
       "url": "https://mentalhealthwallet.productsforgood.co/app/add-tool"
     },
+    "body": "The library has cards for a lot of popular apps, but it can't cover everything. If the app\nyou rely on isn't there, you don't have to go without. You can add it yourself.\n\nOpen the menu (the ⋮ at the top right of your wallet) and choose **Create Tool**. Give your\ncard a name and an icon in the first step. In the next step, tap Add block and pick\nLink Button. That's the piece that turns your card into a launcher.\n\nFill in three things: a Label for the button (like \"Open my app\"), a Target URL, and an\noptional Fallback URL. For the target, use the app's website (starting with https://), or\nits link if you know it. Set the fallback to somewhere useful, like the app's website, so\nyou still land somewhere if the app isn't installed. Then preview and save.\n\n<figure class=\"tip-media\">\n  <img src=\"https://mentalhealthwallet.productsforgood.co/assets/tip-media/add-your-own-app.gif\" width=\"240\" alt=\"Creating a Link Button card for an app and saving it to the wallet.\" />\n  <figcaption>Add a Link Button, give it a name and a link, and it lands in your wallet.</figcaption>\n</figure>\n\nNow that card lives in your wallet alongside everything else, and tapping its button opens\nyour app. Your whole toolkit stays in one place, even the parts we didn't think of.",
     "url": "/tips/add-your-own-app",
     "publishedAt": "2026-09-09"
   },
@@ -84,6 +88,7 @@
       "label": "Start from how I feel",
       "url": "https://mentalhealthwallet.productsforgood.co/app/how-i-feel"
     },
+    "body": "When anxiety hits, the last thing you want is to scroll around deciding what might help.\nSo let the app do that part.\n\nOpen Mental Health Wallet and tap **Start from how I feel**. Choose anxious. It'll suggest\ntools that tend to help with that state, often a short grounding or breathing exercise you\ncan do right where you are. Pick one and follow it for a minute.\n\n<figure class=\"tip-media\">\n  <img src=\"https://mentalhealthwallet.productsforgood.co/assets/tip-media/feeling-anxious.gif\" width=\"240\" alt=\"Choosing anxious, opening a suggested grounding tool, and filling it in.\" />\n  <figcaption>Tell the app you're anxious and it points you to a tool you can do right now.</figcaption>\n</figure>\n\nNot even sure \"anxious\" is the word? Use the guided check-in and it'll help you land on what\nyou're feeling first, then suggest from there.\n\nYou don't have to ride it out alone or white-knuckle through it. A minute with the right\ntool can take the edge off. Keep this one in your back pocket for the next time it creeps up.",
     "url": "/tips/feeling-anxious",
     "publishedAt": "2026-09-05"
   },
@@ -101,6 +106,7 @@
       "label": "Open your wallet",
       "url": "https://mentalhealthwallet.productsforgood.co/app/wallet"
     },
+    "body": "It's been a little while, and that's completely okay. Life gets busy, and a tools app should\nfit around your life, not nag at it.\n\nNo streak to keep up, no catching up to do. If right now happens to be a good moment, open\nyour wallet and use one tool. A single 60-second reset counts. If now isn't the time, this\nemail needs nothing from you.\n\n<figure class=\"come-back-anim\" role=\"img\" aria-label=\"A quiet wallet with one calm tool card gently breathing, ready for a 60-second reset.\">\n  <div class=\"come-back-anim__stage\">\n    <div class=\"come-back-anim__ghost come-back-anim__ghost--a\"></div>\n    <div class=\"come-back-anim__ghost come-back-anim__ghost--b\"></div>\n    <div class=\"come-back-anim__card\">\n      <div class=\"come-back-anim__row\">\n        <span class=\"come-back-anim__icon\">🫁</span>\n        <span class=\"come-back-anim__title\">Box breathing</span>\n      </div>\n      <div class=\"come-back-anim__row\" style=\"justify-content:space-between\">\n        <span class=\"come-back-anim__sub\">A 60-second reset</span>\n        <span class=\"come-back-anim__timer\"></span>\n      </div>\n    </div>\n  </div>\n  <figcaption class=\"come-back-anim__caption\">Here whenever you need it.</figcaption>\n</figure>\n\nEither way, it's here when you need it. That's the point.",
     "url": "/tips/come-back-reset",
     "publishedAt": "2026-09-05"
   },
@@ -118,6 +124,7 @@
       "label": "Open the app and tap a card",
       "url": "https://mentalhealthwallet.productsforgood.co/app/wallet"
     },
+    "body": "Thanks for signing up. Glad to have you.\n\nHere's the deal with these emails: every now and then I'll send a short, practical tip to\nhelp you get more out of the app, and, if you asked for them, the occasional gentle reminder\nto come back. No spam, no pressure. You can change what you receive or stop anytime from the\nlink at the bottom of any email.\n\nIf you want one small thing to try right now: open the app and tap a card to use a tool.\nThat's the whole idea, a small toolkit of things that help, ready when you need them.\n\n<figure class=\"tip-anim\" role=\"img\" aria-label=\"A few coping-tool cards settling into a wallet, then gently glowing.\">\n  <div class=\"tip-anim__stage\">\n    <div class=\"tip-anim__card tip-anim__card--4\"><span class=\"tip-anim__icon\">🌿</span>Grounding</div>\n    <div class=\"tip-anim__card tip-anim__card--3\"><span class=\"tip-anim__icon\">💡</span>Reframe a thought</div>\n    <div class=\"tip-anim__card tip-anim__card--2\"><span class=\"tip-anim__icon\">🫁</span>Box breathing</div>\n    <div class=\"tip-anim__card tip-anim__card--1\"><span class=\"tip-anim__icon\">🌱</span>Daily check-in</div>\n  </div>\n  <figcaption class=\"tip-anim__caption\">Your toolkit, ready when you need it.</figcaption>\n</figure>\n\nThat's it for now. More soon, and only when it's actually useful.",
     "url": "/tips/welcome",
     "publishedAt": "2026-09-05"
   },
@@ -135,6 +142,7 @@
       "label": "Browse app cards to add",
       "url": "https://mentalhealthwallet.productsforgood.co/app/add-tool?filter=apps"
     },
+    "body": "Mental Health Wallet isn't trying to replace the wellness apps you already like. It's\nmeant to sit on top of everything you use, so your whole toolkit lives in one place.\n\nWhen you go to add tools, you'll find cards for apps like Headspace, Calm, Insight Timer,\nand more. Add any of them to your wallet, and you can launch the app right from its card.\nAlongside your quick techniques and your own custom tools, everything sits together, and\nthe app can help point you to the right one based on how you feel.\n\n<figure class=\"tip-media\">\n  <img src=\"https://mentalhealthwallet.productsforgood.co/assets/tip-media/discover-third-party-apps.gif\" width=\"240\" alt=\"Browsing the library, adding Headspace as a card, and opening it from the wallet.\" />\n  <figcaption>Add the apps you already use, and launch them from your wallet.</figcaption>\n</figure>\n\nSo you don't have to choose between the app you love and having one organized home for your\ntools. You can have both.\n\nNext time you open the app, tap the menu, choose Add Tool, and look for the app cards. Add\nthe one you already use most.",
     "url": "/tips/discover-third-party-apps",
     "publishedAt": "2026-09-04"
   },
@@ -152,6 +160,7 @@
       "label": "Try Start from how I feel",
       "url": "https://mentalhealthwallet.productsforgood.co/app/how-i-feel"
     },
+    "body": "Most tools ask you to already know what you're looking for. Mental Health Wallet can work\nthe other way around: start from how you feel, and let it point you to something that fits.\n\nOn your wallet, tap the **Start from how I feel** card. Pick the emotion that matches where\nyou are right now. The app suggests tools that tend to help with that state, so you spend\nyour energy on the practice, not on searching.\n\n<figure class=\"tip-media\">\n  <img src=\"https://mentalhealthwallet.productsforgood.co/assets/tip-media/emotion-based-session.gif\" width=\"240\" alt=\"Tapping Start from how I feel, choosing an emotion, and getting suggested tools.\" />\n  <figcaption>Pick how you feel, and get tools that fit.</figcaption>\n</figure>\n\nNot sure what you're feeling? That happens. Tap the guided check-in instead. It asks a few\nsimple questions about your body, your mind, and your situation, and lands on a feeling\nwith you. From there you get the same tailored suggestions.\n\nIt takes under a minute, and there's no wrong answer. Next time you open the app and feel a\nlittle off but can't name it, this is a good place to start.",
     "url": "/tips/emotion-based-session",
     "publishedAt": "2026-09-04"
   },
@@ -169,6 +178,7 @@
       "label": "Use a tool and check in",
       "url": "https://mentalhealthwallet.productsforgood.co/app/wallet"
     },
+    "body": "It's easy to collect coping tools. It's harder to know which ones are actually doing\nsomething for you. Mental Health Wallet helps you find out.\n\nWhen you finish using a tool, it asks a simple question: how do you feel now? You pick from\ncalmer, clearer, hopeful, same, or worse. That's it, one tap.\n\nDo that a few times and a picture starts to form. The app shows you which tools tend to\nleave you feeling better, and which ones don't seem to land for you. Instead of guessing,\nyou get to lean on the tools that genuinely help, and quietly retire the ones that don't.\n\n<figure class=\"tip-media\">\n  <img src=\"https://mentalhealthwallet.productsforgood.co/assets/tip-media/outcome-capture.gif\" width=\"240\" alt=\"Finishing a tool, tapping how you feel, then opening Insights to see which tools help most.\" />\n  <figcaption>Check in after a tool, then open Insights to see which tools actually help.</figcaption>\n</figure>\n\nNext time you use a tool, take the extra second to answer the check-in. Future you will\nhave real data to work with.",
     "url": "/tips/outcome-capture",
     "publishedAt": "2026-09-04"
   },
@@ -186,6 +196,7 @@
       "label": "Log a check-in",
       "url": "https://mentalhealthwallet.productsforgood.co/app/checkin"
     },
+    "body": "\"Getting better\" means different things to different people. For one person it's managing\nstress; for another it's sleeping better, or feeling more present. Mental Health Wallet\nlets you define it on your own terms.\n\nDuring setup you pick what success means to you. From then on, the daily check-in, the\nseedling button on your wallet, lets you log how you're tracking against that personal\nmeasure. Not a one-size-fits-all wellness score, but the thing you actually care about.\n\n<figure class=\"tip-media\">\n  <img src=\"https://mentalhealthwallet.productsforgood.co/assets/tip-media/personal-kpi-check-in.gif\" width=\"240\" alt=\"Tapping the seedling check-in, rating your personal measure, and seeing your trend in Insights.\" />\n  <figcaption>Tap the seedling, log where you're at, and watch your own trend build in Insights.</figcaption>\n</figure>\n\nOver time those check-ins become a simple, honest record of your own progress. Some days\nup, some days down, and that's fine. The point is to see the trend in your own words.\n\nIf you set a personal measure during setup, try tapping the seedling today and logging\nwhere you're at. It only takes a moment.",
     "url": "/tips/personal-kpi-check-in",
     "publishedAt": "2026-09-04"
   },
@@ -203,6 +214,7 @@
       "label": "Open a tool and tap Learn more",
       "url": "https://mentalhealthwallet.productsforgood.co/app/learn-more-tour"
     },
+    "body": "A coping tool is easier to use when you understand why it's supposed to help. So the tools\nthat come with Mental Health Wallet don't just tell you what to do, they show you the\nreasoning.\n\nOpen any library tool and look for the **Learn more** link in its description. Tap it and\nyou'll see a plain-language explanation: how the technique works, the level of evidence\nbehind it, and a short summary of what research shows. For the ones where it makes sense,\nthere are further reading links so you can go deeper.\n\n<figure class=\"tip-media\">\n  <img src=\"https://mentalhealthwallet.productsforgood.co/assets/tip-media/learn-more-evidence.gif\" width=\"240\" alt=\"Tapping Learn more on a tool opens an explanation of how it works and the evidence behind it.\" />\n  <figcaption>Tap “Learn more” to see how a tool works and the evidence behind it.</figcaption>\n</figure>\n\nIt's expert-sourced, not marketing. The idea is simple: you should be able to answer \"why\nshould I trust this?\" before you rely on it.\n\nNext time a tool catches your eye, tap Learn more before you use it. A little context makes\nthe practice land better.",
     "url": "/tips/learn-more-evidence",
     "publishedAt": "2026-09-04"
   }
