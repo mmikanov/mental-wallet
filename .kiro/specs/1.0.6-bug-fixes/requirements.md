@@ -2,10 +2,17 @@
 
 ## Introduction
 
-This spec collects bug fixes targeted for the 1.0.6 release. They center on **tip content
-consistency** across the three places a tip appears (website, email, and in the app) and on a
-**deep link** that opens the wrong screen. The guiding principle for the content work, stated by
-the product owner:
+This spec collects bug fixes targeted for the 1.0.6 release:
+
+- **Bug 1 — tip content consistency** across the three places a tip appears (website, email,
+  in-app).
+- **Bug 2 — the "Create your own tool" deep link** opens the wrong screen (library instead of
+  the Create Tool builder).
+- **Bug 3 — an archived tool's reminder still fires** (app; a recurrence of a bug believed
+  fixed, still seen on 1.0.5).
+- **Bug 4 — an unsubscribed person is mislabeled "waiting"** in the operator drip summary email.
+
+The guiding principle for the content work (Bug 1), stated by the product owner:
 
 > A tip's actual content — its title, hero image, body, and call-to-action — should be the
 > **same everywhere it appears**. What changes between surfaces is only the surrounding
@@ -147,32 +154,110 @@ how other tip links behave when the app is absent.
 2.4 THE fix SHALL work for the tip's link wherever it appears (email CTA, website CTA, and the
 in-app CTA added in Bug 1), so all three send the reader to the Create Tool screen.
 
-### Requirement 3: Success Verification
+### Bug 3: An Archived Tool's Reminder Still Fires
+
+**User Story:** As a user, when I archive a tool that had a reminder, I expect the reminder to
+stop, so I'm not nudged to use a tool I've put away.
+
+#### Background
+
+When a user sets a reminder on a tool and then archives that tool, the reminder notification
+should stop. This was reported and believed fixed in a past release, but it is **still
+happening** — observed on a real iPhone running the current shipped app (1.0.5). So a prior fix
+either did not fully take or does not cover the real case on-device. Because the symptom is a
+device-level notification behavior, the cause is not obvious from reading the code, and a
+speculative fix risks repeating the "thought it was fixed" cycle.
+
+#### Acceptance Criteria
+
+3B.1 WHEN a user archives a tool that has an active reminder THE reminder's scheduled
+notifications SHALL stop firing; the user SHALL NOT receive further reminder notifications for
+an archived tool.
+
+3B.2 THE reminder definition SHALL be preserved (not deleted) so that restoring the tool can
+re-arm the reminder, consistent with today's intended archive/restore behavior.
+
+3B.3 WHEN an archived tool is restored THE reminder SHALL resume as before (this existing
+behavior SHALL NOT regress).
+
+3B.4 BEFORE a fix is proposed, the actual on-device cause SHALL be established by instrumenting
+the archive→reminder path on a real device (confirming whether the stored notification
+identifiers match what is actually scheduled, whether cancellation runs and succeeds, and
+whether anything reschedules it) — rather than shipping another speculative fix. (Per the
+debugging steering rule: get ground truth first.)
+
+3B.5 THE fix SHALL be covered by a regression test at the layer the bug is actually in (not only
+the layer that was already green), so this specific recurrence cannot silently return.
+
+### Bug 4: An Unsubscribed Person Is Reported as "Waiting" in the Operator Summary
+
+**User Story:** As the operator, I want the daily drip summary to correctly reflect people who
+have unsubscribed, so I'm not told someone is "waiting" for a campaign when they have actually
+opted out and will never receive it.
+
+#### Background
+
+The daily operator summary email classifies each considered subscriber as sent, failed,
+waiting, or finished. A person who has **unsubscribed** from the drip is currently shown as
+**waiting** — but they are not waiting for anything; they opted out and are not an eligible
+audience at all. "Waiting" implies "will receive it once eligible," which is misleading for
+someone who has left.
+
+#### Acceptance Criteria
+
+4.1 A subscriber who has unsubscribed (opted out of the relevant scope) SHALL NOT be reported as
+"waiting" in the operator summary, because they are not awaiting any send.
+
+4.2 THE summary's counts and per-subscriber classification SHALL treat an unsubscribed person as
+not part of the eligible/awaiting audience — either excluded from the considered set or shown
+under a clearly distinct label (for example, "unsubscribed"), not folded into "waiting".
+(Which of exclude-vs-label is chosen is a design decision recorded in `design.md`, but the
+outcome SHALL be that "waiting" means only genuinely-awaiting subscribers.)
+
+4.3 THE change SHALL only affect how people are **classified/reported** in the summary; it SHALL
+NOT change who actually receives email (consent enforcement already prevents sending to
+unsubscribed people — this is a reporting-accuracy fix).
+
+4.4 THE "waiting", "finished", and "sent" classifications for still-subscribed people SHALL
+remain correct and unchanged.
+
+### Success Verification (all bugs)
 
 **User Story:** As the operator, I want to confirm these fixes before relying on them in 1.0.6.
 
 #### Acceptance Criteria
 
-3.1 FOR Bug 1: the same tip SHALL be shown on the website, in a sent email, and in the app, and
+V.1 FOR Bug 1: the same tip SHALL be shown on the website, in a sent email, and in the app, and
 the title, hero, body, and CTA SHALL match across all three (only the surrounding context
 differs).
 
-3.2 FOR Bug 2: tapping "Create your own tool" SHALL open the Create Tool builder on a build that
+V.2 FOR Bug 2: tapping "Create your own tool" SHALL open the Create Tool builder on a build that
 has the fix; and the Add Tool library link SHALL still open the library.
 
-3.3 THE deep-link behavior that depends on the installed native app SHALL be verified on a real
+V.3 THE deep-link behavior that depends on the installed native app SHALL be verified on a real
 device/build (it cannot be fully proven by automated tests alone); the route-resolution layer
 SHALL be covered by automated tests.
 
+V.4 FOR Bug 3 (archived-tool reminder): on a real device, archiving a tool with a reminder SHALL
+stop its notifications, and restoring SHALL resume them. Because this is a device-level
+notification behavior, the fix SHALL be confirmed on-device (not claimed from unit tests alone),
+with a regression test added at the layer the root cause is found.
+
+V.5 FOR Bug 4 (unsubscribed → "waiting"): a summary generated over a set including an
+unsubscribed person SHALL NOT classify that person as "waiting"; this SHALL be covered by an
+automated test over a representative plan, and the summary-builder logic is unit-testable
+(no device needed).
+
 ## Out of Scope
 
-- **Bug 3 (Universal Link not opening the installed app from the website).** The web
-  association files are already served and authorize the app's link paths; when the website CTA
-  opens the install page instead of the app, the cause is device/native-side (link association
-  caching, the app's associated-domains configuration, or how the link was opened) and must be
-  **diagnosed on a real device first**, per the debugging steering rule. It is tracked
-  separately and intentionally not bundled into this spec's fixes until there is a confirmed
-  root cause from on-device instrumentation.
+- **Website Universal Link not opening the installed app (the original "bug 3" from the report).**
+  The web association files are already served and authorize the app's link paths; when the
+  website CTA opens the install page instead of the app, the cause is device/native-side (link
+  association caching, the app's associated-domains configuration, or how the link was opened)
+  and must be **diagnosed on a real device first**, per the debugging steering rule. It is
+  tracked separately and intentionally not bundled into this spec's fixes until there is a
+  confirmed root cause from on-device instrumentation. (Not to be confused with this spec's
+  **Bug 3 = archived-tool reminder**.)
 - Authoring new tip content or changing any tip's wording (this is about rendering existing
   content consistently, not rewriting it).
 - Changing the set of tips in the drip sequence or who receives them.
@@ -202,10 +287,32 @@ SHALL be covered by automated tests.
   equivalent), and wire the CTA to in-app navigation keyed off the tip's CTA route — not off
   opening the URL. The website and email CTAs stay ordinary links.
 - **Deep-link root cause (for `design.md`):** there is currently no "Create Tool" deep-link
-  route; only an "Add Tool" → library route exists, and the tip's CTA points at it. The design
-  must add a Create-Tool route to the app's deep-link table, point the tip's CTA at it, and add
-  the matching not-installed fallback message. Route parsing is unit-testable; the on-device
-  open is the honest caveat (Req 3.3).
+  route; only an "Add Tool" → library route exists (`add-tool` → `LibraryBrowser` in
+  `src/navigation/linking.ts`), and the tip's CTA (`content/tips/add-your-own-tool.md`) points
+  at `.../app/add-tool`. The design must add a Create-Tool route to the app's deep-link table,
+  point the tip's CTA at it (e.g. `.../app/create-tool`), and add the matching not-installed
+  fallback message in `website/app-fallback.html`. Route parsing is unit-testable; the on-device
+  open is the honest caveat (V.3).
+- **Bug 3 (archived-tool reminder) — investigate before fixing (for `design.md`):** the code
+  *appears* correct — `cardService.archive()` calls `reminderService.disableForCard(cardId)`,
+  which cancels each stored notification id and marks the reminder inactive. Two suspicious
+  seams to instrument on-device BEFORE proposing a fix (3B.4): (a) `archive()` wraps the
+  `disableForCard` call in a `try/catch` that **silently swallows any error** ("best-effort"),
+  so a cancellation failure would be invisible; (b) the stored `notification_id` (a JSON array)
+  may not match the identifiers actually scheduled with the OS, so `cancelScheduled` could be
+  cancelling nothing — and launch reconciliation / iOS repeating-notification behavior could
+  re-register or retain it. Also rule out a stale 1.0.5 build vs. current code. Add a `__DEV__`
+  log at the archive→disable→cancel points, confirm on the real device which seam fails, THEN
+  fix that seam and add a regression test there (3B.5). Do not ship a third speculative fix.
+- **Bug 4 (unsubscribed → "waiting") — root cause (for `design.md`):** in `messaging-worker`,
+  `resolveNextStep` (`drip.ts`) returns `{ kind: 'waiting' }` when the earliest unreceived step
+  exists but the subscriber "isn't eligible yet (gap/**scope**)" — so an unsubscribed person
+  (scope flag off) collapses into `waiting`. The production run (`runDripPass` in `index.ts`)
+  builds the plan and the summary counts from these kinds. The design must distinguish
+  "unsubscribed / not in the audience" from "waiting" — either filter unsubscribed people out of
+  the considered set before classification, or add an explicit status — so the summary
+  (`dripSummary.ts`) never labels an opted-out person as waiting. This is pure-logic and
+  unit-testable (no device); add a `dripSummary`/`drip` test with an unsubscribed entry (V.5).
 - **Verification honesty (per workflow steering):** the deep-link and email-delivery paths that
   depend on a native build or a real send can only be fully confirmed on-device / in a real run;
   automated tests cover the route-resolution and content-assembly layers. Say which is which.
