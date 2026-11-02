@@ -133,7 +133,8 @@ Root cause (confirmed): `src/navigation/linking.ts` has no `create-tool` route; 
 `LibraryBrowser`; the tip CTA points at `.../app/add-tool`. Create Tool is `CardCreatorScreen`,
 route `CardCreator`, opened with no params.
 
-- [ ] **2.1 Exploration test — `create-tool` does not resolve to `CardCreator` (FAILS on unfixed code).**
+- [x] **2.1 Exploration test — `create-tool` does not resolve to `CardCreator` (FAILS on unfixed code).**
+  - _As-built:_ added `create-tool`, `/app/create-tool`, and trailing-slash `create-tool/` cases asserting the leaf route is `CardCreator`. Confirmed FAILING on unfixed `linking.ts` (unparseable path → undefined state) and PASSING with the fix.
   - In `src/navigation/__tests__/linking.test.ts` (existing pattern), add a test asserting that
     `linking.getStateFromPath('create-tool', options)` (and the `/app/create-tool` Universal-Link
     form, plus a trailing-slash `create-tool/` for Android normalization) resolves to a state
@@ -143,14 +144,16 @@ route `CardCreator`, opened with no params.
   - _Verify (UNIT-PROVABLE):_ `npm test -- linking` — the new case fails on unfixed code.
     _Requirements: 2.1, 2.4, V.3_
 
-- [ ] **2.2 Preservation test — `add-tool` still resolves to `LibraryBrowser` (PASSES on unfixed code).**
+- [x] **2.2 Preservation test — `add-tool` still resolves to `LibraryBrowser` (PASSES on unfixed code).**
+  - _As-built:_ `add-tool`, `/app/add-tool`, and `add-tool?filter=apps` → `initialFilter: 'apps'` still resolve to `LibraryBrowser`; green before and after the fix.
   - In the same test file, add/confirm a case that `add-tool` (and `/app/add-tool`, and
     `add-tool?filter=apps` → `initialFilter: 'apps'`) still resolves to `LibraryBrowser`. Must
     pass now and after the fix (Req 2.2).
   - Files: `src/navigation/__tests__/linking.test.ts`
   - _Verify (UNIT-PROVABLE):_ `npm test -- linking` — passes now. _Requirements: 2.2_
 
-- [ ] **2.3 Fix — add the `create-tool` route and point the tip CTA + fallback copy at it.**
+- [x] **2.3 Fix — add the `create-tool` route and point the tip CTA + fallback copy at it.**
+  - _As-built:_ added `CardCreator: 'create-tool'` to `config.screens`; repointed the tip CTA to `/app/create-tool` and bumped tip-content `version` 3→4 (content/bookkeeping only; nothing asserts it at runtime); added a `create-tool` `ROUTE_COPY` entry to `app-fallback.html` and `create-tool`/Tip-CTA rows to `deep-links.md`; rebuilt `website/content/index.json` (CTA now ends `/app/create-tool`). `npm test -- linking` 51/51 green; linking files typecheck-clean. `add-tool` → `LibraryBrowser` unchanged.
   - `src/navigation/linking.ts`: in `config.screens`, add `CardCreator: 'create-tool'` alongside
     `LibraryBrowser: 'add-tool'`. No `getStateFromPath` special-case is needed (bare path, no
     verb→param translation; `initialRouteName: 'MainTabs'` already provides the wallet base). The
@@ -181,7 +184,8 @@ route `CardCreator`, opened with no params.
     the route-resolution layer is unit-proven, the device open is not.
   - _Requirements: 2.1, 2.2, 2.3, 2.4, V.2, V.3_
 
-- [ ] **2.4 Checkpoint — Bug 2 green.**
+- [x] **2.4 Checkpoint — Bug 2 green.**
+  - _As-built:_ `npm test -- linking` 51/51 pass; `npm run typecheck` clean for navigation/linking files (pre-existing unrelated store/session errors untouched by this change); rebuilt site carries the `/app/create-tool` CTA and the `create-tool` fallback copy. On-device open of Create Tool (email CTA / cold start / Universal Link) remains the operator's device check on the 1.0.6 build (V.3 — unit-proven at the route layer only).
   - Run the navigation tests + typecheck; confirm the site rebuild carries the new CTA URL and
     the fallback copy renders for `create-tool`.
   - _Verify (UNIT-PROVABLE):_ `npm test -- linking && npm run typecheck`; `cd website && npm run build:content`.

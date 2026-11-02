@@ -7,9 +7,9 @@ topics: ["customization", "tools", "journaling"]
 heroImage: "https://mentalhealthwallet.productsforgood.co/assets/tip-media/add-your-own-tool.gif"
 cta:
   label: "Create your own tool"
-  url: "https://mentalhealthwallet.productsforgood.co/app/add-tool"
+  url: "https://mentalhealthwallet.productsforgood.co/app/create-tool"
 publishedAt: "2026-09-10"
-version: 3
+version: 4
 ---
 
 The curated library is a starting point, not a limit. If the tool you want doesn't exist,

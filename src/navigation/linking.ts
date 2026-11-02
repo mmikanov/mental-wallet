@@ -12,6 +12,7 @@
  * - `checkin` → Wallet, focus + expand the seedling KPI daily check-in card
  * - `learn-more-tour` → Wallet, focus + expand the top (non-session) stack card
  * - `add-tool` (optionally `?filter=apps`) → Library browser
+ * - `create-tool` → Create Tool builder (CardCreator)
  * - `archive`, `settings`
  *
  * Validates: 1.0.4-deep-linking Requirements 1–4.
@@ -71,6 +72,13 @@ export const linking: LinkingOptions<RootStackParamList> = {
         },
       },
       LibraryBrowser: 'add-tool',
+      // Bug 2 (1.0.6): the "Create your own tool" CTA opens the Create Tool
+      // builder, not the Add-Tool library. Bare path, no verb→param translation;
+      // the default switch branch resolves it via defaultGetStateFromPath, and
+      // initialRouteName: 'MainTabs' provides the wallet base beneath it. The
+      // screen opens with no params (matches WalletScreen.handleCreateToolPress →
+      // navigation.navigate('CardCreator')).
+      CardCreator: 'create-tool',
       Archive: 'archive',
       Settings: 'settings',
     },

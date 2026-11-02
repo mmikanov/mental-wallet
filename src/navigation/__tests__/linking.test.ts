@@ -81,6 +81,25 @@ describe('deep-link route parsing', () => {
     expect(r.name).toBe('LibraryBrowser');
   });
 
+  // Bug 2 (1.0.6): the "Create your own tool" CTA must land on the Create Tool
+  // builder (CardCreatorScreen, route `CardCreator`), NOT the Add-Tool library.
+  it('create-tool resolves to CardCreator', () => {
+    const r = leaf(parse('create-tool'));
+    expect(r.name).toBe('CardCreator');
+  });
+
+  it('the /app universal-link form of create-tool resolves to CardCreator', () => {
+    const r = leaf(parse('/app/create-tool'));
+    expect(r.name).toBe('CardCreator');
+  });
+
+  // Android normalizes `mentalwallet://create-tool` to `create-tool/`; the parser
+  // must tolerate the trailing slash and still reach CardCreator.
+  it('tolerates a trailing slash on create-tool (Android normalization)', () => {
+    expect(leaf(parse('create-tool/')).name).toBe('CardCreator');
+    expect(leaf(parse('/app/create-tool/')).name).toBe('CardCreator');
+  });
+
   it('add-tool?filter=apps resolves to LibraryBrowser with initialFilter=apps', () => {
     const r = leaf(parse('add-tool?filter=apps'));
     expect(r.name).toBe('LibraryBrowser');

@@ -38,6 +38,7 @@ that file and this table here is the canonical route list. Adding a new route me
 | `learn-more-tour` | Top stack card, focused + expanded | Skips the session-launcher so a real tool's "Learn more" link is visible. Degrades to the plain wallet if no qualifying card. |
 | `add-tool` | Library browser | |
 | `add-tool?filter=apps` | Library browser, Apps filter pre-selected | For discovering third-party apps. |
+| `create-tool` | Card creator | Opens the Create Tool builder (CardCreatorScreen) with no params — a fresh custom tool. |
 | `archive` | Archive screen | |
 | `settings` | Settings screen | |
 
@@ -61,7 +62,8 @@ Used by the CTA-upgrade work (`.kiro/specs/1.0.4-email-optin-and-cta-upgrade`):
 | `emotion-based-session`, `feeling-anxious` | `/app/how-i-feel` |
 | `personal-kpi-check-in` | `/app/checkin` |
 | `discover-third-party-apps` | `/app/add-tool?filter=apps` |
-| `add-your-own-app`, `add-your-own-tool` | `/app/add-tool` |
+| `add-your-own-app` | `/app/add-tool` |
+| `add-your-own-tool` | `/app/create-tool` |
 | `learn-more-evidence` | `/app/learn-more-tour` |
 
 ## Testing
