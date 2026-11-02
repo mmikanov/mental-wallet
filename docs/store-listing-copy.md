@@ -40,7 +40,7 @@ WHAT YOU GET
 
 • Card Wallet — Organize your tools in a swipeable stack. Focus on one, expand it, use it, done.
 
-• Privacy First — No accounts, no cloud sync, no data collection. Everything stays on your phone.
+• Privacy First — No accounts, no cloud sync. Only anonymous usage stats, never your personal entries. Everything stays on your phone.
 
 WHO IT'S FOR
 
@@ -98,7 +98,7 @@ A card-based toolkit to build coping habits and discover what works for you.
 
     ✦ Card Wallet — Organize your tools in a swipeable stack. Focus on one, expand it, use it, done.
 
-    ✦ Privacy First — No accounts, no cloud sync, no data collection. Everything stays on your phone.
+    ✦ Privacy First — No accounts, no cloud sync. Only anonymous usage stats, never your personal entries. Everything stays on your phone.
 
     WHO IT'S FOR
 

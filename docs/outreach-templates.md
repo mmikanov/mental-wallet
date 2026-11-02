@@ -155,7 +155,7 @@ Post 1-2x per week. Mix between "builder story" posts and "value" posts.
 >
 > So I built a toolkit that puts it all in one place. Grounding exercises, breathing techniques, cognitive reframing, daily check-ins — in a card-based wallet you can build yourself.
 >
-> It's free, completely private (no accounts, no cloud, no data collection), and built around the idea that the best tool is the one you actually use.
+> It's free, completely private (no accounts, no cloud, only anonymous usage stats and never your personal entries), and built around the idea that the best tool is the one you actually use.
 >
 > [App Store link]
 > [Play Store link]
@@ -259,7 +259,7 @@ Send to 5-10 local therapists or therapists you find through professional direct
 > - Set reminders for specific techniques
 > - Track which tools they actually use and how they feel after
 >
-> Everything stays on their phone — no accounts, no cloud storage, no data collection. It's free with no ads.
+> Everything stays on their phone — no accounts, no cloud storage, and only anonymous usage stats (never their personal entries). It's free with no ads.
 >
 > I'm not asking for anything — just sharing in case it's useful for any of your clients who struggle with practicing between sessions. I'd welcome any feedback if you try it yourself.
 >

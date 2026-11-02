@@ -34,8 +34,9 @@ When the user is about to build, submit, or release a new app version (any menti
    - **App Store Connect** → the version → "What's New in This Version"
    - **Google Play Console** → Production (or track) → the release → "Release notes" (`<en-US>...</en-US>`, 500-char limit)
 5. **Confirm the correct build/versionCode is selected** in each console before final submit.
-6. **iOS App Review notes** — if the release touches anything a reviewer should test (e.g. the WebView media feature), add notes in App Review Information.
-7. **Tag the release commit.** Once the shipped build's code is committed, create an annotated tag on that exact commit and push it, so "changes since last release" stays a one-command diff:
+6. **Update the store DESCRIPTION copy if it changed — not just the release notes.** The live App Store / Google Play descriptions are NOT pulled from the repo; they're edited by hand in each console. If `docs/store-listing-copy.md` changed since the last release, re-paste the current description into App Store Connect (App Information → Description) and Google Play Console (Main store listing → Full description). **Pending (added Oct 2026):** the privacy line was corrected from "no data collection" to "only anonymous usage stats, never your personal entries" — the live store descriptions still carry the old wording and must be updated on the next release.
+7. **iOS App Review notes** — if the release touches anything a reviewer should test (e.g. the WebView media feature), add notes in App Review Information.
+8. **Tag the release commit.** Once the shipped build's code is committed, create an annotated tag on that exact commit and push it, so "changes since last release" stays a one-command diff:
    ```
    git tag -a v<version> <commit> -m "Release <version> — <short summary>"
    git push origin v<version>
@@ -44,7 +45,7 @@ When the user is about to build, submit, or release a new app version (any menti
 
 ## Rollout safety (once there are real users)
 
-8. Android `production` track currently publishes to **100% with no manual gate**. Before the real launch, switch to a **staged rollout** (a % first, then ramp) or a **testing track**, then promote. Reminder is in `docs/deployment/app-deployment.md`.
+9. Android `production` track currently publishes to **100% with no manual gate**. Before the real launch, switch to a **staged rollout** (a % first, then ramp) or a **testing track**, then promote. Reminder is in `docs/deployment/app-deployment.md`.
 
 ## Notes
 
