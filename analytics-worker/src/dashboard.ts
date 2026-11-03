@@ -506,10 +506,10 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
             <div class="value">\${num(kpis.newUsers)}</div>
             <div class="detail">First joined in this phase (acquisition cohort). Click for list. Additive across phases.</div>
           </div>
-          <div class="card" onclick="window.open('/events?secret=' + encodeURIComponent(SECRET), '_blank')">
+          <div class="card" onclick="window.open('/events?secret=' + encodeURIComponent(SECRET) + getPhaseParams(), '_blank')">
             <h3>Total Events</h3>
             <div class="value">\${num(kpis.totalEvents)}</div>
-            <div class="detail">Click to view raw events</div>
+            <div class="detail">Click to view raw events (respects the phase + channel filters)</div>
             \${renderD1Health(kpis.totalEventsAllTime)}
           </div>
           <div class="card" onclick="showDetail('onboarding')">

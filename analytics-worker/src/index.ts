@@ -167,15 +167,43 @@ async function handleGetEvents(request: Request, env: Env): Promise<Response> {
   const limit = Math.min(parseInt(url.searchParams.get('limit') || '1000', 10), 10000);
   const offset = parseInt(url.searchParams.get('offset') || '0', 10);
   const eventType = url.searchParams.get('event_type');
+  // Respect the dashboard's global filters so the raw-events drill-down matches the card the
+  // operator clicked from (phase window + channel). Same semantics as buildDetailFilter:
+  //   from/to  → timestamp >= ? / timestamp < ?
+  //   channel  → 'organic' (or 'null') => channel IS NULL; any other value => channel = ?
+  //              (absent / '' / 'all' => no channel predicate)
+  const from = url.searchParams.get('from');
+  const to = url.searchParams.get('to');
+  const channel = url.searchParams.get('channel');
 
-  let query = 'SELECT * FROM events';
+  const conditions: string[] = [];
   const params: unknown[] = [];
 
   if (eventType) {
-    query += ' WHERE event_type = ?';
+    conditions.push('event_type = ?');
     params.push(eventType);
   }
+  if (from) {
+    conditions.push('timestamp >= ?');
+    params.push(from);
+  }
+  if (to) {
+    conditions.push('timestamp < ?');
+    params.push(to);
+  }
+  if (channel && channel !== 'all') {
+    if (channel === 'organic' || channel === 'null') {
+      conditions.push('channel IS NULL');
+    } else {
+      conditions.push('channel = ?');
+      params.push(channel);
+    }
+  }
 
+  let query = 'SELECT * FROM events';
+  if (conditions.length > 0) {
+    query += ' WHERE ' + conditions.join(' AND ');
+  }
   query += ' ORDER BY timestamp DESC LIMIT ? OFFSET ?';
   params.push(limit, offset);
 
