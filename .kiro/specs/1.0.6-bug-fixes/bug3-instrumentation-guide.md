@@ -1,3 +1,10 @@
+> **RESOLVED:** verified not reproducible on-device on current code; no fix needed; instrumentation
+> removed. Two clean real-iPhone runs showed archiving a tool with a reminder correctly cancels the
+> OS notification + inactivates the reminder, no reconcile re-arm on relaunch, and the notification
+> did not fire. A service-layer regression test (`reminderService.disableForCard` cancel +
+> inactivate, plus restore re-arm) now guards against regression. This guide is kept as a historical
+> record of how the on-device cause was ruled out.
+
 # Bug 3 — Instrumentation & On-Device Repro Guide
 
 **Bug:** A tool that has a reminder keeps firing its notification *after the tool is archived*.

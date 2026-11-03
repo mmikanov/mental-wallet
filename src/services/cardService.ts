@@ -18,10 +18,6 @@ import type {
 } from '../types/index';
 import type { CardService } from '../types/services';
 
-// [arch] TEMPORARY Bug 3 instrumentation (1.0.6-bug-fixes task 3.1). Remove in task 3.2.
-// Grep the `[arch]` tag to find/remove all of these diagnostics.
-if (__DEV__) console.log('[arch] build-marker 1.0.6-bug3');
-
 /**
  * Checks if a string is non-empty and not whitespace-only.
  */
@@ -772,18 +768,12 @@ export function createCardService(): CardService {
       // async and must not sit inside an open SQLite transaction. Best-effort: the
       // card is already archived; a notification-cancel hiccup shouldn't fail archive.
       try {
-        // [arch] TEMPORARY Bug 3 instrumentation (task 3.1) — remove in task 3.2.
-        if (__DEV__) console.log('[arch] archive→disableForCard start id=', id);
         // Lazy require so cardService's static import graph doesn't pull in
         // reminderService → expo-notifications for every consumer (keeps store/unit
         // tests that import cardService free of the native notifications module).
         const { createReminderService } = require('./reminderService');
         await createReminderService().disableForCard(id);
-      } catch (err) {
-        // [arch] TEMPORARY Bug 3 instrumentation (task 3.1) — remove in task 3.2.
-        // Observe the otherwise-swallowed failure (cause #1). Keeps the existing
-        // non-fatal swallow behavior below unchanged — this only logs.
-        if (__DEV__) console.log('[arch] disableForCard THREW:', err);
+      } catch {
         // Non-fatal: launch reconciliation only reschedules active reminders, and
         // this reminder is being marked inactive; a stale OS notification (rare)
         // degrades gracefully (tapping it lands on the wallet, card not focused).

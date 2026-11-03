@@ -386,7 +386,18 @@ table — so **this bug cannot be fully closed in-repo**; it needs the operator'
   - _Verify (ON-DEVICE, operator):_ the log table prints on a real device and identifies the failing
     seam per the decision tree. NOT unit-closeable. _Requirements: 3B.4, V.4_
 
-- [ ] **3.2 GATED fix — once the logs identify the seam, apply the matching fix from the decision tree.**
+- [x] **3.2 GATED fix — once the logs identify the seam, apply the matching fix from the decision tree.**
+  - _As-built: **No behavioral fix required** — verified NOT reproducible on a real iPhone (current
+    code). Two clean on-device runs: archiving a tool with a reminder correctly cancels the OS
+    notification (stored id was in the OS-scheduled set, cancel removed it) AND marks the reminder
+    inactive (`is_active→0 updated rows= 1`), no `disableForCard THREW`, no reconcile re-arm on
+    relaunch, and the notification did not fire. All four candidate causes (stored≠scheduled, silent
+    failure, reconcile re-arm, stale build) are ruled out. The temporary `[arch]` instrumentation
+    added in commit 3311ddc was removed — `src/services/cardService.ts` and
+    `src/services/reminderService.ts` were restored byte-for-byte to their pre-instrumentation
+    baseline (empty `git diff` vs. `3311ddc~1`), including reverting the archive `catch (err)` back to
+    the original silent `catch {}`. `grep -rn "\[arch\]" src/` and `grep -rn "logArch" src/` return
+    nothing. This closes V.4 (on-device verification: the archived-tool reminder does not fire)._
   - Chosen only after Task 3.1's device logs. Candidate fixes (design §Bug 3 decision tree):
     - **Stored ids ≠ OS-scheduled ids (cause #2):** cancel by the real OS identifiers — on archive,
       cancel `getAllScheduledNotificationsAsync()` entries whose `data.cardId === id` (cancel by
@@ -407,7 +418,18 @@ table — so **this bug cannot be fully closed in-repo**; it needs the operator'
     Task 3.3's regression test green. The real fix confirmation is ON-DEVICE (V.4). _Requirements:
     3B.1, V.4_
 
-- [ ] **3.3 Regression + preservation tests at the confirmed layer.**
+- [x] **3.3 Regression + preservation tests at the confirmed layer.**
+  - _As-built: extended `src/services/__tests__/reminderService.archiveRestore.test.ts` with a
+    labeled "Bug 3 regression" block. The regression test asserts BOTH halves at the
+    `reminderService.disableForCard` layer: every stored OS notification id is cancelled (exactly
+    those — `cancelScheduledNotificationAsync` called once per stored id, no more/less) AND the row
+    is marked `is_active = 0` for the card. Two preservation tests cover the restore path
+    (Req 3B.3): `reactivateForCard` re-arms the preserved inactive reminder scheduling exactly one OS
+    notification (no double-schedule), and returns an already-active reminder untouched without
+    re-scheduling. `npm test -- reminderService` → 8/8 pass; typecheck shows no new errors in the
+    touched files. Honest caveat: this proves the service cancels + inactivates with a mocked
+    notification module — the OS-level repeating-notification stop was verified ON-DEVICE (V.4), not
+    by this unit suite._
   - Exploration/regression test at the layer the log identifies — most likely
     `reminderService.disableForCard`: after disabling a card's reminders, assert BOTH that the
     reminder is marked `is_active = 0` AND that every scheduled OS notification for that card is
@@ -425,7 +447,17 @@ table — so **this bug cannot be fully closed in-repo**; it needs the operator'
     does NOT prove the OS-level repeating notification stops — that is the on-device pass (V.4).
     _Requirements: 3B.2, 3B.3, 3B.5, V.4_
 
-- [ ] **3.4 Checkpoint — Bug 3 green (unit) + operator on-device sign-off pending.**
+- [x] **3.4 Checkpoint — Bug 3 green (unit) + operator on-device sign-off DONE.**
+  - _As-built: `grep -rn "\[arch\]" src/` → nothing; `grep -rn "logArch" src/` → nothing.
+    `npm test -- reminderService` → 8/8 green. `npm run typecheck` introduces no new errors in the
+    touched files (`cardService.ts`, `reminderService.ts`, and the test) — the repo's pre-existing
+    baseline elsewhere is untouched. `git diff 3311ddc~1 -- src/services/cardService.ts
+    src/services/reminderService.ts` is EMPTY — both service files are back to their
+    pre-instrumentation baseline, so the only net-new Bug 3 code in the repo is the
+    regression/preservation TESTS. **V.4 on-device sign-off is complete:** two clean real-iPhone runs
+    confirmed archiving a tool with a reminder stops its notification and no reconcile re-arm
+    occurs — the bug is closed as verified-not-reproducible-on-device, with a service-layer
+    regression test guarding it._
   - Run the reminder tests + typecheck; confirm no `[arch]` diagnostics remain.
   - _Verify (UNIT-PROVABLE):_ `npm test -- reminderService && npm run typecheck`; grep for `[arch]`
     returns nothing.
