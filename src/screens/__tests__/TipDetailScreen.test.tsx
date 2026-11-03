@@ -97,6 +97,34 @@ describe('TipDetailScreen', () => {
     expect(utils.getByText('Short summary line.')).toBeTruthy();
   });
 
+  it('does NOT render embedded raw HTML (figure/img/figcaption) from the body', async () => {
+    // A realistic body with an embedded media figure — the case that leaked raw HTML as
+    // literal text on the 1.0.6 build. The screen must strip it before markdown rendering.
+    const withHtml: Tip = {
+      ...FIXTURE_TIP,
+      body: [
+        'Keep the apps you already use, all in one place.',
+        '',
+        '<figure class="tip-media">',
+        '  <img src="https://example.test/assets/tip-media/discover.gif" width="240" alt="Browsing the library." />',
+        '  <figcaption>Add the apps you already use.</figcaption>',
+        '</figure>',
+        '',
+        'You can have both.',
+      ].join('\n'),
+    };
+    const { utils } = await renderScreen(withHtml);
+
+    // Prose is present...
+    expect(utils.getByText(/Keep the apps you already use/)).toBeTruthy();
+    expect(utils.getByText(/You can have both\./)).toBeTruthy();
+    // ...but no raw HTML angle-bracket markup leaked into any rendered text node.
+    expect(utils.queryByText(/<figure/)).toBeNull();
+    expect(utils.queryByText(/<img/)).toBeNull();
+    expect(utils.queryByText(/<figcaption/)).toBeNull();
+    expect(utils.queryByText(/tip-media/)).toBeNull();
+  });
+
   it('renders without a hero when heroImage is empty', async () => {
     const noHero: Tip = { ...FIXTURE_TIP, heroImage: '' };
     const { utils } = await renderScreen(noHero);

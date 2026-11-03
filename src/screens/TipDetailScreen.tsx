@@ -31,12 +31,19 @@ import Markdown from 'react-native-markdown-display';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@/navigation/types';
 import { tipCtaToNavigation } from '@/services/tipCtaNavigation';
+import { stripHtmlBlocks } from '@/services/tipBodyForNative';
 import { logEvent } from '@/services/analyticsEventLogger';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'TipDetail'>;
 
 export default function TipDetailScreen({ route, navigation }: Props) {
   const { tip } = route.params;
+
+  // Tip bodies embed raw HTML media blocks (<figure>, <img>, <figcaption>, animation <div>s)
+  // for the website. The native markdown renderer passes unknown HTML through as literal text,
+  // so strip those blocks here and render prose only — the hero image above carries the media
+  // (deliberate per-surface exception, Req 1.6).
+  const bodyMarkdown = React.useMemo(() => stripHtmlBlocks(tip.body ?? ''), [tip.body]);
 
   const onCtaPress = useCallback(() => {
     if (!tip.cta) return;
@@ -82,14 +89,14 @@ export default function TipDetailScreen({ route, navigation }: Props) {
             testID="tip-hero-image"
             source={{ uri: tip.heroImage }}
             style={styles.hero}
-            resizeMode="cover"
+            resizeMode="contain"
             accessibilityIgnoresInvertColors
             accessible={false}
           />
         )}
 
-        {tip.body ? (
-          <Markdown style={markdownStyles}>{tip.body}</Markdown>
+        {bodyMarkdown ? (
+          <Markdown style={markdownStyles}>{bodyMarkdown}</Markdown>
         ) : (
           <Text style={styles.summary}>{tip.summary}</Text>
         )}
