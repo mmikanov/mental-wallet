@@ -16,7 +16,7 @@
  * the top hero carries that media. Same hero media as the website/email; only placement differs.
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -25,6 +25,7 @@ import {
   TouchableOpacity,
   Image,
   Linking,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Markdown from 'react-native-markdown-display';
@@ -44,6 +45,40 @@ export default function TipDetailScreen({ route, navigation }: Props) {
   // so strip those blocks here and render prose only — the hero image above carries the media
   // (deliberate per-surface exception, Req 1.6).
   const bodyMarkdown = React.useMemo(() => stripHtmlBlocks(tip.body ?? ''), [tip.body]);
+
+  // Hero sizing: the tip media GIFs are tall, phone-shaped recordings, but we don't know each
+  // image's aspect ratio ahead of time (the content index carries only the URL). Measure the
+  // real pixel size at runtime and shape the hero box to match, so the GIF shows at its true
+  // proportions with NO crop and NO grey letterbox. Cap the height so a tall portrait GIF never
+  // dominates the screen — the title stays above it and the body starts just below.
+  const { width: screenW, height: screenH } = useWindowDimensions();
+  const [heroRatio, setHeroRatio] = useState<number | null>(null); // width / height
+
+  useEffect(() => {
+    if (!tip.heroImage) return;
+    let cancelled = false;
+    Image.getSize(
+      tip.heroImage,
+      (w, h) => {
+        if (!cancelled && w > 0 && h > 0) setHeroRatio(w / h);
+      },
+      () => {
+        /* measure failed — fall back to the default box below */
+      }
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [tip.heroImage]);
+
+  // Content width = screen minus the 16pt horizontal padding on each side.
+  const contentW = screenW - 32;
+  const maxHeroH = Math.round(screenH * 0.38); // cap so text stays reasonably high
+  // Until measured, use a neutral default height; once measured, honor the real ratio but clamp
+  // the resulting height to maxHeroH (portrait GIFs would otherwise be very tall).
+  const heroHeight = heroRatio
+    ? Math.min(contentW / heroRatio, maxHeroH)
+    : Math.round(contentW * 0.6);
 
   const onCtaPress = useCallback(() => {
     if (!tip.cta) return;
@@ -88,7 +123,7 @@ export default function TipDetailScreen({ route, navigation }: Props) {
           <Image
             testID="tip-hero-image"
             source={{ uri: tip.heroImage }}
-            style={styles.hero}
+            style={[styles.hero, { height: heroHeight }]}
             resizeMode="contain"
             accessibilityIgnoresInvertColors
             accessible={false}
@@ -136,7 +171,8 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: '800', color: '#1A1A1A', marginBottom: 16, lineHeight: 30 },
   hero: {
     width: '100%',
-    aspectRatio: 16 / 9,
+    // height is set dynamically from the image's measured aspect ratio (capped), so the box
+    // matches the GIF — no crop, no grey letterbox. See heroHeight in the component.
     borderRadius: 12,
     backgroundColor: '#E8E8E8',
     marginBottom: 16,

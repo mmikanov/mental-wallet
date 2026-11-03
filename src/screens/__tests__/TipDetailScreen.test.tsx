@@ -31,6 +31,17 @@ jest.mock('@/services/analyticsEventLogger', () => ({
 
 const { logEvent } = require('@/services/analyticsEventLogger');
 
+// jest-expo's Image.getSize stub doesn't invoke the success callback, so mock it to report a
+// realistic portrait GIF size (240x500) — this exercises the measured-aspect-ratio hero path.
+import { Image } from 'react-native';
+beforeAll(() => {
+  jest
+    .spyOn(Image, 'getSize')
+    .mockImplementation((_uri: string, success?: (w: number, h: number) => void) => {
+      success?.(240, 500);
+    });
+});
+
 const FIXTURE_TIP: Tip = {
   slug: 'add-your-own-tool',
   title: 'Add your own tool',
