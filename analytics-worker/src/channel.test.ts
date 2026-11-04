@@ -180,3 +180,63 @@ test('summarizeChannelBreakdown always includes an organic bucket even with no u
   );
   assert.ok(result.find((r) => r.channel === 'organic'), 'organic bucket present');
 });
+
+// --- resolved-channel attribution (FIX 1) ---
+//
+// The per-user resolved channel (MAX(channel) over all a user's events) is computed in SQL
+// in handleDetailChannels, then each metric row is built with that resolved channel as its
+// `channel` field before being handed to summarizeChannelBreakdown. These tests pin the
+// contract the helper must honor given resolved-channel rows: a user whose install
+// (app_opened) event had channel=NULL but a later event resolved to 'linkedin' arrives here
+// as a row with channel:'linkedin' and MUST count as a linkedin install, never organic. The
+// SQL MAX(channel) grouping + skew exclusion are verified against LOCAL D1 and recorded in
+// the FEAT findings.
+
+test('resolved-channel rows: a NULL-install user resolved to linkedin counts as 1 linkedin install, not organic', () => {
+  // Shape mirrors the real data: the user's app_opened had channel=NULL; a later event
+  // resolved to 'linkedin'. handleDetailChannels attributes the install to the resolved
+  // channel, so the install row carries channel:'linkedin'.
+  const installRows: ChannelInstallRow[] = [
+    { channel: 'linkedin', installs: 1, walletAdded: 0 },
+    { channel: null, installs: 1, walletAdded: 0 }, // a user with no channel anywhere
+  ];
+  const result = summarizeChannelBreakdown(installRows, [], [], TODAY);
+
+  const linkedin = result.find((r) => r.channel === 'linkedin');
+  const organic = result.find((r) => r.channel === 'organic');
+  assert.ok(linkedin, 'linkedin bucket present');
+  assert.equal(linkedin!.installs, 1, 'the tagged user is a linkedin install');
+  assert.equal(organic!.installs, 1, 'only the truly-untagged user is organic');
+});
+
+test('resolved-channel rows: activation and retention follow the resolved channel', () => {
+  // One linkedin-resolved user who installed 10d ago and is retained at D7, plus one
+  // organic user who lapsed. Activation den=1 for each channel.
+  const linkedinCohort = [cohortUser('lk1', 'linkedin', 10, 7)];
+  const organicCohort = [cohortUser('og1', null, 10, 0)];
+  const cohortRows: ChannelCohortUserRow[] = [...linkedinCohort, ...organicCohort];
+  const installRows: ChannelInstallRow[] = [
+    { channel: 'linkedin', installs: 1, walletAdded: 0 },
+    { channel: null, installs: 1, walletAdded: 0 },
+  ];
+  const activationRows: ChannelActivationRow[] = [
+    { channel: 'linkedin', num: 1, den: 1 },
+    { channel: null, num: 0, den: 1 },
+  ];
+  const result = summarizeChannelBreakdown(installRows, activationRows, cohortRows, TODAY);
+
+  const linkedin = result.find((r) => r.channel === 'linkedin')!;
+  const organic = result.find((r) => r.channel === 'organic')!;
+  // Activation attributed to the resolved channel.
+  assert.equal(linkedin.activation.num, 1);
+  assert.equal(linkedin.activation.den, 1);
+  assert.equal(organic.activation.num, 0);
+  assert.equal(organic.activation.den, 1);
+  // Retention follows the resolved channel: linkedin user retained at D7, organic lapsed.
+  const expectedLinkedin = computeCohortRetention(linkedinCohort as CohortUserRow[], TODAY, [7, 30]);
+  const expectedOrganic = computeCohortRetention(organicCohort as CohortUserRow[], TODAY, [7, 30]);
+  assert.deepEqual(linkedin.retention, expectedLinkedin);
+  assert.deepEqual(organic.retention, expectedOrganic);
+  assert.equal(linkedin.retention[7].pct, 100);
+  assert.equal(organic.retention[7].pct, 0);
+});

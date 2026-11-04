@@ -283,6 +283,8 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
       sub += ` WHERE anonymous_user_id NOT IN (${excludedIds.map(() => '?').join(', ')})`;
       params.push(...excludedIds);
     }
+    // Exclude clock-skewed events so first-touch lands on a trustworthy timestamp (no params).
+    sub += (excludedIds.length > 0 ? ' AND' : ' WHERE') + ' (received_at IS NULL OR julianday(timestamp) - julianday(received_at) <= 1)';
     sub += ' GROUP BY anonymous_user_id HAVING 1=1';
     if (fromDate) { sub += ' AND MIN(timestamp) >= ?'; params.push(fromDate); }
     if (toDate) { sub += ' AND MIN(timestamp) < ?'; params.push(toDate); }
@@ -315,6 +317,11 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
   const channelMain = buildChannelClause(channelParam);
   dateFilter += channelMain.sql;
   dateParams.push(...channelMain.params);
+  // Exclude events whose device-reported `timestamp` is implausibly far ahead of the
+  // server's `received_at` (clock-skewed devices) from all metric computations. Pure
+  // column math — NO bind params, so dateParams is untouched. NULL received_at (older
+  // rows predating the column) must NOT be dropped, hence the IS NULL guard.
+  dateFilter += ' AND (received_at IS NULL OR julianday(timestamp) - julianday(received_at) <= 1)';
 
   // Helper to build filtered queries
   const withFilter = (baseWhere: string) => {
@@ -358,10 +365,14 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
   const newUsersParams: string[] = [...excludedIds];
   if (fromDate) { newUsersHaving += ' AND MIN(timestamp) >= ?'; newUsersParams.push(fromDate); }
   if (toDate) { newUsersHaving += ' AND MIN(timestamp) < ?'; newUsersParams.push(toDate); }
+  // Clock-skew exclusion in the first-touch cohort too (metric query). Either adds the
+  // predicate as the first WHERE condition (no prior exclusion) or ANDs it on. No params.
+  const skewClause = '(received_at IS NULL OR julianday(timestamp) - julianday(received_at) <= 1)';
+  const newUsersSkew = newUsersExclusion ? ` AND ${skewClause}` : ` WHERE ${skewClause}`;
   const newUsersSql = `
     SELECT COUNT(*) as count FROM (
       SELECT anonymous_user_id
-      FROM events${newUsersExclusion}
+      FROM events${newUsersExclusion}${newUsersSkew}
       GROUP BY anonymous_user_id
       HAVING 1=1${newUsersHaving}
     )
@@ -451,6 +462,10 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
       innerParams.push(...innerChannel.params);
       outerFilter += outerChannel.sql;
       outerParams.push(...outerChannel.params);
+      // Clock-skew exclusion (table-qualified, no bind params) on both sides of the JOIN so
+      // activation matches the other metric queries. NULL received_at is never dropped.
+      innerFilter += ' AND (events.received_at IS NULL OR julianday(events.timestamp) - julianday(events.received_at) <= 1)';
+      outerFilter += ' AND (tc.received_at IS NULL OR julianday(tc.timestamp) - julianday(tc.received_at) <= 1)';
       return query(`
         SELECT tc.anonymous_user_id, tc.timestamp as completed_at, fo.first_open
         FROM events tc
@@ -526,6 +541,7 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
     FROM events
     WHERE event_type = 'app_opened'
       AND json_extract(properties, '$.days_since_install') IS NOT NULL${cohortExclusion}
+      AND (received_at IS NULL OR julianday(timestamp) - julianday(received_at) <= 1)
     GROUP BY anonymous_user_id
   `;
   const cohortStmt = env.DB.prepare(cohortSql);
@@ -688,6 +704,7 @@ function buildDetailFilter(request: Request, env: Env) {
       sub += ` WHERE anonymous_user_id NOT IN (${excludedIds.map(() => '?').join(', ')})`;
       params.push(...excludedIds);
     }
+    sub += (excludedIds.length > 0 ? ' AND' : ' WHERE') + ' (received_at IS NULL OR julianday(timestamp) - julianday(received_at) <= 1)';
     sub += ' GROUP BY anonymous_user_id HAVING 1=1';
     if (fromDate) { sub += ' AND MIN(timestamp) >= ?'; params.push(fromDate); }
     if (toDate) { sub += ' AND MIN(timestamp) < ?'; params.push(toDate); }
@@ -699,6 +716,12 @@ function buildDetailFilter(request: Request, env: Env) {
   const ch = buildChannelClause(channelParam);
   clause += ch.sql;
   params.push(...ch.params);
+
+  // Clock-skew exclusion: drop events whose device `timestamp` is >1 day ahead of
+  // `received_at` from every detail/breakdown metric. Pure column math — NO bind params —
+  // so it rides inside `clause` and repeats with it without disturbing the params array.
+  // NULL received_at (pre-column rows) is explicitly preserved.
+  clause += ' AND (received_at IS NULL OR julianday(timestamp) - julianday(received_at) <= 1)';
 
   // Bind helper that tolerates empty params (local D1 compatibility).
   const query = (sql: string) => {
@@ -1011,94 +1034,128 @@ async function handleDetailChannels(request: Request, env: Env): Promise<Respons
 
   const nowISO = new Date().toISOString();
 
-  // Installs by channel: distinct users whose activity falls in-window, grouped by their
-  // event's channel. (All events share the same channel per the ingest promotion; this
-  // mirrors handleDetailPlatforms' per-event dimension approach.)
-  // Activation by channel: for the same scoped events, users who completed a tool within
-  // 48h of first app_opened. The 48h test needs raw rows, computed in JS (like handleKpis).
-  // Wallet growth by channel: distinct users who added/created a tool.
+  // The app resolves a user's acquisition channel AFTER the first event, so the
+  // `app_opened` (install) event itself always carries channel = NULL — the channel only
+  // appears on later events. Grouping any metric by the per-EVENT channel therefore dumps
+  // every tagged user into organic. Instead, attribute each USER to a single RESOLVED
+  // channel = any non-null channel across all of that user's events. MAX(channel) over the
+  // text column returns a non-null value when one exists and NULL only when every row is
+  // NULL (SQLite/D1 aggregates skip NULLs), which is exactly "any non-null channel, else
+  // organic". The channel is consistent once resolved, so MAX is a safe single-value pick.
+  // Every metric below then maps anonymous_user_id -> resolved channel before grouping,
+  // rather than reading the event's own (often-null) channel column.
+  const resolvedResult = await query(`
+    SELECT anonymous_user_id, MAX(channel) AS resolved_channel
+    FROM events
+    WHERE 1=1${clause}
+    GROUP BY anonymous_user_id
+  `).all<{ anonymous_user_id: string; resolved_channel: string | null }>();
+  const resolvedByUser = new Map<string, string | null>();
+  for (const r of (resolvedResult.results || [])) {
+    resolvedByUser.set(r.anonymous_user_id, r.resolved_channel ?? null);
+  }
+  // Resolve a user's channel; users not in the map (shouldn't happen for in-window metrics)
+  // and users with no non-null channel anywhere both fall through to organic (null).
+  const resolveChannel = (userId: string): string | null => resolvedByUser.get(userId) ?? null;
+
+  // Installs: distinct in-window users who have an app_opened event.
+  // Activation: users who completed a tool within 48h of their first app_opened.
+  // Wallet growth: distinct users who added/created a tool.
+  // Cohort retention: per-user install-day rows.
+  // All are fetched per USER (no GROUP BY channel) and attributed to the resolved channel.
   const [installResult, firstOpenResult, completionResult, walletResult, cohortResult] =
     await Promise.all([
       query(`
-        SELECT channel, COUNT(DISTINCT anonymous_user_id) as installs
+        SELECT DISTINCT anonymous_user_id
         FROM events
         WHERE event_type = 'app_opened'${clause}
-        GROUP BY channel
-      `).all<{ channel: string | null; installs: number }>(),
+      `).all<{ anonymous_user_id: string }>(),
       query(`
-        SELECT anonymous_user_id, channel, MIN(timestamp) as first_open
+        SELECT anonymous_user_id, MIN(timestamp) as first_open
         FROM events
         WHERE event_type = 'app_opened'${clause}
-        GROUP BY anonymous_user_id, channel
-      `).all<{ anonymous_user_id: string; channel: string | null; first_open: string }>(),
+        GROUP BY anonymous_user_id
+      `).all<{ anonymous_user_id: string; first_open: string }>(),
       query(`
-        SELECT anonymous_user_id, channel, timestamp as completed_at
+        SELECT anonymous_user_id, timestamp as completed_at
         FROM events
         WHERE event_type = 'tool_completed'${clause}
-      `).all<{ anonymous_user_id: string; channel: string | null; completed_at: string }>(),
+      `).all<{ anonymous_user_id: string; completed_at: string }>(),
       query(`
-        SELECT channel, COUNT(DISTINCT anonymous_user_id) as wallet_added
+        SELECT DISTINCT anonymous_user_id
         FROM events
         WHERE event_type IN ('tool_added', 'tool_created')${clause}
-        GROUP BY channel
-      `).all<{ channel: string | null; wallet_added: number }>(),
+      `).all<{ anonymous_user_id: string }>(),
       query(`
         SELECT
           anonymous_user_id,
-          channel,
           MIN(timestamp) AS first_open_ts,
           MAX(CAST(json_extract(properties, '$.days_since_install') AS INTEGER)) AS max_dsi,
           COUNT(*) AS opens
         FROM events
         WHERE event_type = 'app_opened'
           AND json_extract(properties, '$.days_since_install') IS NOT NULL${clause}
-        GROUP BY anonymous_user_id, channel
-      `).all<{ anonymous_user_id: string; channel: string | null; first_open_ts: string; max_dsi: number; opens: number }>(),
+        GROUP BY anonymous_user_id
+      `).all<{ anonymous_user_id: string; first_open_ts: string; max_dsi: number; opens: number }>(),
     ]);
 
   // Activation: a user is activated if ANY tool_completed is within 48h of their first
-  // app_opened. Attribute each user to their channel from the first-open rows.
-  const firstOpenByUser = new Map<string, { channel: string | null; firstOpen: string }>();
+  // app_opened. Attribute each user to their RESOLVED channel.
+  const firstOpenByUser = new Map<string, string>();
   for (const r of (firstOpenResult.results || [])) {
-    firstOpenByUser.set(r.anonymous_user_id, { channel: r.channel, firstOpen: r.first_open });
+    firstOpenByUser.set(r.anonymous_user_id, r.first_open);
   }
   const activatedByUser = new Map<string, boolean>();
   for (const r of (completionResult.results || [])) {
-    const fo = firstOpenByUser.get(r.anonymous_user_id);
-    if (!fo) continue;
-    const diff = new Date(r.completed_at).getTime() - new Date(fo.firstOpen).getTime();
+    const firstOpen = firstOpenByUser.get(r.anonymous_user_id);
+    if (!firstOpen) continue;
+    const diff = new Date(r.completed_at).getTime() - new Date(firstOpen).getTime();
     if (diff >= 0 && diff <= 172800000) activatedByUser.set(r.anonymous_user_id, true);
   }
-  // Build activation num/den per channel from the install cohort (first-open users).
+  // Build activation num/den per RESOLVED channel from the install cohort (first-open users).
   const actAgg = new Map<string, { num: number; den: number; channel: string | null }>();
-  for (const [userId, fo] of firstOpenByUser) {
-    const key = fo.channel == null ? '\u0000organic' : fo.channel;
-    const prev = actAgg.get(key) || { num: 0, den: 0, channel: fo.channel };
+  for (const userId of firstOpenByUser.keys()) {
+    const channel = resolveChannel(userId);
+    const key = channel == null ? '\u0000organic' : channel;
+    const prev = actAgg.get(key) || { num: 0, den: 0, channel };
     prev.den += 1;
     if (activatedByUser.get(userId)) prev.num += 1;
     actAgg.set(key, prev);
   }
 
-  const installRows: ChannelInstallRow[] = [];
-  const walletByChannelKey = new Map<string, number>();
-  for (const r of (walletResult.results || [])) {
-    const key = r.channel == null ? '\u0000organic' : r.channel;
-    walletByChannelKey.set(key, (walletByChannelKey.get(key) || 0) + Number(r.wallet_added));
-  }
+  // Installs + wallet growth per RESOLVED channel: count distinct users in each set,
+  // bucketed by the user's resolved channel.
+  const installsByChannel = new Map<string, { channel: string | null; count: number }>();
   for (const r of (installResult.results || [])) {
-    const key = r.channel == null ? '\u0000organic' : r.channel;
-    installRows.push({
-      channel: r.channel,
-      installs: Number(r.installs),
-      walletAdded: walletByChannelKey.get(key) || 0,
-    });
+    const channel = resolveChannel(r.anonymous_user_id);
+    const key = channel == null ? '\u0000organic' : channel;
+    const prev = installsByChannel.get(key) || { channel, count: 0 };
+    prev.count += 1;
+    installsByChannel.set(key, prev);
   }
-  // Include wallet-only channels that had no app_opened rows (edge case) so counts survive.
-  const seenInstallKeys = new Set(installRows.map((r) => (r.channel == null ? '\u0000organic' : r.channel)));
+  const walletByChannel = new Map<string, { channel: string | null; count: number }>();
   for (const r of (walletResult.results || [])) {
-    const key = r.channel == null ? '\u0000organic' : r.channel;
+    const channel = resolveChannel(r.anonymous_user_id);
+    const key = channel == null ? '\u0000organic' : channel;
+    const prev = walletByChannel.get(key) || { channel, count: 0 };
+    prev.count += 1;
+    walletByChannel.set(key, prev);
+  }
+
+  const installRows: ChannelInstallRow[] = [];
+  const seenInstallKeys = new Set<string>();
+  for (const [key, v] of installsByChannel) {
+    installRows.push({
+      channel: v.channel,
+      installs: v.count,
+      walletAdded: walletByChannel.get(key)?.count || 0,
+    });
+    seenInstallKeys.add(key);
+  }
+  // Include wallet-only channels that had no app_opened users (edge case) so counts survive.
+  for (const [key, v] of walletByChannel) {
     if (!seenInstallKeys.has(key)) {
-      installRows.push({ channel: r.channel, installs: 0, walletAdded: Number(r.wallet_added) });
+      installRows.push({ channel: v.channel, installs: 0, walletAdded: v.count });
       seenInstallKeys.add(key);
     }
   }
@@ -1111,7 +1168,7 @@ async function handleDetailChannels(request: Request, env: Env): Promise<Respons
 
   const cohortRows: ChannelCohortUserRow[] = (cohortResult.results || []).map((r) => ({
     anonymous_user_id: r.anonymous_user_id,
-    channel: r.channel,
+    channel: resolveChannel(r.anonymous_user_id),
     first_open_ts: r.first_open_ts,
     max_dsi: Number(r.max_dsi),
     opens: Number(r.opens),
