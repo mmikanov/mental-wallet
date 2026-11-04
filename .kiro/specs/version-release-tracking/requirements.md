@@ -30,3 +30,10 @@ This is a data-quality measure: store-review and tester traffic is not real user
    - The table is not changed by the dashboard's phase, user, or channel selectors.
    - If the table cannot load, the rest of the dashboard still works and a short message appears.
 7. When store dates for earlier versions are available, the operator can backfill them with the same recording step.
+
+## Addendum: Versions That Were Skipped
+
+- A version number that was skipped on a platform (never shipped to the public, for example to keep the two platforms' version numbers in sync) can be recorded as "never released".
+- All activity for a never-released version SHALL be hidden from the metrics, because it can only be testing or review traffic.
+- The Releases table at the bottom of the dashboard SHALL label such a version "Never released" and show no go-live time, so it cannot be mistaken for an upcoming release.
+- A version that is merely waiting in store review is NOT marked this way; its activity stays visible until the real go-live time is recorded.

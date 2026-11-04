@@ -9,6 +9,8 @@ import {
   metricsExclusionExpr,
   compareVersions,
   summarizeReleases,
+  NEVER_RELEASED_AT,
+  isNeverReleased,
 } from './releases.ts';
 
 test('releaseExclusionSql: no bind params, unqualified by default', () => {
@@ -77,4 +79,21 @@ test('summarizeReleases: statuses, empty-release rows, ordering, hidden counts',
   // No release row => nothing hidden regardless of input.
   assert.equal(rows[4].hidden_pre_live_events, 0);
   assert.equal(rows[3].live_at, null);
+});
+
+test('never-released sentinel: skipped versions show as never_released (not scheduled) and hide every event', () => {
+  assert.equal(isNeverReleased(NEVER_RELEASED_AT), true);
+  assert.equal(isNeverReleased('2026-11-04T14:30:00Z'), false);
+  assert.equal(isNeverReleased(null), false);
+  const now = '2026-11-05T00:00:00Z';
+  const seen = [
+    { platform: 'android', app_version: '1.0.2', first_seen: '2026-08-30T00:00:00Z', last_seen: '2026-08-31T00:00:00Z', users: 4, events: 30, hidden_pre_live_events: 30 },
+  ];
+  const releases = [{ platform: 'android', app_version: '1.0.2', live_at: NEVER_RELEASED_AT, note: 'skipped' }];
+  const [row] = summarizeReleases(seen, releases, now);
+  assert.equal(row.status, 'never_released');
+  assert.equal(row.hidden_pre_live_events, 30);
+  // A normal far-future-but-real scheduled release is still "scheduled".
+  const [sched] = summarizeReleases([], [{ platform: 'ios', app_version: '1.0.9', live_at: '2027-01-01T00:00:00Z' }], now);
+  assert.equal(sched.status, 'scheduled');
 });

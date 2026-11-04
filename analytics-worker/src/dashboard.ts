@@ -659,6 +659,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     function releaseStatusText(status) {
       if (status === 'live') return 'Live';
       if (status === 'scheduled') return 'Scheduled';
+      if (status === 'never_released') return 'Never released \u2014 all events hidden';
       return 'Not recorded \u2014 showing all events';
     }
 
@@ -679,7 +680,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
             '<th>Platform</th><th>App version</th><th>Went live</th><th>Status</th><th>Users</th><th>Events</th><th>Hidden pre-live events</th>' +
           '</tr></thead><tbody>' +
           rows.map(function(r) {
-            var live = r.live_at
+            var live = (r.live_at && r.status !== 'never_released')
               ? '<span title="' + escHtml(r.live_at) + '">' + escHtml(fmtEastern(r.live_at)) + '</span>'
               : '<span style="color:#999;">\u2014</span>';
             return '<tr>' +

@@ -58,6 +58,14 @@ Where to find the go-live time:
 - **Google Play Console**: Production, Releases, or the Publishing overview.
 - A console may show only a date. Use the start of that day (UTC) as a conservative boundary.
 
+**Skipped versions (never shipped publicly).** When a version number is consumed but never released on a platform (e.g. to keep iOS and Android versions in sync), record it with the sentinel `live_at = '9999-12-31T00:00:00Z'`. All of its events are then hidden from metrics, and the Releases table shows it as "Never released":
+
+```bash
+CLOUDFLARE_ACCOUNT_ID=<id> npx wrangler d1 execute analytics-db --remote --command "INSERT INTO version_releases (platform, app_version, live_at, note, created_at, updated_at) VALUES ('android','1.0.2','9999-12-31T00:00:00Z','Skipped - never released', datetime('now'), datetime('now')) ON CONFLICT(platform, app_version) DO UPDATE SET live_at=excluded.live_at, note=excluded.note, updated_at=excluded.updated_at;"
+```
+
+Do NOT use this for a version that is merely in store review: leave it without a row so its early traffic stays visible until you record the real go-live time.
+
 The **Releases** table at the bottom of the dashboard lists every version per platform with its go-live time, status, and how many pre-live events are hidden.
 
 ## Set or Update Secrets

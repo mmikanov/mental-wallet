@@ -88,7 +88,19 @@ export interface ReleaseRow {
   note?: string | null;
 }
 
-export type ReleaseStatus = 'live' | 'scheduled' | 'not_recorded';
+/**
+ * Sentinel `live_at` for a version number that was skipped / never shipped publicly (e.g. a
+ * build number consumed only to keep iOS and Android versions in sync). Because it is far in
+ * the future, the release predicate hides ALL events for that (platform, version) — they are
+ * test/review traffic by definition. Displayed as "Never released", not "Scheduled".
+ */
+export const NEVER_RELEASED_AT = '9999-12-31T00:00:00Z';
+
+export function isNeverReleased(liveAt: string | null | undefined): boolean {
+  return !!liveAt && liveAt.startsWith('9999');
+}
+
+export type ReleaseStatus = 'live' | 'scheduled' | 'not_recorded' | 'never_released';
 
 export interface ReleaseSummaryRow {
   platform: string;
@@ -122,7 +134,13 @@ export function summarizeReleases(
   ): ReleaseSummaryRow => {
     const rel = relByKey.get(key(platform, app_version));
     let status: ReleaseStatus = 'not_recorded';
-    if (rel) status = new Date(rel.live_at).getTime() <= nowMs ? 'live' : 'scheduled';
+    if (rel) {
+      status = isNeverReleased(rel.live_at)
+        ? 'never_released'
+        : new Date(rel.live_at).getTime() <= nowMs
+          ? 'live'
+          : 'scheduled';
+    }
     return {
       platform,
       app_version,
