@@ -167,4 +167,4 @@ curl https://mental-wallet-analytics.<your-subdomain>.workers.dev/health
 
 ## Costs
 
-Cloudflare Workers free tier: 100K requests/day, D1 free tier: 5M row reads/day, 100K writes/day, 5GB storage. Comfortably handles thousands of DAUs.
+Cloudflare Workers free tier: 100K requests/day, D1 free tier: 5M row reads/day, 100K writes/day, 5GB storage. Comfortably handles thousands of DAUs for event ingestion, but the **dashboard** is the read-heavy part: one full load runs ~25 queries that each scan the events table, so reads grow with table size. The Worker memoises `/kpis` and `/details/*` for 4 minutes in memory (add `&refresh=1` to bypass; the dashboard's "Refresh now" button does), reads `version_releases` once per 60s, and auto-refreshes every 30 minutes (pause button available). If the 5M/day read limit is hit anyway, reads are blocked until 00:00 UTC; Workers Paid ($5/mo) is the alternative. Before deploying any query change, measure `meta.rows_read` locally (see `docs/tech-debt.md` item 14). Proposed indexes are documented there and not yet applied.

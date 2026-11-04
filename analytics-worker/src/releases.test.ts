@@ -4,8 +4,14 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { DatabaseSync } from 'node:sqlite';
 import {
   releaseExclusionSql,
+  releaseExclusionExpr,
+  isSafeReleaseRow,
+  loadReleases,
+  invalidateReleasesCache,
+  RELEASES_CACHE_TTL_MS,
   metricsExclusionExpr,
   compareVersions,
   summarizeReleases,
@@ -13,31 +19,90 @@ import {
   isNeverReleased,
 } from './releases.ts';
 
-test('releaseExclusionSql: no bind params, unqualified by default', () => {
-  const sql = releaseExclusionSql();
+const REL = [
+  { platform: 'android', app_version: '1.0.6', live_at: '2026-11-04T14:30:00Z' },
+  { platform: 'ios', app_version: '1.0.6', live_at: '2026-11-10T00:00:00Z' },
+  { platform: 'android', app_version: '1.0.2', live_at: NEVER_RELEASED_AT, note: 'skipped' },
+];
+
+test('releaseExclusionSql: literal conditions, no bind params, no subquery', () => {
+  const sql = releaseExclusionSql(REL);
   assert.ok(!sql.includes('?'));
   assert.ok(sql.startsWith(' AND '));
-  assert.ok(sql.includes('version_releases'));
-  assert.ok(sql.includes('julianday(received_at) < julianday(vr.live_at)'));
-  assert.ok(sql.includes('received_at IS NULL'));
-  assert.ok(sql.includes('platform IS NULL') && sql.includes('app_version IS NULL'));
+  assert.ok(!sql.includes('version_releases') && !/select/i.test(sql));
+  assert.ok(sql.includes("platform = 'android' AND app_version = '1.0.6'"));
+  assert.ok(sql.includes("julianday(received_at) < julianday('2026-11-04T14:30:00Z')"));
   assert.ok(!sql.includes('events.') && !sql.includes('tc.'));
 });
 
-test('releaseExclusionSql: alias qualifies every event column', () => {
-  const sql = releaseExclusionSql('tc');
-  assert.ok(!sql.includes('?'));
-  assert.ok(sql.includes('tc.platform IS NULL'));
-  assert.ok(sql.includes('(tc.platform, tc.app_version) NOT IN'));
-  assert.ok(sql.includes('julianday(tc.received_at) < julianday(vr.live_at)'));
+test('releaseExclusionExpr: no rows => 1=1; alias qualifies every event column', () => {
+  assert.equal(releaseExclusionExpr([]), '1=1');
+  const sql = releaseExclusionSql(REL, 'tc');
+  assert.ok(sql.includes("tc.platform = 'ios' AND tc.app_version = '1.0.6'"));
+  assert.ok(sql.includes('julianday(tc.received_at) <'));
   assert.ok(!/[^.\w]received_at/.test(sql.replace(/tc\.received_at/g, '')));
 });
 
 test('metricsExclusionExpr: contains both skew and release predicates', () => {
-  const e = metricsExclusionExpr('events');
+  const e = metricsExclusionExpr(REL, 'events');
   assert.ok(e.includes('julianday(events.timestamp) - julianday(events.received_at) <= 1'));
-  assert.ok(e.includes('version_releases'));
+  assert.ok(e.includes("events.app_version = '1.0.6'"));
   assert.ok(!e.includes('?'));
+});
+
+test('release predicate: injection-unsafe rows are skipped, never inlined', () => {
+  const evil = [
+    { platform: "ios'; DROP TABLE events;--", app_version: '1.0.1', live_at: '2026-01-01T00:00:00Z' },
+    { platform: 'ios', app_version: "1.0' OR '1'='1", live_at: '2026-01-01T00:00:00Z' },
+    { platform: 'ios', app_version: '1.0.1', live_at: "2026-01-01T00:00:00Z') OR 1=1 --" },
+    { platform: 'IOS', app_version: '1.0.1', live_at: '2026-01-01T00:00:00Z' },
+    { platform: 'ios', app_version: '1.0.1', live_at: 'tomorrow' },
+    { platform: 'ios', app_version: '', live_at: '2026-01-01T00:00:00Z' },
+  ];
+  for (const r of evil) assert.equal(isSafeReleaseRow(r), false);
+  assert.equal(releaseExclusionExpr(evil), '1=1');
+  const mixed = releaseExclusionExpr([...evil, REL[0]]);
+  assert.ok(!mixed.includes('DROP') && !mixed.includes('OR 1=1') && !mixed.includes('tomorrow'));
+  assert.ok(mixed.includes("'1.0.6'"));
+  assert.equal(isSafeReleaseRow({ platform: 'ios', app_version: '1.0.6', live_at: '2026-11-04T14:30:00.000+00:00' }), true);
+});
+
+test('release predicate is semantically identical to the old correlated predicate (sqlite)', () => {
+  const db = new DatabaseSync(':memory:');
+  db.exec('CREATE TABLE events (id INTEGER PRIMARY KEY, platform TEXT, app_version TEXT, received_at TEXT)');
+  db.exec('CREATE TABLE version_releases (platform TEXT, app_version TEXT, live_at TEXT)');
+  const ins = db.prepare('INSERT INTO version_releases VALUES (?, ?, ?)');
+  for (const r of REL) ins.run(r.platform, r.app_version, r.live_at);
+  const times = [null, '2026-11-04T14:29:59Z', '2026-11-04T14:30:00Z', '2026-11-09T00:00:00Z', '2026-11-11T00:00:00Z', 'garbage'];
+  const plats = [null, 'android', 'ios', 'web'];
+  const vers = [null, '1.0.6', '1.0.2', '1.0.9'];
+  const insE = db.prepare('INSERT INTO events (platform, app_version, received_at) VALUES (?, ?, ?)');
+  for (const p of plats) for (const v of vers) for (const t of times) insE.run(p, v, t);
+  const oldSql =
+    '(platform IS NULL OR app_version IS NULL OR received_at IS NULL OR (platform, app_version) NOT IN (' +
+    'SELECT vr.platform, vr.app_version FROM version_releases vr WHERE julianday(received_at) < julianday(vr.live_at)))';
+  const oldIds = db.prepare(`SELECT id FROM events WHERE ${oldSql} ORDER BY id`).all().map((r) => r.id);
+  const newIds = db.prepare(`SELECT id FROM events WHERE ${releaseExclusionExpr(REL)} ORDER BY id`).all().map((r) => r.id);
+  assert.ok(oldIds.length > 0 && oldIds.length < plats.length * vers.length * times.length);
+  assert.deepEqual(newIds, oldIds);
+  // No rows => everything included.
+  const all = db.prepare(`SELECT COUNT(*) c FROM events WHERE ${releaseExclusionExpr([])}`).get() as { c: number };
+  assert.equal(all.c, plats.length * vers.length * times.length);
+});
+
+test('loadReleases: reads once, caches for the TTL, refetches after expiry or invalidation', async () => {
+  invalidateReleasesCache();
+  let calls = 0;
+  const db = { prepare: () => ({ all: async () => { calls++; return { results: REL as never[] }; } }) };
+  assert.equal((await loadReleases(db as never, 1_000_000)).length, 3);
+  await loadReleases(db as never, 1_000_000 + RELEASES_CACHE_TTL_MS - 1);
+  assert.equal(calls, 1);
+  await loadReleases(db as never, 1_000_000 + RELEASES_CACHE_TTL_MS);
+  assert.equal(calls, 2);
+  invalidateReleasesCache();
+  await loadReleases(db as never, 1_000_000 + RELEASES_CACHE_TTL_MS);
+  assert.equal(calls, 3);
+  invalidateReleasesCache();
 });
 
 test('compareVersions: numeric dotted ordering', () => {

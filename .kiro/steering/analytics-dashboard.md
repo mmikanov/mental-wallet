@@ -35,12 +35,12 @@ Two orthogonal filters flow from the dashboard to the backend as query params, a
 
 ### Read-time exclusions (clock-skew + release)
 
-Besides the filters above, metrics apply two fixed read-time exclusions, built by one shared helper (`metricsExclusionExpr` in `src/releases.ts`) at every place the clock-skew predicate appears (`handleKpis` filters, activation JOIN, cohort subqueries, cohort retention SQL, `buildDetailFilter`):
+Besides the filters above, metrics apply two fixed read-time exclusions, built by one shared helper (`metricsExclusionExpr(releases, alias?)` in `src/releases.ts`; the release rows come from `loadReleases(env.DB)`, read once per request and cached 60s) at every place the clock-skew predicate appears (`handleKpis` filters, activation JOIN, cohort subqueries, cohort retention SQL, `buildDetailFilter`):
 
 - **Clock-skew**: drop events whose device timestamp is more than a day ahead of `received_at`.
 - **Release**: drop events whose `received_at` is earlier than the `live_at` recorded for their (platform, app_version) in `version_releases`. No row = included; NULL `received_at`/`platform`/`app_version` = included. Nothing is deleted.
 
-Neither applies to raw `GET /events` or the all-time D1-health total. Neither uses bind params, so param arrays are unaffected. Any new self-built metric query MUST use `metricsExclusionExpr(alias)`. The `/details/releases` table is intentionally unfiltered. Operator steps: `docs/deployment/analytics-worker.md`.
+Neither applies to raw `GET /events` or the all-time D1-health total. Neither uses bind params, so param arrays are unaffected. Any new self-built metric query MUST use `metricsExclusionExpr(releases, alias)`. The release part is emitted as literal per-release conditions (whitelist-validated values), NOT a subquery. The `/details/releases` table is intentionally unfiltered. Operator steps: `docs/deployment/analytics-worker.md`.
 
 ### How cohort=new is implemented
 
@@ -63,6 +63,13 @@ AND <col> IN (
 ### Param binding discipline
 
 D1 uses positional `?` params. When a filter clause appears N times in one SQL string (e.g. `handleDetailUsers` embeds `clause` in 3 correlated subqueries + the outer WHERE), the params array must be repeated N times in the SAME order. `handleKpis` uses `withFilter(baseWhere)` which returns `{ where, params }`; always pass the matching `params` for each query. Empty-param queries must skip `.bind()` (there's a `query()` helper that handles this for local D1 compatibility).
+
+## D1 read budget (free tier: 5M row reads/day, account-wide)
+
+- **No correlated subqueries in per-row predicates.** A subquery that references the outer row is re-run per event row and multiplies `rows_read` (this is what blew the budget: ~3k reads became ~46k per query). Load small reference tables once in the Worker and inline validated literals instead.
+- **Check `meta.rows_read` locally before deploying** any query change (Miniflare D1 with ~3k seeded events; wrangler CLI `--json` does not print rows_read, use `Miniflare.getD1Database()`). Never run `--remote` to measure.
+- `GET /kpis` and `GET /details/*` are memoised in-isolate (4 min, keyed by full URL; auth first). `?refresh=1` bypasses; only the manual Refresh button sends it. Do not add new fetches to `refresh()`/`render()` that ignore this; filter-independent data should load once.
+- Index changes (`CREATE INDEX`) read the whole table; apply only when the daily budget allows. See `docs/tech-debt.md` item 14.
 
 ## Dashboard UI (dashboard.ts)
 

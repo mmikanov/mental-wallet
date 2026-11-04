@@ -9,7 +9,7 @@
  */
 
 import { DASHBOARD_HTML } from './dashboard';
-import { metricsExclusionExpr, summarizeReleases, type SeenVersionRow, type ReleaseRow } from './releases';
+import { metricsExclusionExpr, loadReleases, invalidateReleasesCache, summarizeReleases, type SeenVersionRow } from './releases';
 import { computeCohortRetention, type CohortUserRow } from './retention';
 import {
   extractChannel,
@@ -253,6 +253,8 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
   if (!isAuthorized(request, env)) return unauthorizedResponse();
 
   try {
+  // Read version_releases once per request (60s in-isolate cache) for the release predicate.
+  const releases = await loadReleases(env.DB);
   // Phase filtering: optional date range
   const url = new URL(request.url);
   const fromDate = url.searchParams.get('from') || null;
@@ -285,7 +287,7 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
       params.push(...excludedIds);
     }
     // Exclude clock-skewed events so first-touch lands on a trustworthy timestamp (no params).
-    sub += (excludedIds.length > 0 ? ' AND ' : ' WHERE ') + metricsExclusionExpr();
+    sub += (excludedIds.length > 0 ? ' AND ' : ' WHERE ') + metricsExclusionExpr(releases);
     sub += ' GROUP BY anonymous_user_id HAVING 1=1';
     if (fromDate) { sub += ' AND MIN(timestamp) >= ?'; params.push(fromDate); }
     if (toDate) { sub += ' AND MIN(timestamp) < ?'; params.push(toDate); }
@@ -322,7 +324,7 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
   // server's `received_at` (clock-skewed devices) from all metric computations. Pure
   // column math — NO bind params, so dateParams is untouched. NULL received_at (older
   // rows predating the column) must NOT be dropped, hence the IS NULL guard.
-  dateFilter += ' AND ' + metricsExclusionExpr();
+  dateFilter += ' AND ' + metricsExclusionExpr(releases);
 
   // Helper to build filtered queries
   const withFilter = (baseWhere: string) => {
@@ -368,7 +370,7 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
   if (toDate) { newUsersHaving += ' AND MIN(timestamp) < ?'; newUsersParams.push(toDate); }
   // Clock-skew exclusion in the first-touch cohort too (metric query). Either adds the
   // predicate as the first WHERE condition (no prior exclusion) or ANDs it on. No params.
-  const skewClause = metricsExclusionExpr();
+  const skewClause = metricsExclusionExpr(releases);
   const newUsersSkew = newUsersExclusion ? ` AND ${skewClause}` : ` WHERE ${skewClause}`;
   const newUsersSql = `
     SELECT COUNT(*) as count FROM (
@@ -465,8 +467,8 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
       outerParams.push(...outerChannel.params);
       // Clock-skew exclusion (table-qualified, no bind params) on both sides of the JOIN so
       // activation matches the other metric queries. NULL received_at is never dropped.
-      innerFilter += ' AND ' + metricsExclusionExpr('events');
-      outerFilter += ' AND ' + metricsExclusionExpr('tc');
+      innerFilter += ' AND ' + metricsExclusionExpr(releases, 'events');
+      outerFilter += ' AND ' + metricsExclusionExpr(releases, 'tc');
       return query(`
         SELECT tc.anonymous_user_id, tc.timestamp as completed_at, fo.first_open
         FROM events tc
@@ -542,7 +544,7 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
     FROM events
     WHERE event_type = 'app_opened'
       AND json_extract(properties, '$.days_since_install') IS NOT NULL${cohortExclusion}
-      AND ${metricsExclusionExpr()}
+      AND ${metricsExclusionExpr(releases)}
     GROUP BY anonymous_user_id
   `;
   const cohortStmt = env.DB.prepare(cohortSql);
@@ -669,7 +671,9 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
 // Shared phase/date + excluded-user filter for detail drill-downs.
 // Mirrors the dateFilter/withFilter logic in handleKpis so drill-downs
 // respect the active phase filter (from/to) exactly like the top cards.
-function buildDetailFilter(request: Request, env: Env) {
+async function buildDetailFilter(request: Request, env: Env) {
+  // One read of version_releases (cached in-isolate) feeds every literal release condition.
+  const releases = await loadReleases(env.DB);
   const url = new URL(request.url);
   const fromDate = url.searchParams.get('from') || null;
   const toDate = url.searchParams.get('to') || null;
@@ -705,7 +709,7 @@ function buildDetailFilter(request: Request, env: Env) {
       sub += ` WHERE anonymous_user_id NOT IN (${excludedIds.map(() => '?').join(', ')})`;
       params.push(...excludedIds);
     }
-    sub += (excludedIds.length > 0 ? ' AND ' : ' WHERE ') + metricsExclusionExpr();
+    sub += (excludedIds.length > 0 ? ' AND ' : ' WHERE ') + metricsExclusionExpr(releases);
     sub += ' GROUP BY anonymous_user_id HAVING 1=1';
     if (fromDate) { sub += ' AND MIN(timestamp) >= ?'; params.push(fromDate); }
     if (toDate) { sub += ' AND MIN(timestamp) < ?'; params.push(toDate); }
@@ -722,7 +726,7 @@ function buildDetailFilter(request: Request, env: Env) {
   // `received_at` from every detail/breakdown metric. Pure column math — NO bind params —
   // so it rides inside `clause` and repeats with it without disturbing the params array.
   // NULL received_at (pre-column rows) is explicitly preserved.
-  clause += ' AND ' + metricsExclusionExpr();
+  clause += ' AND ' + metricsExclusionExpr(releases);
 
   // Bind helper that tolerates empty params (local D1 compatibility).
   const query = (sql: string) => {
@@ -736,7 +740,7 @@ function buildDetailFilter(request: Request, env: Env) {
 async function handleDetailUsers(request: Request, env: Env): Promise<Response> {
   if (!isAuthorized(request, env)) return unauthorizedResponse();
 
-  const { clause, params } = buildDetailFilter(request, env);
+  const { clause, params } = await buildDetailFilter(request, env);
   // Platform / OS version are per-event. Show each user's most recent
   // non-null value via correlated subqueries against their latest event.
   // The subqueries reuse the same phase/exclusion filter params, so the
@@ -776,7 +780,7 @@ async function handleDetailUsers(request: Request, env: Env): Promise<Response> 
 async function handleDetailOnboarding(request: Request, env: Env): Promise<Response> {
   if (!isAuthorized(request, env)) return unauthorizedResponse();
 
-  const { clause, params, query } = buildDetailFilter(request, env);
+  const { clause, params, query } = await buildDetailFilter(request, env);
 
   // The counts query has two independent sub-selects; each needs its own
   // copy of the filter params, so bind params twice (in sub-select order).
@@ -812,7 +816,7 @@ async function handleDetailOnboarding(request: Request, env: Env): Promise<Respo
 async function handleDetailModes(request: Request, env: Env): Promise<Response> {
   if (!isAuthorized(request, env)) return unauthorizedResponse();
 
-  const { clause, query } = buildDetailFilter(request, env);
+  const { clause, query } = await buildDetailFilter(request, env);
   const result = await query(`
     SELECT
       anonymous_user_id,
@@ -838,7 +842,7 @@ async function handleDetailModes(request: Request, env: Env): Promise<Response> 
 async function handleDetailEmotionSessions(request: Request, env: Env): Promise<Response> {
   if (!isAuthorized(request, env)) return unauthorizedResponse();
 
-  const { clause, params, query } = buildDetailFilter(request, env);
+  const { clause, params, query } = await buildDetailFilter(request, env);
 
   // Per-user: number of emotion sessions started (session_started, one per
   // session, all entry points) + first/last seen. This is the reliable
@@ -905,7 +909,7 @@ async function handleDetailEmotionSessions(request: Request, env: Env): Promise<
 async function handleDetailTools(request: Request, env: Env): Promise<Response> {
   if (!isAuthorized(request, env)) return unauthorizedResponse();
 
-  const { clause, query } = buildDetailFilter(request, env);
+  const { clause, query } = await buildDetailFilter(request, env);
   const result = await query(`
     SELECT
       json_extract(properties, '$.card_id') as card_id,
@@ -928,7 +932,7 @@ async function handleDetailTools(request: Request, env: Env): Promise<Response> 
 async function handleDetailWalletGrowth(request: Request, env: Env): Promise<Response> {
   if (!isAuthorized(request, env)) return unauthorizedResponse();
 
-  const { clause, query } = buildDetailFilter(request, env);
+  const { clause, query } = await buildDetailFilter(request, env);
   // One row per add event (tool_added ∪ tool_created). Source resolves the surface:
   //   tool_created                              -> 'created'
   //   tool_added with source 'emotion_session'  -> 'emotion_session'
@@ -962,7 +966,7 @@ async function handleDetailWalletGrowth(request: Request, env: Env): Promise<Res
 async function handleDetailOutcomes(request: Request, env: Env): Promise<Response> {
   if (!isAuthorized(request, env)) return unauthorizedResponse();
 
-  const { clause, query } = buildDetailFilter(request, env);
+  const { clause, query } = await buildDetailFilter(request, env);
   const result = await query(`
     SELECT
       json_extract(properties, '$.response') as response,
@@ -982,7 +986,7 @@ async function handleDetailOutcomes(request: Request, env: Env): Promise<Respons
 async function handleDetailPlatforms(request: Request, env: Env): Promise<Response> {
   if (!isAuthorized(request, env)) return unauthorizedResponse();
 
-  const { clause, query } = buildDetailFilter(request, env);
+  const { clause, query } = await buildDetailFilter(request, env);
   const [platformResult, osVersionResult, appVersionResult] = await Promise.all([
     query(`
       SELECT platform, COUNT(DISTINCT anonymous_user_id) as users, COUNT(*) as events
@@ -1031,7 +1035,7 @@ async function handleDetailChannels(request: Request, env: Env): Promise<Respons
   const strippedUrl = new URL(request.url);
   strippedUrl.searchParams.delete('channel');
   const strippedRequest = new Request(strippedUrl.toString(), request);
-  const { clause, query } = buildDetailFilter(strippedRequest, env);
+  const { clause, query } = await buildDetailFilter(strippedRequest, env);
 
   const nowISO = new Date().toISOString();
 
@@ -1213,20 +1217,64 @@ async function handleDetailReleases(request: Request, env: Env): Promise<Respons
     GROUP BY e.platform, e.app_version
   `;
   const seenStmt = env.DB.prepare(seenSql);
-  const [seenResult, relResult] = await Promise.all([
+  const [seenResult, releaseRows] = await Promise.all([
     (excludedIds.length > 0 ? seenStmt.bind(...excludedIds) : seenStmt).all<SeenVersionRow>(),
-    env.DB.prepare('SELECT platform, app_version, live_at, note FROM version_releases').all<ReleaseRow>(),
+    loadReleases(env.DB),
   ]);
 
   const rows = summarizeReleases(
     (seenResult.results || []) as SeenVersionRow[],
-    (relResult.results || []) as ReleaseRow[],
+    releaseRows,
     new Date().toISOString(),
   );
   return corsResponse(JSON.stringify({ releases: rows }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   });
+}
+
+// --- In-isolate response memo for expensive read endpoints ---
+// Every dashboard load fires ~25 queries over the events table; D1's free tier is
+// 5M row reads/day account-wide. Memoise GET /kpis and GET /details/* per isolate keyed by
+// the full URL (minus `refresh`). The Cache API does not work on *.workers.dev, so this is
+// plain memory: best-effort (isolates come and go), never a correctness dependency.
+// Auth is always checked BEFORE the cache is consulted. `?refresh=1` bypasses the cache.
+const RESPONSE_CACHE_TTL_MS = 4 * 60 * 1000;
+const RESPONSE_CACHE_MAX = 200;
+const responseCache = new Map<string, { at: number; status: number; body: string }>();
+
+async function memoized(
+  request: Request,
+  env: Env,
+  handler: (request: Request, env: Env) => Promise<Response>,
+): Promise<Response> {
+  if (!isAuthorized(request, env)) return unauthorizedResponse();
+  const url = new URL(request.url);
+  const refresh = url.searchParams.get('refresh') === '1';
+  url.searchParams.delete('refresh');
+  const key = url.toString();
+  const now = Date.now();
+  if (refresh) {
+    invalidateReleasesCache();
+  } else {
+    const hit = responseCache.get(key);
+    if (hit && now - hit.at < RESPONSE_CACHE_TTL_MS) {
+      return corsResponse(hit.body, {
+        status: hit.status,
+        headers: { 'Content-Type': 'application/json', 'X-Cache': 'HIT' },
+      });
+    }
+  }
+  const res = await handler(request, env);
+  if (res.status === 200) {
+    const body = await res.clone().text();
+    if (responseCache.size >= RESPONSE_CACHE_MAX) {
+      for (const [k, v] of responseCache) if (now - v.at >= RESPONSE_CACHE_TTL_MS) responseCache.delete(k);
+      if (responseCache.size >= RESPONSE_CACHE_MAX) responseCache.delete(responseCache.keys().next().value as string);
+    }
+    responseCache.set(key, { at: now, status: 200, body });
+  }
+  return res;
 }
 
 // --- Main Fetch Handler ---
@@ -1255,37 +1303,37 @@ export default {
       return handleDashboard(request, env);
     }
     if (path === '/kpis' && request.method === 'GET') {
-      return handleKpis(request, env);
+      return memoized(request, env, handleKpis);
     }
     if (path === '/details/users' && request.method === 'GET') {
-      return handleDetailUsers(request, env);
+      return memoized(request, env, handleDetailUsers);
     }
     if (path === '/details/onboarding' && request.method === 'GET') {
-      return handleDetailOnboarding(request, env);
+      return memoized(request, env, handleDetailOnboarding);
     }
     if (path === '/details/modes' && request.method === 'GET') {
-      return handleDetailModes(request, env);
+      return memoized(request, env, handleDetailModes);
     }
     if (path === '/details/emotion-sessions' && request.method === 'GET') {
-      return handleDetailEmotionSessions(request, env);
+      return memoized(request, env, handleDetailEmotionSessions);
     }
     if (path === '/details/tools' && request.method === 'GET') {
-      return handleDetailTools(request, env);
+      return memoized(request, env, handleDetailTools);
     }
     if (path === '/details/wallet-growth' && request.method === 'GET') {
-      return handleDetailWalletGrowth(request, env);
+      return memoized(request, env, handleDetailWalletGrowth);
     }
     if (path === '/details/outcomes' && request.method === 'GET') {
-      return handleDetailOutcomes(request, env);
+      return memoized(request, env, handleDetailOutcomes);
     }
     if (path === '/details/platforms' && request.method === 'GET') {
-      return handleDetailPlatforms(request, env);
+      return memoized(request, env, handleDetailPlatforms);
     }
     if (path === '/details/channels' && request.method === 'GET') {
-      return handleDetailChannels(request, env);
+      return memoized(request, env, handleDetailChannels);
     }
     if (path === '/details/releases' && request.method === 'GET') {
-      return handleDetailReleases(request, env);
+      return memoized(request, env, handleDetailReleases);
     }
 
     // Health check

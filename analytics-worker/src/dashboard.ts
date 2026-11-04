@@ -252,7 +252,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     // How often the dashboard auto-refreshes, in milliseconds. Change this one
     // value to adjust the cadence. Auto-refresh also pauses while the tab is
     // hidden, so a forgotten open tab does not keep querying D1 in the background.
-    const REFRESH_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+    const REFRESH_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes (D1 free tier: 5M row reads/day)
 
     // D1 health indicator thresholds (event count as a proxy for read-budget risk).
     // The dashboard can't read the account's actual D1 rows_read, so it warns based on
@@ -278,6 +278,11 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     let refreshTimer = null;    // setTimeout handle for the next auto-refresh
     let paused = false;         // when true, auto-refresh is suspended (no D1 reads) until resumed
     let countdownTimer = null;  // setInterval handle for the countdown display
+    // Set only by the manual "Refresh now" button: appends refresh=1 so the Worker bypasses
+    // its in-memory response cache for that one refresh. Auto-refresh and filter changes
+    // leave it false and may be served from the cache.
+    let forceFresh = false;
+    function freshParam() { return forceFresh ? '&refresh=1' : ''; }
 
     async function fetchMilestones() {
       try {
@@ -414,7 +419,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
 
     async function fetchKPIs() {
       try {
-        const res = await fetch('/kpis?secret=' + encodeURIComponent(SECRET) + getPhaseParams());
+        const res = await fetch('/kpis?secret=' + encodeURIComponent(SECRET) + getPhaseParams() + freshParam());
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return await res.json();
       } catch (e) {
@@ -425,7 +430,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
 
     async function fetchDetail(type, cohortOverride) {
       try {
-        const res = await fetch('/details/' + type + '?secret=' + encodeURIComponent(SECRET) + getPhaseParams(cohortOverride));
+        const res = await fetch('/details/' + type + '?secret=' + encodeURIComponent(SECRET) + getPhaseParams(cohortOverride) + freshParam());
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return await res.json();
       } catch (e) {
@@ -635,7 +640,14 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
       // getPhaseParams; the endpoint ignores &channel so it always spans every channel)
       // and repopulate the channel <select> from the channels present in the data.
       loadChannelBreakdown();
-      loadReleases();
+      // The release table ignores every filter, so load it once and only re-fetch on a
+      // manual refresh (phase/cohort/channel changes would just re-read the same data).
+      if (!releasesLoaded || forceFresh) {
+        loadReleases();
+      } else {
+        var relEl = document.getElementById('release-table');
+        if (relEl) relEl.innerHTML = releasesHtml;
+      }
     }
 
     // Releases reference table. Own fetch with NO phase/cohort/channel params: it spans
@@ -663,19 +675,23 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
       return 'Not recorded \u2014 showing all events';
     }
 
+    let releasesLoaded = false;
+    let releasesHtml = '';  // last rendered release table, restored when render() rebuilds the page
     async function loadReleases() {
       var container = document.getElementById('release-table');
       if (!container) return;
       try {
-        var res = await fetch('/details/releases?secret=' + encodeURIComponent(SECRET));
+        var res = await fetch('/details/releases?secret=' + encodeURIComponent(SECRET) + freshParam());
         if (!res.ok) throw new Error('HTTP ' + res.status);
         var data = await res.json();
         var rows = (data && Array.isArray(data.releases)) ? data.releases : [];
         if (rows.length === 0) {
-          container.innerHTML = '<div class="detail" style="color:#6c757d;">No versions seen yet.</div>';
+          releasesHtml = '<div class="detail" style="color:#6c757d;">No versions seen yet.</div>';
+          releasesLoaded = true;
+          container.innerHTML = releasesHtml;
           return;
         }
-        container.innerHTML =
+        releasesHtml =
           '<table><thead><tr>' +
             '<th>Platform</th><th>App version</th><th>Went live</th><th>Status</th><th>Users</th><th>Events</th><th>Hidden pre-live events</th>' +
           '</tr></thead><tbody>' +
@@ -694,6 +710,8 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
               '</tr>';
           }).join('') +
           '</tbody></table>';
+        releasesLoaded = true;
+        container.innerHTML = releasesHtml;
       } catch (e) {
         console.error('Failed to load releases:', e);
         container.innerHTML = '<div class="detail" style="color:#b26a00;">Could not load releases.</div>';
@@ -1013,9 +1031,11 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     async function manualRefresh() {
       const btn = document.getElementById('refresh-now-btn');
       if (btn) { btn.disabled = true; btn.textContent = 'Refreshing...'; }
+      forceFresh = true;
       try {
         await refresh();
       } finally {
+        forceFresh = false;
         if (btn) { btn.disabled = false; btn.textContent = 'Refresh now'; }
         scheduleNext();
       }

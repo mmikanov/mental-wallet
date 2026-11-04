@@ -120,6 +120,43 @@ _Last updated: 2026-11 (post-1.0.6 submission)._
 - **Effort:** Medium (design work from Apple's templates). **Priority:** Low (post-launch marketing).
 - **Source:** 1.0.6 App Store submission.
 
+### 14. D1 read amplification: dashboard queries scale with table size (lesson + follow-ups)
+- **What:** In Nov 2026 the D1 free tier (5M row reads/day, account-wide) was exhausted and reads
+  were blocked until 2026-11-05T00:00Z. Cause: the release predicate was a correlated
+  `NOT IN (SELECT ... FROM version_releases ...)` re-evaluated per event row, on top of ~25
+  queries per dashboard load that each scan thousands of rows. **Fixed in code:** the release rows
+  are read once (60s isolate cache) and inlined as literal conditions; `/kpis` and `/details/*`
+  are memoised for 4 min (`?refresh=1` bypasses; the Refresh button uses it); auto-refresh is
+  now 30 min; the Releases table loads once instead of on every filter change.
+- **Measured locally** (Miniflare D1, 3,000 synthetic events + 12 `version_releases` rows,
+  `meta.rows_read`), old predicate vs new:
+
+  | Query | Before | After |
+  |---|---|---|
+  | `COUNT(*)` (all filter) | 46,612 | 3,000 |
+  | distinct users, app_opened | 19,113 | 1,236 |
+  | retention buckets | 19,706 | 1,829 |
+  | new users (first touch) | 46,612 | 3,000 |
+  | cohort=new + count | 75,039 | 5,021 |
+  | activation JOIN | 24,871 | 2,438 |
+  | cohort retention SQL | 19,706 | 1,829 |
+  | **Total** | **251,659** | **18,353** |
+
+- **Lessons:** (1) dashboard queries scale with table size, so reads/day grow with every event;
+  (2) a correlated subquery in a per-row predicate multiplies D1 reads; (3) on the free tier, caching
+  is required, not optional; (4) Workers Paid ($5/mo) lifts the read allowance dramatically and is
+  the alternative if caching is not enough; (5) always measure `meta.rows_read` locally before deploying.
+- **Proposed migration, NOT yet applied (to apply after the reset; CREATE INDEX reads the whole
+  table):** `CREATE INDEX IF NOT EXISTS idx_events_type_timestamp ON events (event_type, timestamp);`
+  and `CREATE INDEX IF NOT EXISTS idx_events_anonymous_user_id ON events (anonymous_user_id);`.
+  Note `0001_create_events.sql` already defines `idx_events_type_timestamp` and
+  `idx_events_user (anonymous_user_id, timestamp)`, which already serves `anonymous_user_id`
+  lookups. First check what production has (`PRAGMA index_list(events)`) once reads are back;
+  only add what is missing. Most dashboard predicates are also `json_extract`/`julianday` on
+  columns, so indexes help the `event_type` filter but not every scan.
+- **Effort:** Small. **Priority:** High until verified in production.
+- **Source:** D1 free-tier read limit hit (Nov 2026).
+
 ---
 
 ## Broader / known pre-existing

@@ -21,41 +21,88 @@ export function skewExclusionExpr(alias?: string): string {
   return `(${r} IS NULL OR julianday(${t}) - julianday(${r}) <= 1)`;
 }
 
+// --- Release predicate -------------------------------------------------------------
+//
+// The old predicate was a correlated `(platform, app_version) NOT IN (SELECT ... FROM
+// version_releases ...)` that D1 re-evaluated per event row, multiplying rows_read by the
+// size of version_releases (6k -> 46-84k reads per query). The Worker now reads the ~12
+// release rows ONCE (cached per isolate) and emits LITERAL per-release conditions, so the
+// event scan never touches version_releases. Still no bind params.
+
+const PLATFORM_RE = /^[a-z]+$/;
+const VERSION_RE = /^[0-9]+(\.[0-9]+)*$/;
+// ISO-8601 UTC / offset timestamp, e.g. 2026-11-04T14:30:00Z or ...:00.000+00:00
+const LIVE_AT_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,9})?(Z|[+-]\d{2}:\d{2})$/;
+
+/** True when a release row is safe to inline as SQL literals (strict whitelist). */
+export function isSafeReleaseRow(r: ReleaseRow): boolean {
+  return (
+    typeof r?.platform === 'string' && PLATFORM_RE.test(r.platform) &&
+    typeof r?.app_version === 'string' && VERSION_RE.test(r.app_version) &&
+    typeof r?.live_at === 'string' && LIVE_AT_RE.test(r.live_at)
+  );
+}
+
 /**
  * Release predicate as a bare expression (no leading AND, no bind params).
  *
- * Shape: keep the row if any of platform / app_version / received_at is NULL, or if its
- * (platform, app_version) is NOT in the set of releases whose live_at is later than the
- * event's received_at. The row-value is evaluated in the OUTER scope on purpose: an
- * unqualified `platform` inside a subquery over version_releases would bind to the
- * release row, not the event row. `received_at` is not a version_releases column, so it
- * correctly resolves to the event row (qualified when an alias is given).
+ * One condition per VALID release row, AND-ed together; no (valid) rows => `1=1`. Values
+ * are whitelist-validated (rows failing the regexes are skipped), so inlining is safe.
+ * The COALESCE matters: with a NULL platform/app_version/received_at the inner comparison
+ * is NULL, and a bare `NOT NULL` would DROP the row. COALESCE(...,0) keeps it, matching the
+ * old semantics (NULLs always included, no row => included).
  */
-export function releaseExclusionExpr(alias?: string): string {
+export function releaseExclusionExpr(releases: ReleaseRow[], alias?: string): string {
   const p = col(alias, 'platform');
   const v = col(alias, 'app_version');
   const r = col(alias, 'received_at');
-  return `(${p} IS NULL OR ${v} IS NULL OR ${r} IS NULL OR (${p}, ${v}) NOT IN (` +
-    `SELECT vr.platform, vr.app_version FROM version_releases vr ` +
-    `WHERE julianday(${r}) < julianday(vr.live_at)))`;
+  const conds = releases.filter(isSafeReleaseRow).map(
+    (x) =>
+      `NOT COALESCE(${p} = '${x.platform}' AND ${v} = '${x.app_version}' AND ${r} IS NOT NULL ` +
+      `AND julianday(${r}) < julianday('${x.live_at}'), 0)`,
+  );
+  return conds.length > 0 ? `(${conds.join(' AND ')})` : '1=1';
 }
 
 /** `AND <release predicate>` fragment for appending to an existing WHERE. */
-export function releaseExclusionSql(alias?: string): string {
-  return ` AND ${releaseExclusionExpr(alias)}`;
+export function releaseExclusionSql(releases: ReleaseRow[], alias?: string): string {
+  return ` AND ${releaseExclusionExpr(releases, alias)}`;
 }
 
 /**
  * Combined metrics exclusion (clock-skew + pre-live release), bare expression. Use this
  * everywhere the skew predicate used to be so the two can never drift apart.
  */
-export function metricsExclusionExpr(alias?: string): string {
-  return `${skewExclusionExpr(alias)} AND ${releaseExclusionExpr(alias)}`;
+export function metricsExclusionExpr(releases: ReleaseRow[], alias?: string): string {
+  return `${skewExclusionExpr(alias)} AND ${releaseExclusionExpr(releases, alias)}`;
 }
 
 /** `AND <combined>` fragment. */
-export function metricsExclusionSql(alias?: string): string {
-  return ` AND ${metricsExclusionExpr(alias)}`;
+export function metricsExclusionSql(releases: ReleaseRow[], alias?: string): string {
+  return ` AND ${metricsExclusionExpr(releases, alias)}`;
+}
+
+// --- Per-isolate release cache -------------------------------------------------------
+
+export const RELEASES_CACHE_TTL_MS = 60_000;
+let releasesCache: { rows: ReleaseRow[]; at: number } | null = null;
+
+export function invalidateReleasesCache(): void {
+  releasesCache = null;
+}
+
+/** Minimal D1 surface so this stays testable without Workers types. */
+export interface ReleasesDb {
+  prepare(sql: string): { all<T>(): Promise<{ results?: T[] }> };
+}
+
+/** Read version_releases once (~12 rows), cached in-isolate for 60s. */
+export async function loadReleases(db: ReleasesDb, now: number = Date.now()): Promise<ReleaseRow[]> {
+  if (releasesCache && now - releasesCache.at < RELEASES_CACHE_TTL_MS) return releasesCache.rows;
+  const res = await db.prepare('SELECT platform, app_version, live_at, note FROM version_releases').all<ReleaseRow>();
+  const rows = (res.results || []) as ReleaseRow[];
+  releasesCache = { rows, at: now };
+  return rows;
 }
 
 /** Numeric dotted compare. Returns <0, 0, >0 (ascending). Non-numeric parts count as 0. */
