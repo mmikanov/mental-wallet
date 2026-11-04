@@ -20,7 +20,7 @@ The production analytics backend is a Cloudflare Worker with D1 (SQLite) storage
 - `GET /events` — raw events JSON (auth). `DELETE /events` — clear all (auth).
 - `GET /dashboard` — serves `DASHBOARD_HTML` with `__DASHBOARD_SECRET__` substituted in.
 - `GET /kpis` — all top-level KPIs computed server-side.
-- `GET /details/{users|onboarding|modes|tools|outcomes|platforms}` — drill-down tables.
+- `GET /details/{users|onboarding|modes|tools|outcomes|platforms}` — drill-down tables. `GET /details/releases` — release reference table (ignores phase/cohort/channel).
 - `GET /milestones` — phase dates + excluded IDs for the dashboard filters.
 - `GET /health` — `{status:"ok"}`.
 
@@ -32,6 +32,15 @@ Two orthogonal filters flow from the dashboard to the backend as query params, a
 
 1. **Phase filter** (`from` / `to` ISO timestamps) — selects a date window. Driven by milestone dates (`MILESTONE_RELEASE`, `MILESTONE_WARM_END`, `MILESTONE_COLD_START`). See `docs/deployment/analytics-worker.md` for how buttons map to windows.
 2. **Cohort filter** (`cohort=active|new`) — Active (default) = any user with activity in the window; New = the acquisition cohort, users whose FIRST-EVER event falls inside the window.
+
+### Read-time exclusions (clock-skew + release)
+
+Besides the filters above, metrics apply two fixed read-time exclusions, built by one shared helper (`metricsExclusionExpr` in `src/releases.ts`) at every place the clock-skew predicate appears (`handleKpis` filters, activation JOIN, cohort subqueries, cohort retention SQL, `buildDetailFilter`):
+
+- **Clock-skew**: drop events whose device timestamp is more than a day ahead of `received_at`.
+- **Release**: drop events whose `received_at` is earlier than the `live_at` recorded for their (platform, app_version) in `version_releases`. No row = included; NULL `received_at`/`platform`/`app_version` = included. Nothing is deleted.
+
+Neither applies to raw `GET /events` or the all-time D1-health total. Neither uses bind params, so param arrays are unaffected. Any new self-built metric query MUST use `metricsExclusionExpr(alias)`. The `/details/releases` table is intentionally unfiltered. Operator steps: `docs/deployment/analytics-worker.md`.
 
 ### How cohort=new is implemented
 

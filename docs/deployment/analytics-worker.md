@@ -41,6 +41,25 @@ Always run the migration before deploying the code that depends on the new schem
 
 ---
 
+## Record a Version's Go-Live Time (Release Filter)
+
+Store review and tester (TestFlight / internal track) traffic arrives before a version is public. Metrics ignore a version's events **received before** its recorded go-live time, per platform. No row for a (platform, version) means all its events are shown (so you can watch a release during review, and history stays intact). Nothing is deleted, and the raw `/events` view and the D1 health total are not filtered.
+
+Once a version is public on a store, record it (run the migration first if `version_releases` does not exist yet: `0006_create_version_releases.sql`):
+
+```bash
+CLOUDFLARE_ACCOUNT_ID=<id> npx wrangler d1 execute analytics-db --remote --command "INSERT INTO version_releases (platform, app_version, live_at, created_at, updated_at) VALUES ('android','1.0.6','2026-11-05T14:00:00Z', datetime('now'), datetime('now')) ON CONFLICT(platform, app_version) DO UPDATE SET live_at=excluded.live_at, updated_at=excluded.updated_at;"
+```
+
+`CLOUDFLARE_ACCOUNT_ID` is required for `wrangler d1 execute --remote` in this setup. `platform` is `ios` or `android`; `live_at` is ISO-8601 UTC. Re-running with a new time updates it.
+
+Where to find the go-live time:
+- **App Store Connect**: the version's Activity tab, the status change to Ready for Sale.
+- **Google Play Console**: Production, Releases, or the Publishing overview.
+- A console may show only a date. Use the start of that day (UTC) as a conservative boundary.
+
+The **Releases** table at the bottom of the dashboard lists every version per platform with its go-live time, status, and how many pre-live events are hidden.
+
 ## Set or Update Secrets
 
 ```bash

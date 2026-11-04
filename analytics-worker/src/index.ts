@@ -9,6 +9,7 @@
  */
 
 import { DASHBOARD_HTML } from './dashboard';
+import { metricsExclusionExpr, summarizeReleases, type SeenVersionRow, type ReleaseRow } from './releases';
 import { computeCohortRetention, type CohortUserRow } from './retention';
 import {
   extractChannel,
@@ -284,7 +285,7 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
       params.push(...excludedIds);
     }
     // Exclude clock-skewed events so first-touch lands on a trustworthy timestamp (no params).
-    sub += (excludedIds.length > 0 ? ' AND' : ' WHERE') + ' (received_at IS NULL OR julianday(timestamp) - julianday(received_at) <= 1)';
+    sub += (excludedIds.length > 0 ? ' AND ' : ' WHERE ') + metricsExclusionExpr();
     sub += ' GROUP BY anonymous_user_id HAVING 1=1';
     if (fromDate) { sub += ' AND MIN(timestamp) >= ?'; params.push(fromDate); }
     if (toDate) { sub += ' AND MIN(timestamp) < ?'; params.push(toDate); }
@@ -321,7 +322,7 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
   // server's `received_at` (clock-skewed devices) from all metric computations. Pure
   // column math — NO bind params, so dateParams is untouched. NULL received_at (older
   // rows predating the column) must NOT be dropped, hence the IS NULL guard.
-  dateFilter += ' AND (received_at IS NULL OR julianday(timestamp) - julianday(received_at) <= 1)';
+  dateFilter += ' AND ' + metricsExclusionExpr();
 
   // Helper to build filtered queries
   const withFilter = (baseWhere: string) => {
@@ -367,7 +368,7 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
   if (toDate) { newUsersHaving += ' AND MIN(timestamp) < ?'; newUsersParams.push(toDate); }
   // Clock-skew exclusion in the first-touch cohort too (metric query). Either adds the
   // predicate as the first WHERE condition (no prior exclusion) or ANDs it on. No params.
-  const skewClause = '(received_at IS NULL OR julianday(timestamp) - julianday(received_at) <= 1)';
+  const skewClause = metricsExclusionExpr();
   const newUsersSkew = newUsersExclusion ? ` AND ${skewClause}` : ` WHERE ${skewClause}`;
   const newUsersSql = `
     SELECT COUNT(*) as count FROM (
@@ -464,8 +465,8 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
       outerParams.push(...outerChannel.params);
       // Clock-skew exclusion (table-qualified, no bind params) on both sides of the JOIN so
       // activation matches the other metric queries. NULL received_at is never dropped.
-      innerFilter += ' AND (events.received_at IS NULL OR julianday(events.timestamp) - julianday(events.received_at) <= 1)';
-      outerFilter += ' AND (tc.received_at IS NULL OR julianday(tc.timestamp) - julianday(tc.received_at) <= 1)';
+      innerFilter += ' AND ' + metricsExclusionExpr('events');
+      outerFilter += ' AND ' + metricsExclusionExpr('tc');
       return query(`
         SELECT tc.anonymous_user_id, tc.timestamp as completed_at, fo.first_open
         FROM events tc
@@ -541,7 +542,7 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
     FROM events
     WHERE event_type = 'app_opened'
       AND json_extract(properties, '$.days_since_install') IS NOT NULL${cohortExclusion}
-      AND (received_at IS NULL OR julianday(timestamp) - julianday(received_at) <= 1)
+      AND ${metricsExclusionExpr()}
     GROUP BY anonymous_user_id
   `;
   const cohortStmt = env.DB.prepare(cohortSql);
@@ -704,7 +705,7 @@ function buildDetailFilter(request: Request, env: Env) {
       sub += ` WHERE anonymous_user_id NOT IN (${excludedIds.map(() => '?').join(', ')})`;
       params.push(...excludedIds);
     }
-    sub += (excludedIds.length > 0 ? ' AND' : ' WHERE') + ' (received_at IS NULL OR julianday(timestamp) - julianday(received_at) <= 1)';
+    sub += (excludedIds.length > 0 ? ' AND ' : ' WHERE ') + metricsExclusionExpr();
     sub += ' GROUP BY anonymous_user_id HAVING 1=1';
     if (fromDate) { sub += ' AND MIN(timestamp) >= ?'; params.push(fromDate); }
     if (toDate) { sub += ' AND MIN(timestamp) < ?'; params.push(toDate); }
@@ -721,7 +722,7 @@ function buildDetailFilter(request: Request, env: Env) {
   // `received_at` from every detail/breakdown metric. Pure column math — NO bind params —
   // so it rides inside `clause` and repeats with it without disturbing the params array.
   // NULL received_at (pre-column rows) is explicitly preserved.
-  clause += ' AND (received_at IS NULL OR julianday(timestamp) - julianday(received_at) <= 1)';
+  clause += ' AND ' + metricsExclusionExpr();
 
   // Bind helper that tolerates empty params (local D1 compatibility).
   const query = (sql: string) => {
@@ -1182,6 +1183,52 @@ async function handleDetailChannels(request: Request, env: Env): Promise<Respons
   });
 }
 
+// Release reference table: every (platform, app_version) seen in events merged with the
+// recorded go-live times. Deliberately spans ALL platforms/versions and ignores the
+// phase/cohort/channel filters (a reference table, like the channel breakdown). Only the
+// internal-user exclusion list is applied. Counts are RAW (not release-filtered); the
+// hidden column shows how many of those events the metrics currently ignore.
+async function handleDetailReleases(request: Request, env: Env): Promise<Response> {
+  if (!isAuthorized(request, env)) return unauthorizedResponse();
+
+  const excludedIds = env.EXCLUDED_USER_IDS
+    ? env.EXCLUDED_USER_IDS.split(',').map(id => id.trim()).filter(id => id.length > 0)
+    : [];
+  const exclusion = excludedIds.length > 0
+    ? ` AND e.anonymous_user_id NOT IN (${excludedIds.map(() => '?').join(', ')})`
+    : '';
+  const seenSql = `
+    SELECT
+      e.platform AS platform,
+      e.app_version AS app_version,
+      MIN(e.timestamp) AS first_seen,
+      MAX(e.timestamp) AS last_seen,
+      COUNT(DISTINCT e.anonymous_user_id) AS users,
+      COUNT(*) AS events,
+      SUM(CASE WHEN vr.live_at IS NOT NULL AND e.received_at IS NOT NULL
+               AND julianday(e.received_at) < julianday(vr.live_at) THEN 1 ELSE 0 END) AS hidden_pre_live_events
+    FROM events e
+    LEFT JOIN version_releases vr ON vr.platform = e.platform AND vr.app_version = e.app_version
+    WHERE e.platform IS NOT NULL AND e.app_version IS NOT NULL${exclusion}
+    GROUP BY e.platform, e.app_version
+  `;
+  const seenStmt = env.DB.prepare(seenSql);
+  const [seenResult, relResult] = await Promise.all([
+    (excludedIds.length > 0 ? seenStmt.bind(...excludedIds) : seenStmt).all<SeenVersionRow>(),
+    env.DB.prepare('SELECT platform, app_version, live_at, note FROM version_releases').all<ReleaseRow>(),
+  ]);
+
+  const rows = summarizeReleases(
+    (seenResult.results || []) as SeenVersionRow[],
+    (relResult.results || []) as ReleaseRow[],
+    new Date().toISOString(),
+  );
+  return corsResponse(JSON.stringify({ releases: rows }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
 // --- Main Fetch Handler ---
 
 export default {
@@ -1236,6 +1283,9 @@ export default {
     }
     if (path === '/details/channels' && request.method === 'GET') {
       return handleDetailChannels(request, env);
+    }
+    if (path === '/details/releases' && request.method === 'GET') {
+      return handleDetailReleases(request, env);
     }
 
     // Health check

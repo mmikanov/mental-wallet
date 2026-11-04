@@ -1,0 +1,23 @@
+# Tasks
+
+- [x] 1. Migration for `version_releases`; append to both migrate chains.
+  - _Verify:_ applied 0001–0006 to local D1 without error.
+  - _Requirements:_ 1
+- [x] 2. Pure helpers in `src/releases.ts` (release/combined predicate, `compareVersions`, `summarizeReleases`).
+  - _Verify:_ `npm test` in analytics-worker.
+  - _Requirements:_ 2, 3, 4, 6
+- [x] 3. Replace every inline skew predicate in `index.ts` with the combined helper; leave raw `/events` and health total alone.
+  - _Verify:_ `grep julianday src/index.ts` empty except releases handler; tsc clean; local-D1 predicate run.
+  - _Requirements:_ 2, 3, 4, 5
+- [x] 4. `GET /details/releases` endpoint and route.
+  - _Verify:_ handler SQL run on local D1 (events, hidden counts).
+  - _Requirements:_ 6
+- [x] 5. Releases table at the bottom of the dashboard.
+  - _Verify:_ tsc clean; no backticks / unescaped template expressions in the HTML string. On-device/browser render still needs a manual look.
+  - _Requirements:_ 6
+- [x] 6. Unit tests (`releases.test.ts`) and local-D1 verification.
+  - _Verify:_ 29 tests pass; results in `.agents/tasks/version-release-tracking/results.md`.
+  - _Requirements:_ 2, 3, 4
+- [x] 7. Docs and steering updates (deployment doc, release checklist, dashboard steering) including backfill instructions.
+  - _Verify:_ read-through.
+  - _Requirements:_ 1, 7

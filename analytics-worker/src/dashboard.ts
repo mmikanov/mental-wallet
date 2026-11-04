@@ -618,6 +618,12 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
           Note: iOS link installs appear here under <strong>Organic / untagged</strong> — Apple does not pass our tag through the App Store, so real iOS per-channel data lives in App Store Connect. Attribution here is directional, not exact.
         </div>
         <div id="channel-breakdown"><div class="loading-detail">Loading channel breakdown…</div></div>
+
+        <div class="section-title">Releases</div>
+        <div class="detail" style="margin-bottom:8px;color:#6c757d;font-size:0.8rem;">
+          When each version went live per platform. Events received before the go-live time are hidden from the metrics above; versions with no recorded time show everything.
+        </div>
+        <div id="release-table"><div class="loading-detail">Loading releases…</div></div>
       \`;
 
       // Re-open detail panel if one was active (preserving its cohort override)
@@ -629,6 +635,68 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
       // getPhaseParams; the endpoint ignores &channel so it always spans every channel)
       // and repopulate the channel <select> from the channels present in the data.
       loadChannelBreakdown();
+      loadReleases();
+    }
+
+    // Releases reference table. Own fetch with NO phase/cohort/channel params: it spans
+    // every platform/version and is unaffected by the filter selectors. A failure only
+    // shows a small message here; the rest of the dashboard is untouched.
+    function escHtml(v) {
+      return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function fmtEastern(iso) {
+      try {
+        return new Intl.DateTimeFormat('en-US', {
+          timeZone: 'America/New_York', year: 'numeric', month: 'short', day: 'numeric',
+          hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
+        }).format(new Date(iso));
+      } catch (e) {
+        return iso;
+      }
+    }
+
+    function releaseStatusText(status) {
+      if (status === 'live') return 'Live';
+      if (status === 'scheduled') return 'Scheduled';
+      return 'Not recorded \u2014 showing all events';
+    }
+
+    async function loadReleases() {
+      var container = document.getElementById('release-table');
+      if (!container) return;
+      try {
+        var res = await fetch('/details/releases?secret=' + encodeURIComponent(SECRET));
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        var data = await res.json();
+        var rows = (data && Array.isArray(data.releases)) ? data.releases : [];
+        if (rows.length === 0) {
+          container.innerHTML = '<div class="detail" style="color:#6c757d;">No versions seen yet.</div>';
+          return;
+        }
+        container.innerHTML =
+          '<table><thead><tr>' +
+            '<th>Platform</th><th>App version</th><th>Went live</th><th>Status</th><th>Users</th><th>Events</th><th>Hidden pre-live events</th>' +
+          '</tr></thead><tbody>' +
+          rows.map(function(r) {
+            var live = r.live_at
+              ? '<span title="' + escHtml(r.live_at) + '">' + escHtml(fmtEastern(r.live_at)) + '</span>'
+              : '<span style="color:#999;">\u2014</span>';
+            return '<tr>' +
+              '<td>' + escHtml(r.platform) + '</td>' +
+              '<td>' + escHtml(r.app_version) + '</td>' +
+              '<td>' + live + '</td>' +
+              '<td>' + escHtml(releaseStatusText(r.status)) + '</td>' +
+              '<td>' + num(Number(r.users) || 0) + '</td>' +
+              '<td>' + num(Number(r.events) || 0) + '</td>' +
+              '<td>' + num(Number(r.hidden_pre_live_events) || 0) + '</td>' +
+              '</tr>';
+          }).join('') +
+          '</tbody></table>';
+      } catch (e) {
+        console.error('Failed to load releases:', e);
+        container.innerHTML = '<div class="detail" style="color:#b26a00;">Could not load releases.</div>';
+      }
     }
 
     // Fetch /details/channels and render one row per channel + a clearly-labeled organic
