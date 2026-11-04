@@ -124,6 +124,18 @@ than delegating the whole tip to a web page in an in-app browser where the CTA c
 act. The website and email surfaces are unaffected by this constraint — their CTAs are ordinary
 links as today.
 
+#### Follow-up criteria discovered in on-device testing (added after the first build)
+
+1.11 THE in-app tip view SHALL NOT display raw markup from the tip's content. Tip content
+includes embedded media markup authored for the website; the in-app view SHALL render readable
+text and omit that markup rather than showing it as literal on-screen code. (On the first build,
+tips showed raw angle-bracket markup as text.)
+
+1.12 THE in-app tip's lead image SHALL be shown at a sensible, legible size — large enough to be
+useful but capped so it does not fill the screen and push the tip text out of view. It SHALL NOT
+be cropped awkwardly or shrunk to a tiny thumbnail. (On the first build the image was either
+cropped to a fixed box or rendered very small.)
+
 ### Bug 2: The "Create your own tool" Deep Link Opens the Wrong Screen
 
 **User Story:** As a reader who taps "Create your own tool," I want to land on the screen that

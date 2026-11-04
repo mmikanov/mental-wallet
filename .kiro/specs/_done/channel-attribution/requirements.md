@@ -133,6 +133,12 @@ must preserve that.
 
 6.6 WHERE a channel has too few installs to read a metric meaningfully THE dashboard SHALL make the small sample evident (for example, by showing the count alongside the percentage) rather than presenting a fragile percentage as if it were solid.
 
+6.7 THE per-channel breakdown SHALL attribute each person to the channel resolved from their activity as a whole, not only from their very first event. (Added after launch testing: the channel is read shortly after install, so a person's first event can carry no channel yet while later events do; the breakdown must count that person under their real channel, not fold them into the organic/untagged group. Without this, every tagged install was mis-counted as organic.)
+
+6.8 THE dashboard metrics SHALL ignore events whose device-reported time is implausibly far ahead of when the server received them, so a person with a badly-set device clock does not distort retention, cohort, or time-window figures. Such events SHALL still be visible in the raw event drill-down for investigation. (Added after launch testing: real devices with misconfigured clocks produced far-future-dated events that skewed the measures.)
+
+6.9 WHEN the operator opens the raw event list from a dashboard figure THE raw list SHALL respect the currently-selected channel and time-window filters, so it shows the events behind the number that was clicked rather than the entire unfiltered event history. (Added after launch testing: the drill-down previously ignored the active filters.)
+
 ### Requirement 7: No User-Facing Question or Friction
 
 **User Story:** As a user, I should never be asked where I came from, and my setup experience should not change because of attribution.

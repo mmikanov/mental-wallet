@@ -1,0 +1,27 @@
+{
+  "verdict": "APPROVED",
+  "findings": [
+    {
+      "severity": "NIT",
+      "title": "runDripPass's existing `|| !resolved.campaign` fallthrough should be called out for the new `unsubscribed` kind",
+      "where": "design.md §Bug 4 — Classification Change; messaging-worker/src/index.ts runDripPass",
+      "problem": "The design says runDripPass will add an `unsubscribed` counter and emit `status: 'unsubscribed'` entries, but the existing dispatch is `if (resolved.kind === 'waiting' || !resolved.campaign) {...} // else kind === 'next' → sends`. If an explicit `unsubscribed` branch is not added BEFORE the waiting check, an `unsubscribed` result (which carries a campaign) falls through to the send path.",
+      "fix": "In tasks.md, require the new branch to precede the waiting check: `if (resolved.kind === 'unsubscribed') { unsubscribed++; plan.push({status:'unsubscribed',...}); continue; }` and keep the missing-campaign case in waiting."
+    },
+    {
+      "severity": "NIT",
+      "title": "SummaryPlanEntry.status already has a `not_yet` member the design omits",
+      "where": "design.md §Bug 4 — dripSummary.ts bullet; messaging-worker/src/dripSummary.ts",
+      "problem": "The design describes extending the status union with `'unsubscribed'` but the real type is `'next' | 'waiting' | 'finished' | 'not_yet'`. An implementer could drop the existing `not_yet` member when editing.",
+      "fix": "Note in tasks.md that the union already includes `not_yet` (simulation-only) and the change is purely additive (`... | 'unsubscribed'`), leaving `not_yet` unchanged."
+    },
+    {
+      "severity": "NIT",
+      "title": "The tip `version` bump (Bug 2) does not reach the drip/website via index.json",
+      "where": "design.md §Bug 2 — Point the tip CTA at it; website/build-content.js",
+      "problem": "The design says the `version` bump is 'the number the website build and the drip read,' but build-content.js's index.json mapping omits `version`, and neither the worker nor the app consume it. The bump is a source-of-truth hygiene marker with no runtime consumer in this path.",
+      "fix": "Keep the version bump (correct convention) but correct the rationale: it documents the content change; it has no drip/website runtime effect unless `version` is also added to the index.json map (out of scope for 1.0.6)."
+    }
+  ],
+  "reviewDoc": "/Users/moshemikanovsky/Mental-Wallet/.kiro/specs/1.0.6-bug-fixes/.design-review.md"
+}
