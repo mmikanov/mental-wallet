@@ -147,12 +147,19 @@ Install Referrer; iOS ships the no-op and relies on App Store Connect source ana
 windows (coarser by design). Spec: `.kiro/specs/channel-attribution/` (Phases 1-3 live;
 Phase 4 app code is in this build). Keep attribution mechanics OUT of the public copy.
 
-**Reviewer note (App Review Information):** this version reads the install referrer on first
-launch (Android) and attaches an anonymous marketing-channel label to the app's existing
-anonymous analytics events. It adds **no new deep-link or WebView surface** beyond prior
-releases, adds **no user-facing UI or prompt**, collects **no personal data**, and does not
-transmit user data beyond the existing anonymous analytics. There is nothing new for the
-reviewer to interact with — the change is a background analytics label.
+**Reviewer note (App Review Information) — Apple, paste verbatim (NO Android/Play references, per the 1.0.4 rejection rule):**
+```
+This update contains behind-the-scenes reliability improvements and minor fixes. It adds no
+new user-facing features, screens, prompts, or permissions, and no new deep-link or WebView
+surfaces beyond the previous version. The app remains fully anonymous — no account, no personal
+data collected, and no change to data handling or the privacy practices already declared. There
+is nothing new for the reviewer to interact with; existing functionality is unchanged. Please
+reach us via the in-app Settings if anything needs clarification.
+```
+(On iOS the channel-attribution code added this release is a **no-op** — the install-referrer
+read is Android-only — so there is genuinely nothing attribution-related happening on-device for
+a reviewer to see. Keep the Android/Play-Install-Referrer mechanics OUT of anything submitted to
+Apple; they live in the internal **Notes** above and the Google Play entry only.)
 
 ### 1.0.5
 
