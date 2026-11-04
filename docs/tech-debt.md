@@ -1,350 +1,154 @@
-# Tech Debt & Future Improvements
+# Tech Debt & Follow-Ups
 
-A running list of known refactors and improvements that are safe to defer. These are not
-bugs — the app works — but addressing them reduces future maintenance risk. Add new items
-at the top of the relevant section with a short rationale and the files involved.
+A running list of known debt, deferred improvements, and parked items surfaced during the
+measurement-foundation work and the 1.0.6 release cycle. Each item notes **what**, **why it
+matters**, and a rough **effort/priority**. Nothing here blocks the current release; these are
+things to pick up deliberately.
 
----
-
-## ESLint was never installed — 470 issues surfaced on first-ever lint run
-
-**Type:** Tooling gap / code hygiene backlog
-**Priority:** Low–Medium (not blocking; mostly warnings. 2 real React-hooks errors worth a look.)
-**Discovered:** 2026-10-01, during `library-card-sync`. The repo had a `lint` script (`eslint .`)
-in `package.json` from early on, but **ESLint and its config were never actually installed** — so
-`npm run lint` only ever errored (`eslint: command not found`) / hung trying to `npx`-download it.
-It had therefore never run in ~2 months of development, and no code had ever been linted.
-
-**What was done now:** ran `npx expo lint`, which installed `eslint@^9` + `eslint-config-expo@~10`
-(added to `devDependencies`) and created `eslint.config.js` (Expo flat config). `npm run lint`
-now works.
-
-**First full run:** `✖ 470 problems (46 errors, 424 warnings)`.
-
-By area:
-- app source (`src/`, `App.tsx`): 163
-- tests (`__tests__`, `*.test.*`): 288
-- scripts / tooling / workers / website: 19
-
-By rule (top offenders):
-| count | sev | rule | nature |
-|------:|-----|------|--------|
-| 146 | warn | `import/first` | imports after non-import statements — almost all from the test pattern `jest.mock(...)` before `import` (intentional in those suites) |
-| 87 | warn | `@typescript-eslint/no-require-imports` | `require(...)` calls (lazy requires, jest mocks, Node scripts) |
-| 78 | warn | `@typescript-eslint/no-unused-vars` | unused imports/vars/args |
-| 55 | warn | `@typescript-eslint/array-type` | `T[]` vs `Array<T>` style preference |
-| 36 | **error** | `react/no-unescaped-entities` | unescaped `'`/`"`/`—` in JSX text — cosmetic, auto-fixable |
-| 30 | warn | `react-hooks/exhaustive-deps` | missing/extra hook deps — worth triaging case by case |
-| 21 | **error** | `import/no-duplicates` | same module imported twice (merge-able) |
-| 7 | **error** | `no-undef` | all `__dirname` in CommonJS Node scripts (`scripts/`, `tools/`, `website/`) — a config-scoping issue, **not real bugs**: those files need a Node/CommonJS env in the eslint config |
-| 7 | **error** | `react-hooks/rules-of-hooks` + others | see "genuine issues" below |
-
-**Auto-fixable:** 203 of 470 messages are fixable with `eslint . --fix` (the entity-escaping,
-duplicate-imports, array-type, and many import-order ones). A `--fix` pass would clear roughly
-half with no behavior change.
-
-**Genuine issues worth a real look (not just style):**
-- **`src/components/wallet/ThirdPartyIcon.tsx:91,145` — `react-hooks/rules-of-hooks`**: two
-  `useEffect`s called **conditionally**. This is a real React correctness smell (hook call order
-  can change between renders) and should be reviewed/fixed deliberately, not auto-fixed.
-- **`react-hooks/exhaustive-deps` (30)**: each is a potential stale-closure/missed-update bug;
-  triage individually — some are intentional and just need an eslint-disable with a reason.
-- The 7 `no-undef` are **false alarms** from the config not marking the Node-script files as a
-  CommonJS/Node environment — fix the config, not the code.
-
-**Impact on the recent `library-card-sync` work:** 20 warnings across 6 of our files, **zero
-errors**. Breakdown: 11 `no-require-imports` + 3 `import/first` (both from the deliberate
-`jest.mock(...)`-before-import test pattern we used), 4 `import/no-duplicates`, 2 unused-vars.
-Nothing functional; safe to clean up in the general pass.
-
-**Proposed approach (deferrable):**
-1. Scope the config so Node scripts (`scripts/`, `tools/`, `website/`, `*-worker/`) get a
-   Node/CommonJS env — clears the 7 `no-undef` and many `no-require-imports` with no code change.
-2. Run `eslint . --fix` for the ~203 auto-fixable style issues; review the diff (should be
-   behavior-preserving).
-3. Fix the 2 `ThirdPartyIcon.tsx` conditional-hook errors by hand.
-4. Triage `exhaustive-deps` (30) and remaining `no-unused-vars` (78) incrementally.
-5. Decide a baseline policy: either get to zero and add lint to CI, or set `--max-warnings` and
-   gate only on errors to prevent backsliding while the warning backlog is burned down.
-
-**Files:** project-wide; config at `eslint.config.js`; script at `package.json` `"lint"`.
-
-**Risk if deferred:** Low for correctness (type-checking + tests already cover the important
-classes of bugs), but the longer it sits the more the warning count grows and the harder it is to
-adopt lint-in-CI. The one item not to defer indefinitely is the `ThirdPartyIcon.tsx` conditional
-hooks — that's a latent React bug, not a style nit.
+_Last updated: 2026-11 (post-1.0.6 submission)._
 
 ---
 
-## react-native-webview has no Jest mock — blocks ExpandedContent (and any WebView-reaching) suites at import time
+## Analytics worker / dashboard
 
-**Type:** Bug / test infrastructure
-**Priority:** Medium (blocks coverage on affected suites)
-**Discovered:** During the `1.0.5-fixes` work (Bug 2, wiring duration tracking into
-`ExpandedContent.tsx`). `src/components/wallet/__tests__/ExpandedContent.test.ts` fails to
-LOAD — not an assertion failure, an import-time crash — so the suite provides no coverage.
+### 1. Per-channel retention uses a windowed aggregation, not first-open cohort parity
+- **What:** In `handleDetailChannels`, the per-channel D7/D30 retention applies the phase window
+  to the aggregation rather than filtering on each user's first-open timestamp the way the
+  headline cohort-retention metric does.
+- **Why it matters:** Under a selected phase window, per-channel retention can under-report
+  slightly vs. the headline number. Directionally safe and equal for All-Time; a cosmetic/parity
+  gap, not a correctness bug.
+- **Effort:** Small (align the query to the headline cohort approach). **Priority:** Low.
+- **Source:** channel-attribution design review (non-blocking nit).
 
-**Root cause:** the import graph `ExpandedContent -> ControlRenderer -> DisplayMediaControl ->
-PlatformEmbed -> react-native-webview` reaches `src/components/media/PlatformEmbed.tsx:22`
-(`import { WebView } from 'react-native-webview'`). Under jest-expo there is no mock for
-`react-native-webview` (checked: not in `jest.config.js`, jest setup, or `__mocks__`), so its
-native `RNCWebViewModule` TurboModule is unavailable and the module throws when the suite is
-loaded. This is the same class of problem as the `expo-file-system` item below (a native module
-resolved at import time with no jest stub).
+### 2. `"(not set)"` channel value is its own bucket, not folded into organic
+- **What:** Some Play installs report the install referrer as the literal string `"(not set)"`
+  (distinct from `null`/organic and from `google-play`). It shows as its own row in the channel
+  breakdown.
+- **Why it matters:** It's effectively untagged traffic, so arguably belongs in the
+  organic/untagged bucket; as-is it fragments the breakdown slightly.
+- **Effort:** One line (map `"(not set)"` → organic in the resolved-channel logic).
+  **Priority:** Low. **Decision pending:** confirm we want it folded vs. kept visible.
+- **Source:** surfaced in live data during 1.0.6 attribution testing.
 
-**Proposed fix:** add a jest mock for `react-native-webview` (a stub `WebView` component +
-`WebViewNavigation` type) in the jest setup or a `__mocks__/react-native-webview.js`, so any
-suite whose import graph touches `PlatformEmbed` can load. Prefer the shared mock so the many
-media/preview/wallet suites all benefit.
+### 3. Stress-test generator can write to production analytics
+- **What:** `src/services/analyticsStressTest.ts` (a `__DEV__` synthetic-event generator) enqueues
+  events through the normal transmitter, which in a dev build points at whatever analytics
+  endpoint is configured — potentially production.
+- **Why it matters:** Synthetic/test events can leak into the production analytics DB and pollute
+  real metrics. (We investigated a data anomaly partly because of this risk.)
+- **Effort:** Small (guard the stress test so it refuses to enqueue unless pointed at a non-prod
+  endpoint, or hard-require an explicit opt-in flag). **Priority:** Medium.
+- **Source:** analytics data-anomaly investigation during 1.0.6 testing.
 
-**Files:**
-- `jest.config.js` / jest setup (add the mock) — or a `__mocks__/react-native-webview.js`
-- Import chain: `src/components/media/PlatformEmbed.tsx` (the `react-native-webview` import)
-- Affected suite (example): `src/components/wallet/__tests__/ExpandedContent.test.ts`
+### 4. Device-clock trust / event-time hardening (partially addressed)
+- **What:** The dashboard now **excludes** events whose device `timestamp` is >1 day ahead of
+  `received_at` from metrics (clock-skew guard). But the underlying analytics still **store** the
+  device-reported time verbatim, and only the >+1-day-future case is filtered.
+- **Why it matters:** Far-past skew, or smaller forward skew, still isn't normalized. A fuller fix
+  would prefer/clamp to `received_at` when the device time is implausible, at ingest time, so the
+  stored data is clean rather than filtered at read time.
+- **Effort:** Medium (ingest-time normalization + migration decision for existing rows).
+  **Priority:** Low-Medium.
+- **Source:** 1.0.6 attribution testing (clock-skewed real-device events).
 
-**Risk if deferred:** Medium — `ExpandedContent` (and other WebView-reaching component suites)
-can't run, so regressions in those components — including the duration-tracking `stopTracking`
-wiring just added to `ExpandedContent` in 1.0.5 — are guarded only by the typechecker, not a
-running test.
-
----
-
-## Curated-library rationale tests drift from `curatedLibrary.ts` content (3 failing assertions)
-
-**Type:** Bug / test-vs-data drift
-**Priority:** Medium (real red tests; masks genuine rationale regressions)
-**Discovered:** During the `1.0.5-fixes` work — confirmed PRE-EXISTING and unrelated to the
-three bugs in that spec (nothing in 1.0.5 touched `curatedLibrary.ts` or these tests). Surfaced
-because the run exercised the full Jest suite.
-
-**Symptoms (in `src/data/__tests__/curatedLibrary.rationale.grounding.test.ts` and
-`...rationale.property.test.ts`):**
-- `lib-grounding-54321 has correct approach` — expects a specific `approach`, receives
-  `"somatic techniques"` (the static data and the test's `EXPECTED_APPROACHES` map disagree).
-- `learnMoreLinks use credible domains only` — a `learnMoreLinks` entry's `title.length`
-  exceeds the 100-char cap the test enforces (received 115 for `lib-box-breathing`/`lib-pmr`,
-  121 for `lib-name-it-tame-it`), and at least one link's hostname is not in the test's
-  `CREDIBLE_DOMAINS` allow-list.
-- Property 9 (`every card rationale passes validateRationaleMetadata`) also flags a card.
-
-**Root cause:** the rationale content in `src/data/curatedLibrary.ts` (approach value, link
-titles, link domains) has diverged from the constraints these tests assert. Either the data was
-edited without updating the tests, or the tests encode rules the data was never trimmed to meet.
-Needs a decision per assertion: fix the data (shorten titles to <=100, use an allow-listed
-domain, correct the approach) OR update the test's expectations if the rule/expected value is
-stale.
-
-**Files:**
-- `src/data/curatedLibrary.ts` (rationale for `lib-grounding-54321`, `lib-box-breathing`
-  (L146), `lib-pmr` (L209), `lib-name-it-tame-it` (L261) — approach, `learnMoreLinks` titles/URLs)
-- `src/data/__tests__/curatedLibrary.rationale.grounding.test.ts` (`EXPECTED_APPROACHES`,
-  `CREDIBLE_DOMAINS`, the <=100 title-length rule)
-- `src/data/__tests__/curatedLibrary.rationale.property.test.ts` (Property 9)
-
-**Risk if deferred:** Medium — these suites are red, so a real future rationale regression
-(bad domain, over-long title, wrong approach) is indistinguishable from the existing failures
-and would slip through. Also note the admin-editing/export flow validates rationale
-(`validateExportReadiness`), so drift here can affect what an admin can export.
+### 5. `EXCLUDED_USER_IDS` is a manual, redeploy-to-change mechanism
+- **What:** Excluding your own test-device users from metrics requires editing `wrangler.toml`
+  and redeploying (or deleting rows). There's no lightweight "mark this install as internal" path.
+- **Why it matters:** Ongoing internal testing keeps minting fresh anonymous ids that inflate
+  real-user counts; cleanup is manual each time.
+- **Effort:** Medium. **Priority:** Low (deletion/exclusion works; just not ergonomic).
 
 ---
 
-## expo-file-system mock breaks ~1/5 of the Jest suite at import time
+## Mobile app
 
-**Type:** Bug / test infrastructure
-**Priority:** Medium (blocks real coverage on affected suites)
-**Discovered:** During the `1.0.4-wallet-growth-instrumentation` work — running `npx jest`
-showed 21 of 158 suites failing (28 tests) with `TypeError: Cannot read properties of
-undefined (reading 'cache')`. Confirmed pre-existing: the identical `21 failed / 28 failed`
-result reproduces on a clean tree (with all feature changes stashed), so it is unrelated to
-that feature.
+### 6. No in-app version display
+- **What:** The app shows its version nowhere in-app (no Settings/About line). Confirming which
+  build is running requires Android system settings or App Store Connect.
+- **Why it matters:** Makes QA/debugging and "which version are you on?" support harder than it
+  should be. (Came up directly when verifying the 1.0.6 internal build.)
+- **Effort:** Small (add a "Version X.Y.Z (build)" line to Settings via `expo-constants` /
+  `expo-application`). **Priority:** Medium. **Operator explicitly wants this in a future build.**
+- **Source:** 1.0.6 Android internal-testing verification.
 
-**Root cause:** `src/components/wallet/ThirdPartyIcon.tsx:27` runs
-`new Directory(Paths.cache, 'icon-cache')` at module load. Under jest-expo, `Paths` (from the
-new `expo-file-system` API) is not mocked, so `Paths.cache` is `undefined` and the `new
-Directory(...)` throws **at import time**. Any suite whose import graph reaches
-`ThirdPartyIcon` (via `renderCardIcon` → `CardPreviewSheet`, `LibraryToolPreview`,
-`ArchiveScreen`, `SessionView`, `ToolPreviewCard`, etc.) fails to even load — before any test
-assertion runs. This means those suites currently provide **no** coverage, and code paths that
-happen to touch them (e.g. the widened `onAddToWallet` signature) are only guarded by the
-typechecker, not by a running test.
+### 7. Per-channel subreddit split is lost on iOS
+- **What:** Reddit links share `utm_source=reddit` with the subreddit in `utm_campaign`. The Play
+  referrer carries the campaign (so Android can split by subreddit), but the iOS App Store `ct`
+  token only carries the channel label, not the subreddit.
+- **Why it matters:** On iOS you can see "reddit" but not which subreddit. Acceptable for now
+  (iOS attribution is coarser by design), but a gap if per-subreddit iOS reads become important.
+- **Effort:** Medium (decide whether to push subreddit into the `ct` token and how to read it
+  back from App Store Connect). **Priority:** Low.
+- **Source:** channel-attribution launch-link preparation.
 
-**Proposed fix:** add a jest mock for the `expo-file-system` `Paths`/`Directory` API (in the
-jest setup or `__mocks__`) that returns a stub cache dir, OR lazily construct `ICON_CACHE_DIR`
-inside the function that needs it instead of at module top-level, so importing the component
-never throws. Prefer the mock so component tests exercise the real module.
-
-**Files:**
-- `jest.config.js` / jest setup (add the mock) — or `src/components/wallet/ThirdPartyIcon.tsx`
-  (defer the `new Directory(...)` off module load)
-- Affected suites (examples): `src/components/session/__tests__/SessionLauncherContent.walletState.test.tsx`,
-  `ToolPreviewCard.test.ts`, `SessionView.test.tsx`, `CardPreviewSheet.test.tsx`,
-  `LibraryToolPreview.crisisNav.test.tsx`, `ArchiveScreen.originBadge.test.tsx`, and ~15 others.
-
-**Risk if deferred:** Medium — a fifth of the suite silently doesn't run, so regressions in
-those components (including the session add/preview flows just instrumented) won't be caught by
-CI until the mock is fixed.
+### 8. iOS channel attribution is console-only (accepted tradeoff, documented)
+- **What:** iOS has no device-side install referrer; iOS link-installs appear as organic in the
+  app's own dashboard, and real iOS channel data lives in App Store Connect source analytics.
+- **Why it matters:** Not a bug — an accepted platform limitation — but worth remembering that
+  iOS channel reads require the App Store Connect console + time-window separation, not the app's
+  dashboard.
+- **Effort:** N/A (documented tradeoff). **Priority:** Awareness only.
 
 ---
 
-## Onboarding state reset should use a shared default (avoid per-field drift)
+## Store / release hygiene
 
-**Type:** Refactor / maintainability
-**Priority:** Low
-**Discovered:** During post-1.0.3 fixes (Bug 4b — the new `collapsedStackHintSeen` flag was
-not reset by the developer "Reset Onboarding" action because the reset hardcoded each field).
+### 9. Live store descriptions are hand-edited and can drift from the repo
+- **What:** The App Store / Google Play **descriptions** are edited by hand in each console and
+  are NOT pulled from the repo. The repo's `docs/store-listing-copy.md` is the source of truth,
+  but the live listings can lag (e.g. the "no data collection" → "only anonymous usage stats"
+  privacy correction must be applied in the consoles on the next release).
+- **Why it matters:** Risk of inaccurate/inconsistent live copy, including privacy claims that
+  App Review scrutinizes.
+- **Effort:** Process (the release checklist now reminds to re-paste the description if changed).
+  **Priority:** Medium — verify the live descriptions are updated with the 1.0.6 privacy wording.
+- **Source:** release-checklist steering addition during 1.0.6.
 
-**Problem:** The developer reset handlers in `src/screens/SettingsScreen.tsx`
-(`handleResetOnboarding` and `handleResetEntireApp`) reset the Zustand onboarding store by
-listing every field explicitly in `useOnboardingStore.setState({ ... })`. `src/stores/onboardingStore.ts`
-also defines a `DEFAULT_STATE` object separately. Whenever a new onboarding flag is added to
-the store, it must be manually added in **three** places (the store's `DEFAULT_STATE`, and
-both reset handlers). Forgetting the reset handlers means the flag persists in memory after a
-reset — exactly the bug that surfaced with `collapsedStackHintSeen`.
+### 10. Android production track publishes at 100% with no staged-rollout gate
+- **What:** The Play `production` submit profile pushes to 100% immediately.
+- **Why it matters:** No safety ramp for a real public launch; a bad build reaches everyone at once.
+- **Effort:** Small (switch to a staged rollout % or a testing track, then promote).
+  **Priority:** Medium before the real cold-acquisition launch.
+- **Source:** app-deployment docs / release-checklist.
 
-**Proposed fix:** Export a single canonical default from the store (e.g. `DEFAULT_STATE` plus
-its derived fields, or a `resetOnboardingState()` action on the store) and have both
-`SettingsScreen` handlers call that instead of re-listing fields inline. New flags then only
-need to be added in one place.
-
-**Files:**
-- `src/stores/onboardingStore.ts` (export a default/reset)
-- `src/screens/SettingsScreen.tsx` (`handleResetOnboarding`, `handleResetEntireApp`)
-
-**Risk if deferred:** Low but recurring — each new onboarding flag risks the same
-reset-doesn't-clear-it bug until the reset paths are consolidated.
-
----
-
-## Duplicated tip-frontmatter parser + web-only-block strip across send scripts
-
-**Type:** Refactor / DRY
-**Priority:** Low
-**Discovered:** During tip media work (adding email GIF + stripping the website-only
-`<figure class="tip-anim">` from email bodies).
-
-**Problem:** `messaging-worker/scripts/send-tip.ts` and `messaging-worker/scripts/run-campaign.ts`
-each carry their own copy of the tip frontmatter parser (`parseTipFile`) and now also their
-own copy of `stripWebOnlyBlocks()`. A third, slightly different parser exists in
-`website/build-content.js`. Any change to the tip schema or to what counts as "web-only"
-markup must be made in multiple places, which is error-prone.
-
-**Proposed fix:** Extract a single shared tip-parsing/normalization helper (frontmatter parse
-+ `stripWebOnlyBlocks`) used by both messaging scripts (and ideally aligned with the website
-build's parser). Keep the "strip web-only blocks before email" rule in exactly one place.
-
-**Files:**
-- `messaging-worker/scripts/send-tip.ts`
-- `messaging-worker/scripts/run-campaign.ts`
-- `website/build-content.js` (parser alignment, optional)
-
-**Risk if deferred:** Low but recurring — schema/markup changes can silently diverge between
-the single-send and campaign paths (e.g. a new web-only block type stripped in one but not the
-other).
+### 11. Optional App Store product-page assets not provided (Header / Search Results)
+- **What:** Apple's newer product-page **Header** and **Search Results** creative assets
+  (image/video) are optional and currently unset; Apple falls back to screenshots/app previews.
+- **Why it matters:** A branding/ASO polish opportunity (and A/B-testable via Product Page
+  Optimization), not a functional gap.
+- **Effort:** Medium (design work from Apple's templates). **Priority:** Low (post-launch marketing).
+- **Source:** 1.0.6 App Store submission.
 
 ---
 
-## Email body renders as plain text (no inline media/formatting)
+## Broader / known pre-existing
 
-**Type:** Feature / limitation (spec'd)
-**Priority:** Medium (when inline email media is wanted)
-**Discovered:** Wiring the welcome tip — the website shows an inline animation, but the email
-can only show media via the top `heroImage` GIF; inline HTML in the body is escaped to text,
-so we strip it for email.
+### 12. Repo-wide pre-existing TypeScript errors
+- **What:** `npm run typecheck` reports a baseline of pre-existing errors (walletStore, kpiStore,
+  sessionStore, some worker files) unrelated to recent feature work. New work has been kept from
+  adding to this baseline, but the baseline itself remains.
+- **Why it matters:** Noise that makes it harder to spot new type regressions; a clean typecheck
+  is a better safety net.
+- **Effort:** Medium-Large (burn down the baseline). **Priority:** Low-Medium.
+- **Source:** observed throughout the 1.0.6 work.
 
-**Status:** Requirements written — see `.kiro/specs/email-inline-media/requirements.md`.
-
-**Summary:** `messaging-worker/src/index.ts` renders the tip body with `escapeHtml` (plain
-text) and hardcodes `heroImage` at the top. The interim `stripWebOnlyBlocks()` keeps email
-bodies clean, but authors can't place media mid-email. The spec covers rendering the body as
-sanitized HTML so a single authored tip can position media anywhere in both web and email.
-
----
-
-## Email links should match the sending domain (deliverability polish)
-
-**Type:** Improvement / email deliverability
-**Priority:** Low
-**Discovered:** First real tip email batch — Resend's "Insights" flagged: "Ensure link URLs
-match sending domain. Mismatched URLs can trigger spam filters." The flagged link was the
-App Store URL (`https://apps.apple.com/app/mental-health-wallet/id6800036822`).
-
-**Assessment:** Low risk as-is. The mismatched link is the Apple App Store — a highly
-trusted domain — and it's the obvious CTA for an app's email, so it's unlikely to hurt
-placement. Sending domain (`productsforgood.co`) auth (SPF/DKIM/DMARC), list quality, and
-complaint rate matter far more. We chose to ship the batch without changing this.
-
-**Proposed improvement (when convenient):** Route email store links through our own domain so
-the link domain matches the sender. The website tip articles already do this — the article
-CTA uses `/#hero` + `app-cta.js` to redirect to the right store per platform. The email CTA
-and any in-body store links, however, use the raw `apps.apple.com` / Play Store URLs. Point
-the email CTA at a `https://mentalhealthwallet.productsforgood.co/…` download/redirect URL
-(reusing the same per-platform redirect logic) so all links share the sending domain. This
-removes the Resend warning and is marginally better for deliverability.
-
-**Files:**
-- `messaging-worker/src/index.ts` (tip email CTA + any store links)
-- `content/tips/*.md` (tip `cta.url` values point directly at stores today)
-- `website/app-cta.js` (existing per-platform redirect logic to reuse)
-
-**Risk if deferred:** Low — a cosmetic Resend warning; no known deliverability problem for a
-trusted store link.
+### 13. ESLint backlog
+- **What:** ESLint (expo config) was set up earlier; a lint backlog was recorded as tech debt at
+  that time and has not been fully burned down.
+- **Why it matters:** Standard lint hygiene.
+- **Effort:** Medium. **Priority:** Low.
+- **Source:** earlier lint setup (pre-1.0.6).
 
 ---
 
-## Campaign retries a non-transient failure forever (infinite chunk loop)
+## Deferred specs (written, not implemented)
 
-**Type:** Bug / robustness
-**Priority:** Medium-High (can stall a real batch)
-**Discovered:** First real "Welcome wave" batch. Chunk 1 sent 5 recipients fine but 1
-recipient (the operator's own address) failed with a Resend `409 invalid_idempotent_request`.
-Every subsequent chunk retried that same recipient, failed identically, and `remaining`
-never dropped below 1 — an effectively infinite loop (chunk 2..16+ all `sent=0 failed=1
-remaining=1`) until the run was manually stopped.
+These are tracked as specs, not debt per se, but listed here for visibility:
 
-**Root cause:** The campaign loop treats a recipient as "done" only when their `tip_sends`
-row is `sent`/`pending`, and it retries `failed` rows on the next chunk. That's correct for
-*transient* failures, but a 409 idempotency collision (see item below) is **not transient**
-within 24h, so the recipient can never move out of `failed` and the batch spins forever.
-
-**Proposed fix:**
-- Treat certain failures as **terminal** (don't retry within the run): e.g. 409
-  idempotency collisions, hard bounces, invalid-address — mark a terminal state (e.g.
-  `failed_permanent`) that the audience/remaining query excludes.
-- Add a **max-attempts / backoff** per recipient, and detect **no-progress chunks** (if a
-  chunk yields `sent=0` and `remaining` is unchanged, stop and report rather than loop).
-- Surface a clear end-of-run summary instead of looping.
-
-**Files:** `messaging-worker/src/index.ts` (campaign execute loop + `selectAudience`
-`notYetClause`; the `tip_sends` status handling).
-
-**Interim workaround:** if a batch gets stuck on one recipient, stop the run and either mark
-that recipient's `tip_sends` row `sent` (if they actually got it) or delete it, then re-run.
-
----
-
-## Idempotency key ignores body/version — editing a tip and re-sending within 24h fails
-
-**Type:** Bug / operability
-**Priority:** Medium
-**Discovered:** Same batch. The worker sends Resend an `Idempotency-Key` of
-`${tip_slug}:${email}` (e.g. `welcome:me@…`). Resend caches that key for 24h. After we edited
-the welcome email (paragraph-rendering fix) and re-sent to the same address, Resend returned
-`409 invalid_idempotent_request` ("same key, modified body"). Note this is enforced on
-**Resend's servers**, independent of our `tip_sends` table — deleting the D1 row does NOT
-clear it.
-
-**Root cause:** the idempotency key is stable across content changes (no body hash / version
-/ campaign component), so a legitimately *edited* re-send within 24h looks like a conflicting
-duplicate.
-
-**Proposed fix:** include a content/version discriminator in the key, e.g.
-`${tip_slug}:${version}:${email}` or `${tip_slug}:${bodyHash}:${email}` (tip frontmatter
-already has a `version` field). An edited resend then gets a fresh key and is accepted, while
-true accidental duplicates (same content) still dedupe. Pairs with the terminal-failure fix
-above so a 409 doesn't loop.
-
-**Files:** `messaging-worker/src/index.ts` (`send-test` idempotency key ~L448 and campaign
-loop `idempotencyKey` ~L985); tip `version` in `content/tips/*.md` frontmatter.
-
-**Operator note:** during iteration, re-send edited tips to yourself **without `--record`**
-(no idempotency key is sent), or use a fresh `+alias`, or wait ~24h for the key to expire.
+- **`attribution-dashboard-enhancements`** — requirements written; design/tasks not done. Covers
+  side-by-side channel comparison, one-clear-retention-number, small-sample honesty, and reading
+  the install-source data well. Natural next step now that channel attribution is live.
+- **`prebuild-migration`** — move to Expo prebuild so `app.json` is the single source of truth and
+  the 4-file version sync goes away. Would simplify the release process (ties to item 9 and the
+  version-bump workflow).
