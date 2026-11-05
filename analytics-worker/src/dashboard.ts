@@ -145,6 +145,8 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     .detail-panel table { width: 100%; border-collapse: collapse; font-size: 0.85rem; box-shadow: none; margin-bottom: 0; }
     .detail-panel th, .detail-panel td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #f0f0f0; }
     .detail-panel th { color: #6c757d; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; }
+    .detail-panel tr.clickable-row { cursor: pointer; }
+    .detail-panel tr.clickable-row:hover { background: #f5f8ff; }
     .loading-detail { text-align: center; padding: 20px; color: #6c757d; font-size: 0.9rem; }
     .phase-filter {
       display: flex;
@@ -831,9 +833,11 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
         var usersLabel = effectiveCohort === 'new' ? 'New Unique Users' : 'Active Unique Users';
         html = '<div class="detail-panel">' +
           '<h3>' + usersLabel + ' (' + users.length + ') <button class="close-btn" onclick="closeDetail()">Close</button></h3>' +
+          '<p style="margin-bottom:12px;color:#6c757d;font-size:0.85rem;">Click a row to see that user\\'s full event timeline in the order they happened.</p>' +
           '<table><thead><tr><th>User ID</th><th>Platform</th><th>OS Version</th><th>Country</th><th>Events</th><th>First Seen</th><th>Last Seen</th></tr></thead><tbody>' +
           users.map(function(u) {
-            return '<tr><td>' + shortId(u.anonymous_user_id) + '</td><td>' + (u.platform || '-') + '</td><td>' + (u.os_version || '-') + '</td><td>' + (u.country || '-') + '</td><td>' + u.event_count + '</td><td>' + fmtDate(u.first_seen) + '</td><td>' + fmtDate(u.last_seen) + '</td></tr>';
+            // Pass the FULL raw anonymous_user_id to the timeline fetch (shortId is display-only).
+            return '<tr class="clickable-row" onclick="showUserEvents(\\'' + encodeURIComponent(u.anonymous_user_id) + '\\')"><td>' + shortId(u.anonymous_user_id) + '</td><td>' + (u.platform || '-') + '</td><td>' + (u.os_version || '-') + '</td><td>' + (u.country || '-') + '</td><td>' + u.event_count + '</td><td>' + fmtDate(u.first_seen) + '</td><td>' + fmtDate(u.last_seen) + '</td></tr>';
           }).join('') +
           '</tbody></table></div>';
       }
@@ -963,6 +967,83 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
       }
 
       panel.innerHTML = html;
+    }
+
+    // Minimal HTML escaper for rendering raw, untrusted event properties (arbitrary JSON
+    // strings) inside the timeline without breaking the markup. Internal operator tool, but
+    // we still don't want a stray '<' in a property value to corrupt the panel.
+    function escapeHtml(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    // Pretty-print the raw properties JSON string for the timeline. Falls back to the raw
+    // string when it isn't valid JSON (e.g. NULL / already-plain values).
+    function fmtProps(raw) {
+      if (raw == null || raw === '') return '';
+      try { return JSON.stringify(JSON.parse(raw), null, 2); }
+      catch (e) { return String(raw); }
+    }
+
+    // Per-user event timeline drill-down. Opened by clicking a row in the Users detail table.
+    // Fetches /details/user-events?user=<id> (auth-gated, UNFILTERED raw history, capped) and
+    // renders the user's events in chronological order with a step number. 'userIdEnc' is the
+    // encodeURIComponent'd raw anonymous_user_id passed from the row's onclick. A "Back to
+    // user list" button re-opens the users table (preserving its cohort override).
+    async function showUserEvents(userIdEnc) {
+      var panel = document.getElementById('detail-panel');
+      if (!panel) return;
+      panel.innerHTML = '<div class="loading-detail">Loading timeline...</div>';
+
+      // The timeline is a raw per-user view, so it deliberately does NOT send the global
+      // phase/cohort/channel params (getPhaseParams) — only the secret and the user id. We
+      // still honor the manual-refresh cache bypass via freshParam().
+      var data;
+      try {
+        var res = await fetch('/details/user-events?secret=' + encodeURIComponent(SECRET) +
+          '&user=' + userIdEnc + freshParam());
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        data = await res.json();
+      } catch (e) {
+        console.error('Failed to fetch user events:', e);
+        panel.innerHTML = '<div class="detail-panel"><h3>Error loading timeline ' +
+          '<button class="close-btn" onclick="showDetail(\\'users\\', activeDetailCohort)">Back to user list</button></h3></div>';
+        return;
+      }
+
+      var fullId = data && data.user ? data.user : decodeURIComponent(userIdEnc);
+      var events = (data && data.events) ? data.events : [];
+      var cappedNote = (data && data.capped)
+        ? '<p style="margin-bottom:12px;color:#b26a00;font-size:0.8rem;">Showing the first ' + events.length + ' events (capped). Older events beyond the cap are not shown.</p>'
+        : '';
+
+      var body = events.length === 0
+        ? '<tr><td colspan="5" style="color:#6c757d;">No events for this user.</td></tr>'
+        : events.map(function(ev, i) {
+            var props = fmtProps(ev.properties);
+            var propsCell = props
+              ? '<pre style="margin:0;white-space:pre-wrap;word-break:break-word;font-size:0.75rem;color:#444;">' + escapeHtml(props) + '</pre>'
+              : '<span style="color:#aaa;">\u2014</span>';
+            var meta = [ev.platform, ev.app_version, ev.channel].filter(Boolean).map(escapeHtml).join(' \u00b7 ') || '\u2014';
+            return '<tr>' +
+              '<td style="color:#6c757d;">' + (i + 1) + '</td>' +
+              '<td>' + fmtDate(ev.timestamp) + '</td>' +
+              '<td><strong>' + escapeHtml(ev.event_type) + '</strong><div style="color:#888;font-size:0.72rem;">' + meta + '</div></td>' +
+              '<td style="color:#888;font-size:0.72rem;">' + escapeHtml(ev.session_id ? String(ev.session_id).slice(0, 8) + '\u2026' : '\u2014') + '</td>' +
+              '<td>' + propsCell + '</td>' +
+              '</tr>';
+          }).join('');
+
+      panel.innerHTML = '<div class="detail-panel">' +
+        '<h3>User Timeline \u2014 ' + escapeHtml(shortId(fullId)) + ' (' + events.length + ' events) ' +
+        '<button class="close-btn" onclick="showDetail(\\'users\\', activeDetailCohort)">\u2190 Back to user list</button></h3>' +
+        '<p style="margin-bottom:8px;color:#6c757d;font-size:0.8rem;">Full id: <code>' + escapeHtml(fullId) + '</code></p>' +
+        '<p style="margin-bottom:12px;color:#6c757d;font-size:0.8rem;">Raw chronological sequence (oldest first). This view is unfiltered \u2014 it ignores the phase / cohort / channel filters and shows the user\\'s entire recorded history.</p>' +
+        cappedNote +
+        '<table><thead><tr><th>#</th><th>Timestamp</th><th>Event</th><th>Session</th><th>Properties</th></tr></thead><tbody>' +
+        body +
+        '</tbody></table></div>';
     }
 
     function closeDetail() {

@@ -68,6 +68,10 @@ Do NOT use this for a version that is merely in store review: leave it without a
 
 The **Releases** table at the bottom of the dashboard lists every version per platform with its go-live time, status, and how many pre-live events are hidden.
 
+## Inspect a Single User's Event Timeline
+
+From the **New Unique Users** (or Active Unique Users) drill-down table, click any user row to open that user's full event timeline — every event they produced, oldest first, with timestamp, event type, session, and the raw event properties. Use "Back to user list" to return. This view is served by `GET /details/user-events?user=<anonymous_user_id>` and is intentionally **unfiltered**: it ignores the phase / cohort / channel filters and the clock-skew / release exclusions so you see the user's complete recorded history in order (a raw forensic view). It is auth-gated like every other read endpoint and capped at 2000 events per user. The query is a cheap per-user indexed lookup (`idx_events_user`), so it does not add meaningful D1 read cost.
+
 ## Set or Update Secrets
 
 ```bash

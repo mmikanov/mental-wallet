@@ -9,6 +9,7 @@
  */
 
 import { DASHBOARD_HTML } from './dashboard';
+import { USER_EVENTS_SQL, USER_EVENTS_LIMIT } from './userEvents';
 import { metricsExclusionExpr, loadReleases, invalidateReleasesCache, summarizeReleases, type SeenVersionRow } from './releases';
 import { computeCohortRetention, type CohortUserRow } from './retention';
 import {
@@ -777,6 +778,39 @@ async function handleDetailUsers(request: Request, env: Env): Promise<Response> 
   });
 }
 
+// Per-user event timeline drill-down. Opened from a row in the Users detail table so the
+// operator can see every event a single user produced, in the order they did them. The query
+// itself (USER_EVENTS_SQL) and its cap (USER_EVENTS_LIMIT) live in ./userEvents so the Worker
+// and the SQL-level tests share one source of truth; see that module for the (intentional)
+// decision to leave this view UNFILTERED (no phase/cohort/channel, no clock-skew/release
+// exclusion) — it is a raw per-user forensic timeline. It is still auth-gated (via memoized)
+// and capped. The lookup rides idx_events_user (anonymous_user_id, timestamp), so rows_read
+// stays proportional to the one user's events, not the table.
+async function handleDetailUserEvents(request: Request, env: Env): Promise<Response> {
+  if (!isAuthorized(request, env)) return unauthorizedResponse();
+
+  const url = new URL(request.url);
+  const userId = url.searchParams.get('user');
+  if (!userId) {
+    return corsResponse(JSON.stringify({ error: 'Missing required ?user=<anonymous_user_id>' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  const result = await env.DB.prepare(USER_EVENTS_SQL).bind(userId, USER_EVENTS_LIMIT).all();
+
+  return corsResponse(JSON.stringify({
+    user: userId,
+    count: result.results.length,
+    capped: result.results.length >= USER_EVENTS_LIMIT,
+    events: result.results,
+  }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
 async function handleDetailOnboarding(request: Request, env: Env): Promise<Response> {
   if (!isAuthorized(request, env)) return unauthorizedResponse();
 
@@ -1307,6 +1341,9 @@ export default {
     }
     if (path === '/details/users' && request.method === 'GET') {
       return memoized(request, env, handleDetailUsers);
+    }
+    if (path === '/details/user-events' && request.method === 'GET') {
+      return memoized(request, env, handleDetailUserEvents);
     }
     if (path === '/details/onboarding' && request.method === 'GET') {
       return memoized(request, env, handleDetailOnboarding);

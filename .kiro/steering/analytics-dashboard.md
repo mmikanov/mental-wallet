@@ -21,6 +21,7 @@ The production analytics backend is a Cloudflare Worker with D1 (SQLite) storage
 - `GET /dashboard` — serves `DASHBOARD_HTML` with `__DASHBOARD_SECRET__` substituted in.
 - `GET /kpis` — all top-level KPIs computed server-side.
 - `GET /details/{users|onboarding|modes|tools|outcomes|platforms}` — drill-down tables. `GET /details/releases` — release reference table (ignores phase/cohort/channel).
+- `GET /details/user-events?user=<anonymous_user_id>` — per-user event timeline. Returns ONE user's events ordered by `timestamp` ASC (the chronological sequence), each row with `timestamp`, `event_type`, `session_id`, `platform`, `app_version`, `channel`, and the raw `properties` JSON string. **Auth required** (via `memoized`, auth checked first). **Unfiltered on purpose**: it applies NEITHER the global phase/cohort/channel filters NOR the clock-skew/release read-time exclusions — it is a raw per-user forensic view, so the operator sees the user's FULL recorded history with no gaps. Capped at `USER_EVENTS_LIMIT` (2000) rows to bound reads. `user` is a positional bind param (never interpolated). The lookup rides `idx_events_user (anonymous_user_id, timestamp)`, so it is a per-user range scan, not a full-table scan — measured locally on seeded Miniflare D1 (3k events / 150 users) at `rows_read = 21` for a 20-event user. Query + cap live in `src/userEvents.ts` (shared by the handler and `src/user-events.test.ts`). Opened from the dashboard by clicking a row in the Users detail table (`showUserEvents()`).
 - `GET /milestones` — phase dates + excluded IDs for the dashboard filters.
 - `GET /health` — `{status:"ok"}`.
 
@@ -78,6 +79,7 @@ D1 uses positional `?` params. When a filter clause appears N times in one SQL s
 - `setPhase()` / `setCohort()` update state then call `refresh()`. `setCohort()` also clears any per-panel override so an explicit global change takes over an open drill-down.
 - Clickable KPI cards call `showDetail(type, cohortOverride?)` which fetches `/details/<type>` and renders a table into `#detail-panel`. `activeDetail` + `activeDetailCohort` are re-opened after each refresh.
 - The New Unique Users card calls `showDetailNewUsers()`, which opens the users table with a `'new'` cohort override for that panel only — it does NOT change the global Users filter.
+- In the Users detail table every row is clickable (`showUserEvents(encodeURIComponent(anonymous_user_id))`); it fetches `/details/user-events` and renders that user's chronological timeline (step #, timestamp, event_type + device meta, session, pretty-printed properties) with a "Back to user list" button that re-opens the users table preserving its cohort override. The timeline fetch sends only `secret` + `user` (NOT `getPhaseParams`), because the endpoint is deliberately unfiltered. Raw `properties` are run through an `escapeHtml` helper before injection.
 
 ## When adding a new metric, filter, or drill-down
 
