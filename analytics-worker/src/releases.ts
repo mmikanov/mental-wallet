@@ -105,6 +105,17 @@ export async function loadReleases(db: ReleasesDb, now: number = Date.now()): Pr
   return rows;
 }
 
+/**
+ * Versions that may be offered in the "Joined in version" picker: a recorded, safe release
+ * row that is not the never-released sentinel and whose live_at has already passed. Sorted
+ * platform A-Z, then newest version first. Pure; used by tests and mirrored by the dashboard.
+ */
+export function joinVersionOptions(releases: ReleaseRow[], nowISO: string): ReleaseRow[] {
+  const nowMs = new Date(nowISO).getTime();
+  return releases
+    .filter((r) => isSafeReleaseRow(r) && !isNeverReleased(r.live_at) && new Date(r.live_at).getTime() <= nowMs)
+    .sort((a, b) => a.platform.localeCompare(b.platform) || compareVersions(b.app_version, a.app_version));
+}
 /** Numeric dotted compare. Returns <0, 0, >0 (ascending). Non-numeric parts count as 0. */
 export function compareVersions(a: string, b: string): number {
   const pa = a.split('.').map((x) => parseInt(x, 10) || 0);

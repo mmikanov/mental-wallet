@@ -12,6 +12,8 @@ import { DASHBOARD_HTML } from './dashboard';
 import { USER_EVENTS_SQL, USER_EVENTS_LIMIT } from './userEvents';
 import { metricsExclusionExpr, loadReleases, invalidateReleasesCache, summarizeReleases, type SeenVersionRow } from './releases';
 import { computeCohortRetention, type CohortUserRow } from './retention';
+import { parseJoinVersion, buildUserRestrictions, buildNewUsersCount } from './userFilters';
+import { buildUsersSql, sortUsers, parseUsersSort, USERS_LIMIT, type UserRow } from './usersQuery';
 import {
   extractChannel,
   buildChannelClause,
@@ -273,27 +275,19 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
     ? env.EXCLUDED_USER_IDS.split(',').map(id => id.trim()).filter(id => id.length > 0)
     : [];
 
-  // Build the "new user cohort" restriction. This is an anonymous_user_id IN (...)
-  // subquery that selects users whose first-ever event (MIN timestamp across ALL
-  // history, not just the window) lands inside the phase window. The subquery is
-  // deliberately NOT constrained by the outer timestamp filter, only by the
-  // exclusion list, so first-touch is measured over the full event history.
-  // Returns the SQL fragment and the params to bind (in the order they appear).
-  const buildCohortClause = (col: string) => {
-    if (cohort !== 'new') return { sql: '', params: [] as string[] };
-    const params: string[] = [];
-    let sub = 'SELECT anonymous_user_id FROM events';
-    if (excludedIds.length > 0) {
-      sub += ` WHERE anonymous_user_id NOT IN (${excludedIds.map(() => '?').join(', ')})`;
-      params.push(...excludedIds);
-    }
-    // Exclude clock-skewed events so first-touch lands on a trustworthy timestamp (no params).
-    sub += (excludedIds.length > 0 ? ' AND ' : ' WHERE ') + metricsExclusionExpr(releases);
-    sub += ' GROUP BY anonymous_user_id HAVING 1=1';
-    if (fromDate) { sub += ' AND MIN(timestamp) >= ?'; params.push(fromDate); }
-    if (toDate) { sub += ' AND MIN(timestamp) < ?'; params.push(toDate); }
-    return { sql: ` AND ${col} IN (${sub})`, params };
-  };
+  // Global "Joined in version" filter: users whose FIRST-EVER counted event was on platform P,
+  // version V (strict `ios:1.0.5` shape; anything else is ignored).
+  const joinVersion = parseJoinVersion(url.searchParams.get('joinVersion'));
+  // User-level cohort restrictions (see userFilters.ts). cohort=new => first-ever event in
+  // [from,to) AND resolved-channel match; the join-version cohort composes with either mode.
+  // In 'new' mode the channel is applied at USER level (resolved channel, same attribution as the
+  // Channel Breakdown) instead of per event; in 'active' mode it stays a per-event predicate.
+  const userChannelScope = cohort === 'new' ? channelParam : null;
+  const buildCohortClause = (col: string) =>
+    buildUserRestrictions(col, {
+      excludedIds, releases, fromDate, toDate,
+      windowed: cohort === 'new', joinVersion, channel: userChannelScope,
+    });
 
   // Build WHERE clause for date filtering and user exclusion
   let dateFilter = '';
@@ -318,7 +312,7 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
   dateParams.push(...cohortMain.params);
   // Append the channel predicate (unqualified column) so it rides through every
   // withFilter query exactly like the date/exclusion/cohort filters above.
-  const channelMain = buildChannelClause(channelParam);
+  const channelMain = buildChannelClause(cohort === 'new' ? null : channelParam);
   dateFilter += channelMain.sql;
   dateParams.push(...channelMain.params);
   // Exclude events whose device-reported `timestamp` is implausibly far ahead of the
@@ -357,30 +351,14 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
   const retentionFilter = withFilter("WHERE event_type = 'app_opened'");
   const platformFilter = withFilter("WHERE platform IS NOT NULL");
 
-  // New users (first-touch): users whose FIRST-EVER event falls in the phase
-  // window. Computed over all history (per-user MIN timestamp), then the
-  // install-time is tested against from/to via HAVING. This partitions users
-  // cleanly by acquisition phase, so per-phase counts are additive.
-  // Excluded internal users are removed before aggregating.
-  const newUsersExclusion = excludedIds.length > 0
-    ? ` WHERE anonymous_user_id NOT IN (${excludedIds.map(() => '?').join(', ')})`
-    : '';
-  let newUsersHaving = '';
-  const newUsersParams: string[] = [...excludedIds];
-  if (fromDate) { newUsersHaving += ' AND MIN(timestamp) >= ?'; newUsersParams.push(fromDate); }
-  if (toDate) { newUsersHaving += ' AND MIN(timestamp) < ?'; newUsersParams.push(toDate); }
-  // Clock-skew exclusion in the first-touch cohort too (metric query). Either adds the
-  // predicate as the first WHERE condition (no prior exclusion) or ANDs it on. No params.
-  const skewClause = metricsExclusionExpr(releases);
-  const newUsersSkew = newUsersExclusion ? ` AND ${skewClause}` : ` WHERE ${skewClause}`;
-  const newUsersSql = `
-    SELECT COUNT(*) as count FROM (
-      SELECT anonymous_user_id
-      FROM events${newUsersExclusion}${newUsersSkew}
-      GROUP BY anonymous_user_id
-      HAVING 1=1${newUsersHaving}
-    )
-  `;
+  // New users (first-touch): users whose FIRST-EVER event falls in the phase window, computed
+  // over all history (per-user MIN timestamp). Partitions users cleanly by acquisition phase, so
+  // per-phase counts are additive. Independent of the Users toggle, but it DOES honor the Channel
+  // filter (resolved per-user channel, matching the Channel Breakdown) and the Joined-in-version
+  // filter. Same subqueries as cohort=new, so the card equals the drill-down row count.
+  const newUsersQ = buildNewUsersCount({
+    excludedIds, releases, fromDate, toDate, joinVersion, channel: channelParam,
+  });
 
   const [
     totalResult,
@@ -398,7 +376,7 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
   ] = await Promise.all([
     query(`SELECT COUNT(*) as total FROM events${allFilter.where}`, allFilter.params).first<{ total: number }>(),
     query(`SELECT COUNT(DISTINCT anonymous_user_id) as count FROM events${allFilter.where}`, allFilter.params).first<{ count: number }>(),
-    query(newUsersSql, newUsersParams).first<{ count: number }>(),
+    query(newUsersQ.sql, newUsersQ.params).first<{ count: number }>(),
     query(`SELECT COUNT(DISTINCT anonymous_user_id) as count FROM events ${appOpenedFilter.where}`, appOpenedFilter.params).first<{ count: number }>(),
     query(`SELECT COUNT(DISTINCT anonymous_user_id) as count FROM events ${onboardingFilter.where}`, onboardingFilter.params).first<{ count: number }>(),
     query(`SELECT json_extract(properties, '$.mode') as mode, COUNT(*) as count FROM events ${modeFilter.where} GROUP BY mode`, modeFilter.params).all(),
@@ -460,8 +438,8 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
       outerFilter += outerCohort.sql;
       outerParams.push(...outerCohort.params);
       // Channel predicate with table-qualified columns to match each side of the JOIN.
-      const innerChannel = buildChannelClause(channelParam, 'events.channel');
-      const outerChannel = buildChannelClause(channelParam, 'tc.channel');
+      const innerChannel = buildChannelClause(cohort === 'new' ? null : channelParam, 'events.channel');
+      const outerChannel = buildChannelClause(cohort === 'new' ? null : channelParam, 'tc.channel');
       innerFilter += innerChannel.sql;
       innerParams.push(...innerChannel.params);
       outerFilter += outerChannel.sql;
@@ -536,6 +514,13 @@ async function handleKpis(request: Request, env: Env): Promise<Response> {
     cohortExclusion = ` AND anonymous_user_id NOT IN (${excludedIds.map(() => '?').join(', ')})`;
     cohortParams.push(...excludedIds);
   }
+  // Retention previously ignored the Channel filter. Scope it by the user's RESOLVED channel and
+  // the join-version cohort (not windowed here: the install-day window is applied in JS below).
+  const cohortUser = buildUserRestrictions('anonymous_user_id', {
+    excludedIds, releases, fromDate, toDate, windowed: false, joinVersion, channel: channelParam,
+  });
+  cohortExclusion += cohortUser.sql;
+  cohortParams.push(...cohortUser.params);
   const cohortSql = `
     SELECT
       anonymous_user_id,
@@ -700,34 +685,37 @@ async function buildDetailFilter(request: Request, env: Env) {
     clause += ` AND anonymous_user_id NOT IN (${placeholders})`;
     params.push(...excludedIds);
   }
-  // New-user acquisition cohort restriction. Selects users whose first-ever
-  // event (MIN timestamp over ALL history) falls inside the phase window.
-  // The subquery is only bounded by from/to (via HAVING) and the exclusion
-  // list — never by the outer window — so first-touch is measured correctly.
-  if (cohort === 'new') {
-    let sub = 'SELECT anonymous_user_id FROM events';
-    if (excludedIds.length > 0) {
-      sub += ` WHERE anonymous_user_id NOT IN (${excludedIds.map(() => '?').join(', ')})`;
-      params.push(...excludedIds);
-    }
-    sub += (excludedIds.length > 0 ? ' AND ' : ' WHERE ') + metricsExclusionExpr(releases);
-    sub += ' GROUP BY anonymous_user_id HAVING 1=1';
-    if (fromDate) { sub += ' AND MIN(timestamp) >= ?'; params.push(fromDate); }
-    if (toDate) { sub += ' AND MIN(timestamp) < ?'; params.push(toDate); }
-    clause += ` AND anonymous_user_id IN (${sub})`;
-  }
+  // User-level restrictions (userFilters.ts), identical to handleKpis:
+  //  - cohort=new: users whose first-ever event falls in [from,to) (NEVER bounded by the outer
+  //    window; first-touch is measured over ALL history) AND whose RESOLVED channel matches.
+  //  - joinVersion: users whose first-ever event was on platform P, version V (any cohort).
+  const joinVersion = parseJoinVersion(url.searchParams.get('joinVersion'));
+  const restr = buildUserRestrictions('anonymous_user_id', {
+    excludedIds, releases, fromDate, toDate,
+    windowed: cohort === 'new', joinVersion, channel: cohort === 'new' ? channelParam : null,
+  });
+  clause += restr.sql;
+  params.push(...restr.params);
 
-  // Channel predicate (unqualified column). Rides inside `clause`, so any handler
-  // that repeats `clause` N times naturally repeats this `?` N times too.
-  const ch = buildChannelClause(channelParam);
+  // Per-event channel predicate (unqualified column) for the Active cohort. In 'new' mode the
+  // channel is already applied at user level above, so it is skipped here (otherwise the install
+  // event, which is untagged, would be dropped and the list would disagree with the card).
+  const ch = buildChannelClause(cohort === 'new' ? null : channelParam);
   clause += ch.sql;
   params.push(...ch.params);
 
-  // Clock-skew exclusion: drop events whose device `timestamp` is >1 day ahead of
-  // `received_at` from every detail/breakdown metric. Pure column math — NO bind params —
-  // so it rides inside `clause` and repeats with it without disturbing the params array.
-  // NULL received_at (pre-column rows) is explicitly preserved.
+  // Clock-skew + release exclusion: pure column math, NO bind params.
   clause += ' AND ' + metricsExclusionExpr(releases);
+
+  // Same filter WITHOUT the user-level IN-subqueries, for per-user correlated lookups that are
+  // already pinned to one user (re-running the subqueries inside each lookup multiplies reads).
+  let lookupClause = '';
+  const lookupParams: string[] = [];
+  if (fromDate) { lookupClause += ' AND timestamp >= ?'; lookupParams.push(fromDate); }
+  if (toDate) { lookupClause += ' AND timestamp < ?'; lookupParams.push(toDate); }
+  lookupClause += ch.sql;
+  lookupParams.push(...ch.params);
+  lookupClause += ' AND ' + metricsExclusionExpr(releases);
 
   // Bind helper that tolerates empty params (local D1 compatibility).
   const query = (sql: string) => {
@@ -735,44 +723,29 @@ async function buildDetailFilter(request: Request, env: Env) {
     return params.length > 0 ? stmt.bind(...params) : stmt;
   };
 
-  return { clause, params, query };
+  return { clause, params, query, lookupClause, lookupParams, releases };
 }
 
 async function handleDetailUsers(request: Request, env: Env): Promise<Response> {
   if (!isAuthorized(request, env)) return unauthorizedResponse();
 
-  const { clause, params } = await buildDetailFilter(request, env);
-  // Platform / OS version are per-event. Show each user's most recent
-  // non-null value via correlated subqueries against their latest event.
-  // The subqueries reuse the same phase/exclusion filter params, so the
-  // filter clause appears three times and params are bound three times.
-  const sql = `
-    SELECT
-      e.anonymous_user_id,
-      COUNT(*) as event_count,
-      MIN(e.timestamp) as first_seen,
-      MAX(e.timestamp) as last_seen,
-      (SELECT p.platform FROM events p
-        WHERE p.anonymous_user_id = e.anonymous_user_id AND p.platform IS NOT NULL${clause}
-        ORDER BY p.timestamp DESC LIMIT 1) as platform,
-      (SELECT o.os_version FROM events o
-        WHERE o.anonymous_user_id = e.anonymous_user_id AND o.os_version IS NOT NULL${clause}
-        ORDER BY o.timestamp DESC LIMIT 1) as os_version,
-      (SELECT c.country FROM events c
-        WHERE c.anonymous_user_id = e.anonymous_user_id AND c.country IS NOT NULL${clause}
-        ORDER BY c.timestamp DESC LIMIT 1) as country
-    FROM events e
-    WHERE 1=1${clause}
-    GROUP BY e.anonymous_user_id
-    ORDER BY event_count DESC
-    LIMIT 200
-  `;
-  // Param order matches the four clause occurrences: platform sub, os sub, country sub, outer.
-  const allParams = [...params, ...params, ...params, ...params];
-  const stmt = env.DB.prepare(sql);
-  const result = await (allParams.length > 0 ? stmt.bind(...allParams) : stmt).all();
+  const { clause, params, lookupClause, lookupParams, releases } = await buildDetailFilter(request, env);
+  // Sort is applied here (server-side, over the TRUE full set) so the USERS_LIMIT cap keeps the
+  // right rows. The key comes from a whitelist (parseUsersSort) and is never put in SQL.
+  const url = new URL(request.url);
+  const sort = parseUsersSort(url.searchParams.get('sort'), url.searchParams.get('dir'));
+  const q = buildUsersSql(clause, params, lookupClause, lookupParams, releases);
+  const stmt = env.DB.prepare(q.sql);
+  const result = await (q.params.length > 0 ? stmt.bind(...q.params) : stmt).all<UserRow>();
+  const rows = sortUsers((result.results || []) as UserRow[], sort).slice(0, USERS_LIMIT);
 
-  return corsResponse(JSON.stringify(result.results), {
+  return corsResponse(JSON.stringify({
+    users: rows,
+    total: (result.results || []).length,
+    capped: (result.results || []).length > USERS_LIMIT,
+    limit: USERS_LIMIT,
+    sort,
+  }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   });

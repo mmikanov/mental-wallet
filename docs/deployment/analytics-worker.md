@@ -72,6 +72,15 @@ The **Releases** table at the bottom of the dashboard lists every version per pl
 
 From the **New Unique Users** (or Active Unique Users) drill-down table, click any user row to open that user's full event timeline — every event they produced, oldest first, with timestamp, event type, session, and the raw event properties. Use "Back to user list" to return. This view is served by `GET /details/user-events?user=<anonymous_user_id>` and is intentionally **unfiltered**: it ignores the phase / cohort / channel filters and the clock-skew / release exclusions so you see the user's complete recorded history in order (a raw forensic view). It is auth-gated like every other read endpoint and capped at 2000 events per user. The query is a cheap per-user indexed lookup (`idx_events_user`), so it does not add meaningful D1 read cost.
 
+## Users Table: Sorting, Versions, and "Joined in version"
+
+No new migration or secret is needed for these; deploy the Worker as usual.
+
+- **Sorting.** In the Users drill-down (Active or New Unique Users) click any column header to sort; click again to reverse. The default is Events, highest first, shown with an arrow. The choice is kept across auto-refresh. Up to 1,000 users are returned; if there are more, the table says so and sorting is done by the server across everyone, so the top rows are always the true top.
+- **First version / Latest version.** First version is the platform and app version on the user's very first event (the version they joined on); Latest version is the app version on their most recent event in the selected window. "—" means that event had no app version recorded.
+- **Joined in version filter.** Under Channel there is a "Joined in version" picker listing each live version per OS with its go-live date. It narrows every card and table to users whose first event was on that version and OS, and the "Showing:" line says so. It combines with Phase, Users and Channel. Versions that never shipped, are scheduled, or have no go-live time recorded are not offered, so record a version's go-live time (section above) for it to appear.
+- **Channel + New Unique Users.** The New Unique Users card now follows the Channel filter, counting users by their resolved channel (the same way the Channel Breakdown does), and the list opened from the card has the same count. D7/D30 retention also follows Channel now.
+
 ## Set or Update Secrets
 
 ```bash

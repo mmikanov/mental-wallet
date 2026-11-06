@@ -4,6 +4,8 @@
  * Clickable cards open detail panels with drill-down data from /details/* endpoints.
  */
 
+import { USERS_SORT_JS } from './usersTableClient.ts';
+
 export const DASHBOARD_HTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -240,6 +242,14 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     <span class="phase-dates" id="channel-hint">Scopes every metric to one acquisition channel. Composes with phase + Users. Organic = untagged traffic (includes iOS link installs — see breakdown note).</span>
   </div>
 
+  <div class="phase-filter" id="join-version-filter">
+    <label>Joined in version:</label>
+    <select id="join-version-select" onchange="setJoinVersion(this.value)">
+      <option value="">Any version</option>
+    </select>
+    <span class="phase-dates" id="join-version-hint">Only users whose very first event was on this app version and OS. The date is when that version went live. Composes with Phase, Users and Channel.</span>
+  </div>
+
   <div id="dashboard-content">
     <div class="empty-state"><p>Loading...</p></div>
   </div>
@@ -273,6 +283,11 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     // it re-scopes /kpis and every /details/* fetch. The <select> options beyond the two
     // static ones are populated at each refresh from the channels present in the data.
     let currentChannel = '';
+    // "Joined in version" filter: '' = any, otherwise 'platform:version' (e.g. 'ios:1.0.5').
+    // Serialized by getPhaseParams() as &joinVersion=... so it re-scopes /kpis and every
+    // /details/* fetch. Options come from the release table (live versions only).
+    let currentJoinVersion = '';
+    let joinVersionLabel = '';  // human label for the "Showing:" line, e.g. 'ios 1.0.5 (live Nov 1, 2026)'
 
     // Refresh scheduling state
     let lastRefreshAt = null;   // Date of the last successful refresh
@@ -361,6 +376,50 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
       refresh();
     }
 
+    // Joined-in-version filter. Like setChannel, an explicit global change clears any open
+    // drill-down's per-panel cohort override so the panel follows the globals.
+    function setJoinVersion(value) {
+      currentJoinVersion = value || '';
+      var sel = document.getElementById('join-version-select');
+      var opt = sel && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
+      joinVersionLabel = currentJoinVersion && opt ? opt.getAttribute('data-label') || opt.text : '';
+      activeDetailCohort = null;
+      updatePhaseRange();
+      refresh();
+    }
+
+    // Fill the picker from the release table: only versions that are recorded AND live
+    // (never-released sentinels, scheduled and not-recorded versions are skipped), grouped by OS,
+    // newest first, each labelled with its go-live date. Keeps the current selection.
+    function populateJoinVersionSelect(rows) {
+      var sel = document.getElementById('join-version-select');
+      if (!sel) return;
+      var live = (rows || []).filter(function(r) { return r.status === 'live' && r.live_at && r.platform && r.app_version; });
+      var byPlatform = {};
+      live.forEach(function(r) { (byPlatform[r.platform] = byPlatform[r.platform] || []).push(r); });
+      var html = '<option value="">Any version</option>';
+      Object.keys(byPlatform).sort().forEach(function(p) {
+        html += '<optgroup label="' + escHtml(p === 'ios' ? 'iOS' : p === 'android' ? 'Android' : p) + '">';
+        byPlatform[p].sort(function(a, b) { return cmpVersionStr(b.app_version, a.app_version); }).forEach(function(r) {
+          var d = new Date(r.live_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+          var label = p + ' ' + r.app_version + ' (live ' + d + ')';
+          html += '<option value="' + escHtml(p + ':' + r.app_version) + '" data-label="' + escHtml(label) + '">' +
+            escHtml(r.app_version + ' \u2014 live ' + d) + '</option>';
+        });
+        html += '</optgroup>';
+      });
+      sel.innerHTML = html;
+      sel.value = currentJoinVersion;
+      if (sel.value !== currentJoinVersion) {
+        // Selected version is no longer offered (e.g. release row removed): keep the scope visible.
+        sel.innerHTML += '<option value="' + escHtml(currentJoinVersion) + '">' + escHtml(currentJoinVersion) + '</option>';
+        sel.value = currentJoinVersion;
+      }
+      var cur = sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
+      joinVersionLabel = currentJoinVersion && cur ? (cur.getAttribute('data-label') || cur.text) : '';
+      updatePhaseRange();
+    }
+
     // Returns the actual {from, to} timestamps for the current phase (null = unbounded).
     // Single source of truth for both the query params and the range shown on the bar.
     function getActiveRange() {
@@ -393,6 +452,8 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
       // /kpis and every /details/* fetch. ('organic' and specific labels are both just the
       // value; the backend maps 'organic' => channel IS NULL.)
       if (currentChannel) params += '&channel=' + encodeURIComponent(currentChannel);
+      // Joined-in-version scope ('platform:version'), applied by /kpis and every /details/*.
+      if (currentJoinVersion) params += '&joinVersion=' + encodeURIComponent(currentJoinVersion);
       return params;
     }
 
@@ -409,14 +470,15 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     function updatePhaseRange() {
       var el = document.getElementById('phase-range');
       if (!el) return;
+      var joinText = currentJoinVersion ? ' \u00b7 users who joined in ' + (joinVersionLabel || currentJoinVersion) : '';
       if (currentPhase === 'all') {
-        el.textContent = 'Showing: all events (no date filter)';
+        el.textContent = 'Showing: all events (no date filter)' + joinText;
         return;
       }
       var r = getActiveRange();
       var fromText = r.from ? fmtDate(r.from) : 'the beginning';
       var toText = r.to ? fmtDate(r.to) : 'now';
-      el.textContent = 'Showing: ' + fromText + ' \u2192 ' + toText;
+      el.textContent = 'Showing: ' + fromText + ' \u2192 ' + toText + joinText;
     }
 
     async function fetchKPIs() {
@@ -430,9 +492,9 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
       }
     }
 
-    async function fetchDetail(type, cohortOverride) {
+    async function fetchDetail(type, cohortOverride, extraParams) {
       try {
-        const res = await fetch('/details/' + type + '?secret=' + encodeURIComponent(SECRET) + getPhaseParams(cohortOverride) + freshParam());
+        const res = await fetch('/details/' + type + '?secret=' + encodeURIComponent(SECRET) + getPhaseParams(cohortOverride) + (extraParams || '') + freshParam());
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return await res.json();
       } catch (e) {
@@ -687,6 +749,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
         if (!res.ok) throw new Error('HTTP ' + res.status);
         var data = await res.json();
         var rows = (data && Array.isArray(data.releases)) ? data.releases : [];
+        populateJoinVersionSelect(rows);
         if (rows.length === 0) {
           releasesHtml = '<div class="detail" style="color:#6c757d;">No versions seen yet.</div>';
           releasesLoaded = true;
@@ -804,6 +867,71 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
       sel.value = currentChannel;
     }
 
+    // ---- Users table: sortable columns -------------------------------------------------
+    // Sort state survives auto-refresh/re-open because it is plain JS state (not DOM).
+    var usersSort = { key: 'event_count', dir: 'desc' };
+    var usersPayload = null;      // last /details/users response: { users, total, capped, limit }
+    var usersLabelCohort = 'active';
+    function usersSortParams() { return '&sort=' + encodeURIComponent(usersSort.key) + '&dir=' + encodeURIComponent(usersSort.dir); }
+
+    // Shared sort helpers (cmpVersionStr, sortUsersRows, usersDefaultDir...), unit-tested.
+    ${USERS_SORT_JS}
+
+    // Click a header: same column toggles direction, a new column starts at its default.
+    // Fully loaded list => sort the rows in the browser (no request). Capped list => ask the
+    // server to sort the full set (the table only holds the top rows).
+    function sortUsersBy(key) {
+      if (usersSort.key === key) {
+        usersSort = { key: key, dir: usersSort.dir === 'asc' ? 'desc' : 'asc' };
+      } else {
+        usersSort = { key: key, dir: usersDefaultDir(key) };
+      }
+      if (usersPayload && usersPayload.capped) {
+        showDetail('users', activeDetailCohort);
+        return;
+      }
+      var panel = document.getElementById('detail-panel');
+      if (panel && usersPayload) panel.innerHTML = renderUsersPanel();
+    }
+
+    function versionCell(platform, version) {
+      return version ? escHtml((platform ? platform + ' ' : '') + version) : '<span style="color:#999;">\u2014</span>';
+    }
+
+    function renderUsersPanel() {
+      var all = (usersPayload && Array.isArray(usersPayload.users)) ? usersPayload.users : [];
+      var capped = !!(usersPayload && usersPayload.capped);
+      // Server rows already arrive in the chosen order; sorting again client-side is a no-op
+      // for capped lists and the actual sort for uncapped ones.
+      var users = capped ? all : sortUsersRows(all, usersSort.key, usersSort.dir);
+      var total = usersPayload && usersPayload.total != null ? usersPayload.total : users.length;
+      var usersLabel = usersLabelCohort === 'new' ? 'New Unique Users' : 'Active Unique Users';
+      var cols = [
+        ['user', 'User ID'], ['platform', 'Platform'], ['os_version', 'OS Version'], ['country', 'Country'],
+        ['first_version', 'First version'], ['latest_version', 'Latest version'],
+        ['event_count', 'Events'], ['first_seen', 'First Seen'], ['last_seen', 'Last Seen']
+      ];
+      var head = cols.map(function(c) {
+        var active = usersSort.key === c[0];
+        var arrow = active ? (usersSort.dir === 'asc' ? ' \u25B2' : ' \u25BC') : '';
+        return '<th class="sortable" style="cursor:pointer;user-select:none;" aria-sort="' + (active ? (usersSort.dir === 'asc' ? 'ascending' : 'descending') : 'none') +
+          '" onclick="sortUsersBy(\\'' + c[0] + '\\')" title="Sort by ' + c[1] + '">' + c[1] + arrow + '</th>';
+      }).join('');
+      var capNote = capped
+        ? '<p style="margin-bottom:8px;color:#b26a00;font-size:0.8rem;">Showing the top ' + users.length + ' of ' + total + ' users by the chosen sort (sorted on the server across all ' + total + ').</p>'
+        : '';
+      return '<div class="detail-panel">' +
+        '<h3>' + usersLabel + ' (' + total + ') <button class="close-btn" onclick="closeDetail()">Close</button></h3>' +
+        '<p style="margin-bottom:12px;color:#6c757d;font-size:0.85rem;">Click a column header to sort (click again to reverse). Click a row to see that user\\'s full event timeline in the order they happened. First version = app version on the user\\'s first event; Latest version = on their most recent event in this window.</p>' +
+        capNote +
+        '<table><thead><tr>' + head + '</tr></thead><tbody>' +
+        users.map(function(u) {
+          // Pass the FULL raw anonymous_user_id to the timeline fetch (shortId is display-only).
+          return '<tr class="clickable-row" onclick="showUserEvents(\\'' + encodeURIComponent(u.anonymous_user_id) + '\\')"><td>' + shortId(u.anonymous_user_id) + '</td><td>' + (u.platform || '-') + '</td><td>' + (u.os_version || '-') + '</td><td>' + (u.country || '-') + '</td><td>' + versionCell(u.first_platform, u.first_version) + '</td><td>' + versionCell(u.platform, u.latest_version) + '</td><td>' + u.event_count + '</td><td>' + fmtDate(u.first_seen) + '</td><td>' + fmtDate(u.last_seen) + '</td></tr>';
+        }).join('') +
+        '</tbody></table></div>';
+    }
+
     // Clicking the New Unique Users card opens the users table scoped to the
     // new cohort for the current phase window, WITHOUT changing the global
     // Users filter. The override applies only to this drill-down.
@@ -819,7 +947,9 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
 
       panel.innerHTML = '<div class="loading-detail">Loading...</div>';
 
-      const data = await fetchDetail(type, activeDetailCohort);
+      // Users table: the server sorts (whitelisted key) so the row cap applies to the true full
+      // set. The chosen sort lives in usersSort (a JS variable) so it survives auto-refresh.
+      const data = await fetchDetail(type, activeDetailCohort, type === 'users' ? usersSortParams() : '');
       if (!data) {
         panel.innerHTML = '<div class="detail-panel"><h3>Error loading data <button class="close-btn" onclick="closeDetail()">Close</button></h3></div>';
         return;
@@ -828,18 +958,9 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
       let html = '';
 
       if (type === 'users') {
-        const users = Array.isArray(data) ? data : [];
-        var effectiveCohort = activeDetailCohort || currentCohort;
-        var usersLabel = effectiveCohort === 'new' ? 'New Unique Users' : 'Active Unique Users';
-        html = '<div class="detail-panel">' +
-          '<h3>' + usersLabel + ' (' + users.length + ') <button class="close-btn" onclick="closeDetail()">Close</button></h3>' +
-          '<p style="margin-bottom:12px;color:#6c757d;font-size:0.85rem;">Click a row to see that user\\'s full event timeline in the order they happened.</p>' +
-          '<table><thead><tr><th>User ID</th><th>Platform</th><th>OS Version</th><th>Country</th><th>Events</th><th>First Seen</th><th>Last Seen</th></tr></thead><tbody>' +
-          users.map(function(u) {
-            // Pass the FULL raw anonymous_user_id to the timeline fetch (shortId is display-only).
-            return '<tr class="clickable-row" onclick="showUserEvents(\\'' + encodeURIComponent(u.anonymous_user_id) + '\\')"><td>' + shortId(u.anonymous_user_id) + '</td><td>' + (u.platform || '-') + '</td><td>' + (u.os_version || '-') + '</td><td>' + (u.country || '-') + '</td><td>' + u.event_count + '</td><td>' + fmtDate(u.first_seen) + '</td><td>' + fmtDate(u.last_seen) + '</td></tr>';
-          }).join('') +
-          '</tbody></table></div>';
+        usersPayload = data;
+        usersLabelCohort = activeDetailCohort || currentCohort;
+        html = renderUsersPanel();
       }
 
       if (type === 'onboarding') {

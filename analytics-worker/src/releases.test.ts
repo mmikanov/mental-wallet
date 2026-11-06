@@ -17,6 +17,7 @@ import {
   summarizeReleases,
   NEVER_RELEASED_AT,
   isNeverReleased,
+  joinVersionOptions,
 } from './releases.ts';
 
 const REL = [
@@ -161,4 +162,21 @@ test('never-released sentinel: skipped versions show as never_released (not sche
   // A normal far-future-but-real scheduled release is still "scheduled".
   const [sched] = summarizeReleases([], [{ platform: 'ios', app_version: '1.0.9', live_at: '2027-01-01T00:00:00Z' }], now);
   assert.equal(sched.status, 'scheduled');
+});
+
+test('joinVersionOptions: live, safe, recorded versions only; grouped by platform, newest first', () => {
+  const now = '2026-11-05T00:00:00Z';
+  const rows = [
+    { platform: 'ios', app_version: '1.0.5', live_at: '2026-10-01T00:00:00Z' },
+    { platform: 'ios', app_version: '1.0.10', live_at: '2026-11-01T00:00:00Z' },
+    { platform: 'ios', app_version: '1.0.9', live_at: '2026-10-20T00:00:00Z' },
+    { platform: 'ios', app_version: '1.0.2', live_at: NEVER_RELEASED_AT },
+    { platform: 'ios', app_version: '1.1.0', live_at: '2027-01-01T00:00:00Z' }, // scheduled
+    { platform: 'android', app_version: '1.0.4', live_at: '2026-09-17T00:00:00Z' },
+    { platform: 'android', app_version: "1.0'--", live_at: '2026-09-17T00:00:00Z' }, // unsafe
+  ];
+  assert.deepEqual(
+    joinVersionOptions(rows, now).map((r) => `${r.platform}:${r.app_version}`),
+    ['android:1.0.4', 'ios:1.0.10', 'ios:1.0.9', 'ios:1.0.5'],
+  );
 });
