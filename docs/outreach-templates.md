@@ -288,6 +288,7 @@ a label, don't rename it, or you'll split its history into two buckets.
 | Reddit posts | `reddit` |
 | LinkedIn posts / DMs | `linkedin` |
 | Therapist outreach | `therapist` |
+| Linktree (link-in-bio) | `linktree` |
 | Organic (no campaign) | *(no tag — see below)* |
 
 **Organic = no tag.** Don't add `?utm_source=organic`. Leave the link plain (or let people reach
