@@ -6,6 +6,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { sortUsers, parseUsersSort, defaultDirFor, SORT_KEYS, type UserRow, type SortKey } from './usersQuery.ts';
+import { countryName } from './countryName.ts';
 import { USERS_SORT_JS } from './usersTableClient.ts';
 import { DASHBOARD_HTML } from './dashboard.ts';
 
@@ -13,7 +14,8 @@ const row = (id: string, o: Partial<UserRow> = {}): UserRow => ({
   anonymous_user_id: id, event_count: 1, first_seen: '2026-11-01T00:00:00.000Z', last_seen: '2026-11-02T00:00:00.000Z',
   platform: 'ios', os_version: '17', country: 'US', first_platform: 'ios', first_version: '1.0.5', latest_version: '1.0.5', ...o,
 });
-const client = new Function(USERS_SORT_JS + '; return { sortUsersRows, usersDefaultDir, cmpVersionStr };')() as {
+const client = new Function(USERS_SORT_JS + '; return { sortUsersRows, usersDefaultDir, cmpVersionStr, countryName, versionLabel };')() as {
+  countryName: (c: string | null) => string; versionLabel: (v: string | null) => string;
   sortUsersRows: (r: UserRow[], k: string, d: string) => UserRow[]; usersDefaultDir: (k: string) => string; cmpVersionStr: (a: string, b: string) => number;
 };
 const ids = (r: UserRow[]) => r.map((x) => x.anonymous_user_id);
@@ -43,6 +45,7 @@ test('timestamps sort chronologically as instants (offset-aware), not as strings
 });
 
 test('text sorts case-insensitively with missing last; stable on ties', () => {
+  // Country sorts by NAME: Brazil (br) < Canada (CA) < United States (US).
   assert.deepEqual(ids(sortUsers(data, { key: 'country', dir: 'asc' })), ['d', 'c', 'a', 'b']);
   assert.deepEqual(ids(sortUsers(data, { key: 'country', dir: 'desc' })), ['a', 'c', 'd', 'b']);
   const ties = [row('x'), row('y'), row('z')];
@@ -77,4 +80,30 @@ test('dashboard inline script parses and wires the new filter + sortable headers
   assert.ok(m![1].includes("'&joinVersion=' + encodeURIComponent(currentJoinVersion)"), 'getPhaseParams sends joinVersion');
   assert.ok(m![1].includes('function sortUsersBy'));
   assert.ok(DASHBOARD_HTML.includes('id="join-version-select"'));
+});
+
+test('country sort uses the displayed name, not the code (server + browser)', () => {
+  // Codes DE < NL < SE would differ from names: Germany, Netherlands, Sweden is same, so pick
+  // a case where they diverge: CH (Switzerland) vs DE (Germany) vs AT (Austria) -> names A,G,S.
+  const rows = [row('x', { country: 'CH' }), row('y', { country: 'DE' }), row('z', { country: 'AT' }), row('t', { country: 'T1' })];
+  // Names: Austria, Germany, Switzerland, Tor network. Codes: AT, CH, DE, T1 (CH < DE by code).
+  assert.deepEqual(ids(sortUsers(rows, { key: 'country', dir: 'asc' })), ['z', 'y', 'x', 't']);
+  assert.deepEqual(ids(client.sortUsersRows(rows, 'country', 'asc')), ['z', 'y', 'x', 't']);
+});
+
+test('countryName: names, special codes, missing, bad input; browser copy matches', () => {
+  const cases: Array<[string | null | undefined, string]> = [
+    ['US', 'United States'], ['de', 'Germany'], [' il ', 'Israel'], ['XX', 'Unknown'], ['T1', 'Tor network'],
+    [null, '\u2014'], [undefined, '\u2014'], ['', '\u2014'], ['  ', '\u2014'], ['not-a-code', 'NOT-A-CODE'],
+  ];
+  for (const [input, want] of cases) {
+    assert.equal(countryName(input), want, String(input));
+    assert.equal(client.countryName(input as string | null), want, 'browser ' + String(input));
+  }
+});
+
+test('versionLabel: version number only, em dash when missing', () => {
+  assert.equal(client.versionLabel('1.0.5'), '1.0.5');
+  assert.equal(client.versionLabel(null), '\u2014');
+  assert.equal(client.versionLabel(''), '\u2014');
 });

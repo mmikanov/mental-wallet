@@ -94,3 +94,12 @@ test('a SQL-injection-style user id is matched literally (bound param), returns 
   const rows = db.prepare(USER_EVENTS_SQL).all(evil, USER_EVENTS_LIMIT) as unknown[];
   assert.equal(rows.length, 0); // bound literally, so it does NOT match userA
 });
+
+test('returns the country column per row (null when unstamped)', () => {
+  const { db, ins } = seedDb();
+  ins.run('c1', 'userK', 's1', 'app_opened', '2026-11-01T00:00:00Z', null, 'r', 'ios', '1.0.6', null);
+  ins.run('c2', 'userK', 's1', 'tool_opened', '2026-11-02T00:00:00Z', null, 'r', 'ios', '1.0.6', null);
+  db.prepare('UPDATE events SET country = ? WHERE id = ?').run('DE', 'c2');
+  const rows = db.prepare(USER_EVENTS_SQL).all('userK', USER_EVENTS_LIMIT) as Array<{ country: string | null }>;
+  assert.deepEqual(rows.map((r) => r.country), [null, 'DE']);
+});

@@ -13,6 +13,7 @@
  * below; the dashboard sorts the already-loaded rows with an equivalent client copy
  * (usersTableClient.ts) when the list is not capped.
  */
+import { countryName } from './countryName.ts';
 import { compareVersions, metricsExclusionExpr, type ReleaseRow } from './releases.ts';
 
 /** Max rows returned. Above this the dashboard re-requests with sort params (server-side). */
@@ -117,6 +118,7 @@ function cmpValue(key: SortKey, a: UserRow, b: UserRow): number {
       return compareVersions(a.first_version as string, b.first_version as string) || cmpStr(a.first_platform, b.first_platform);
     case 'latest_version':
       return compareVersions(a.latest_version as string, b.latest_version as string) || cmpStr(a.platform, b.platform);
+    case 'country': return cmpStr(countryName(a.country), countryName(b.country));
     case 'user': return cmpStr(a.anonymous_user_id, b.anonymous_user_id);
     default: return cmpStr(a[key], b[key]);
   }

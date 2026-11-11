@@ -27,8 +27,28 @@ export const USERS_SORT_JS = `
     }
     function cmpText(a, b) { return String(a == null ? '' : a).toLowerCase().localeCompare(String(b == null ? '' : b).toLowerCase()); }
 
+    // Country code -> English name. Mirrors countryName() in countryName.ts (parity-tested).
+    // null/empty => em dash; Cloudflare XX / T1 get friendly labels; any failure => the raw code.
+    var DASH = String.fromCharCode(8212);
+    var COUNTRY_SPECIAL = { XX: 'Unknown', T1: 'Tor network' };
+    var countryNamesFmt = null;
+    function countryName(code) {
+      if (code === null || code === undefined) return DASH;
+      var c = String(code).trim().toUpperCase();
+      if (c === '') return DASH;
+      if (COUNTRY_SPECIAL[c]) return COUNTRY_SPECIAL[c];
+      try {
+        if (!countryNamesFmt) countryNamesFmt = new Intl.DisplayNames(['en'], { type: 'region' });
+        var n = countryNamesFmt.of(c);
+        return n && n !== c ? n : c;
+      } catch (e) { return c; }
+    }
+    // Version cell text: just the version number (platform has its own column).
+    function versionLabel(version) { return version ? String(version) : DASH; }
+
     function usersValue(key, r) { return key === 'user' ? r.anonymous_user_id : r[key]; }
     function usersCompare(key, a, b) {
+      if (key === 'country') return cmpText(countryName(a.country), countryName(b.country));
       if (key === 'event_count') return Number(a.event_count) - Number(b.event_count);
       if (key === 'first_seen' || key === 'last_seen') return new Date(a[key]).getTime() - new Date(b[key]).getTime();
       if (key === 'first_version') return cmpVersionStr(a.first_version, b.first_version) || cmpText(a.first_platform, b.first_platform);

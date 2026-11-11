@@ -48,7 +48,9 @@ test('users table: default Events desc with arrow; click sorts client-side; sort
   assert.match(html, /Events \u25BC/);
   assert.deepEqual(order(html), ['b', 'a', 'c']);
   assert.match(html, /First version/); assert.match(html, /Latest version/);
-  assert.match(html, /ios 1\.0\.5/); assert.ok(html.includes('\u2014'), 'NULL version rendered as a dash');
+  assert.match(html, /<td>1\.0\.5<\/td>/); assert.ok(!/ios 1\.0\.5/.test(html), 'version cell has no platform prefix');
+  assert.match(html, /<td>United States<\/td>/, 'country shows the name, not the code');
+  assert.ok(html.includes('\u2014'), 'NULL version rendered as a dash');
 
   const before = e.urls.length;
   e.run("sortUsersBy('first_version')"); // new column => default desc, version-aware: 1.0.10 first
@@ -93,4 +95,15 @@ test('Joined-in-version picker: live versions only, grouped by OS, date label; f
   assert.match(e.run('getPhaseParams("new")'), /&cohort=new.*&joinVersion=/);
   e.run('updatePhaseRange()');
   assert.match(e.els['phase-range'].textContent, /users who joined in ios:1\.0\.5/);
+});
+
+test('user timeline: Country column shows the country name per event', async () => {
+  const e = makeEnv([]);
+  const ev = (country: any) => ({ timestamp: '2026-11-01T00:00:00Z', event_type: 'app_opened', session_id: 's1234567890', platform: 'ios', app_version: '1.0.6', channel: null, country, properties: null });
+  const fetchFn = async (url: string) => ({ ok: true, json: async () => ({ user: 'u1', capped: false, events: [ev('DE'), ev(null), ev('T1')] }) });
+  e.ctx.fetch = fetchFn;
+  await e.run("showUserEvents('u1')");
+  const h = e.els['detail-panel'].innerHTML;
+  assert.match(h, /<th>Country<\/th>/);
+  assert.ok(h.includes('<td>Germany</td>') && h.includes('<td>Tor network</td>') && h.includes('<td>\u2014</td>'));
 });

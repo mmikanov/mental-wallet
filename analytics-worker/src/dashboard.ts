@@ -894,8 +894,9 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
       if (panel && usersPayload) panel.innerHTML = renderUsersPanel();
     }
 
-    function versionCell(platform, version) {
-      return version ? escHtml((platform ? platform + ' ' : '') + version) : '<span style="color:#999;">\u2014</span>';
+    // Version number only (platform has its own column). Names via countryName().
+    function versionCell(version) {
+      return version ? escHtml(versionLabel(version)) : '<span style="color:#999;">\u2014</span>';
     }
 
     function renderUsersPanel() {
@@ -922,12 +923,12 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
         : '';
       return '<div class="detail-panel">' +
         '<h3>' + usersLabel + ' (' + total + ') <button class="close-btn" onclick="closeDetail()">Close</button></h3>' +
-        '<p style="margin-bottom:12px;color:#6c757d;font-size:0.85rem;">Click a column header to sort (click again to reverse). Click a row to see that user\\'s full event timeline in the order they happened. First version = app version on the user\\'s first event; Latest version = on their most recent event in this window.</p>' +
+        '<p style="margin-bottom:12px;color:#6c757d;font-size:0.85rem;">Click a column header to sort (click again to reverse). Click a row to see that user\\'s full event timeline in the order they happened. First version = app version (number only; see Platform column) on the user\\'s first event; Latest version = on their most recent event in this window.</p>' +
         capNote +
         '<table><thead><tr>' + head + '</tr></thead><tbody>' +
         users.map(function(u) {
           // Pass the FULL raw anonymous_user_id to the timeline fetch (shortId is display-only).
-          return '<tr class="clickable-row" onclick="showUserEvents(\\'' + encodeURIComponent(u.anonymous_user_id) + '\\')"><td>' + shortId(u.anonymous_user_id) + '</td><td>' + (u.platform || '-') + '</td><td>' + (u.os_version || '-') + '</td><td>' + (u.country || '-') + '</td><td>' + versionCell(u.first_platform, u.first_version) + '</td><td>' + versionCell(u.platform, u.latest_version) + '</td><td>' + u.event_count + '</td><td>' + fmtDate(u.first_seen) + '</td><td>' + fmtDate(u.last_seen) + '</td></tr>';
+          return '<tr class="clickable-row" onclick="showUserEvents(\\'' + encodeURIComponent(u.anonymous_user_id) + '\\')"><td>' + shortId(u.anonymous_user_id) + '</td><td>' + (u.platform || '-') + '</td><td>' + (u.os_version || '-') + '</td><td>' + escHtml(countryName(u.country)) + '</td><td>' + versionCell(u.first_version) + '</td><td>' + versionCell(u.latest_version) + '</td><td>' + u.event_count + '</td><td>' + fmtDate(u.first_seen) + '</td><td>' + fmtDate(u.last_seen) + '</td></tr>';
         }).join('') +
         '</tbody></table></div>';
     }
@@ -1140,7 +1141,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
         : '';
 
       var body = events.length === 0
-        ? '<tr><td colspan="5" style="color:#6c757d;">No events for this user.</td></tr>'
+        ? '<tr><td colspan="6" style="color:#6c757d;">No events for this user.</td></tr>'
         : events.map(function(ev, i) {
             var props = fmtProps(ev.properties);
             var propsCell = props
@@ -1150,6 +1151,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
             return '<tr>' +
               '<td style="color:#6c757d;">' + (i + 1) + '</td>' +
               '<td>' + fmtDate(ev.timestamp) + '</td>' +
+              '<td>' + escapeHtml(countryName(ev.country)) + '</td>' +
               '<td><strong>' + escapeHtml(ev.event_type) + '</strong><div style="color:#888;font-size:0.72rem;">' + meta + '</div></td>' +
               '<td style="color:#888;font-size:0.72rem;">' + escapeHtml(ev.session_id ? String(ev.session_id).slice(0, 8) + '\u2026' : '\u2014') + '</td>' +
               '<td>' + propsCell + '</td>' +
@@ -1162,7 +1164,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
         '<p style="margin-bottom:8px;color:#6c757d;font-size:0.8rem;">Full id: <code>' + escapeHtml(fullId) + '</code></p>' +
         '<p style="margin-bottom:12px;color:#6c757d;font-size:0.8rem;">Raw chronological sequence (oldest first). This view is unfiltered \u2014 it ignores the phase / cohort / channel filters and shows the user\\'s entire recorded history.</p>' +
         cappedNote +
-        '<table><thead><tr><th>#</th><th>Timestamp</th><th>Event</th><th>Session</th><th>Properties</th></tr></thead><tbody>' +
+        '<table><thead><tr><th>#</th><th>Timestamp</th><th>Country</th><th>Event</th><th>Session</th><th>Properties</th></tr></thead><tbody>' +
         body +
         '</tbody></table></div>';
     }

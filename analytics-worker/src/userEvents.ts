@@ -30,6 +30,7 @@ export const USER_EVENTS_SQL = `
       platform,
       app_version,
       channel,
+      country,
       properties
     FROM events
     WHERE anonymous_user_id = ?
